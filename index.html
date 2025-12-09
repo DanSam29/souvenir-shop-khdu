@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ХДУ Сувеніри - Інтернет-магазин</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container header-container">
+            <div class="logo">
+                <div class="logo-wrapper">
+                    <div class="logo-image">
+                        <!-- Змініть src на ваш файл логотипа -->
+                        <img src="hdu-logo.png" alt="ХДУ" class="hdu-logo">
+                    </div>
+                    <div class="logo-text">
+                        <h1>ХДУ Сувеніри</h1>
+                        <p>Офіційний магазин Херсонського державного університету</p>
+                    </div>
+                </div>
+            </div>
+            <div class="user-actions">
+                <div class="cart-icon" id="cartIcon">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cartCount">0</span>
+                </div>
+                <div class="auth-buttons">
+                    <button id="loginBtn" class="btn btn-primary"><i class="fas fa-sign-in-alt"></i> Увійти</button>
+                    <button id="registerBtn" class="btn btn-primary btn-outline"><i class="fas fa-user-plus"></i> Реєстрація</button>
+                </div>
+            </div>
+        </div>
+        <nav class="navbar">
+            <div class="container">
+                <div class="search-container">
+                    <div class="search-box expanded">
+                        <input type="text" id="searchInput" placeholder="Пошук товарів за назвою, категорією, описом...">
+                        <button id="searchBtn"><i class="fas fa-search"></i> Пошук</button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container main-container">
+        <aside class="sidebar">
+            <div class="filters">
+                <h3><i class="fas fa-filter"></i> Фільтри</h3>
+                <div class="filter-group">
+                    <h4>Категорії</h4>
+                    <label><input type="checkbox" class="category-filter" value="all" checked> Всі товари</label>
+                    <label><input type="checkbox" class="category-filter" value="Одяг"> Одяг</label>
+                    <label><input type="checkbox" class="category-filter" value="Аксесуари"> Аксесуари</label>
+                    <label><input type="checkbox" class="category-filter" value="Канцелярія"> Канцелярія</label>
+                </div>
+                <div class="filter-group">
+                    <h4>Ціна, грн</h4>
+                    <div class="price-range">
+                        <input type="range" min="0" max="5000" value="2500" class="slider" id="priceSlider">
+                        <div class="price-values">
+                            <span>0</span>
+                            <span id="currentPrice">2500</span>
+                            <span>5000</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <h4>Сортування</h4>
+                    <select id="sortSelect">
+                        <option value="popularity">За популярністю</option>
+                        <option value="price-asc">За ціною (зростання)</option>
+                        <option value="price-desc">За ціною (спадання)</option>
+                        <option value="newest">За новизною</option>
+                    </select>
+                </div>
+                <button class="btn btn-block" id="applyFilters">Застосувати фільтри</button>
+                <button class="btn btn-outline btn-block" id="resetFilters">Скинути фільтри</button>
+            </div>
+        </aside>
+
+        <section class="content">
+            <div class="page-header">
+                <div class="view-options">
+                    <span>Режим перегляду:</span>
+                    <button class="view-btn active" id="gridViewBtn" data-view="grid">
+                        <i class="fas fa-th-large"></i> Сітка
+                    </button>
+                    <button class="view-btn" id="listViewBtn" data-view="list">
+                        <i class="fas fa-list"></i> Список
+                    </button>
+                </div>
+            </div>
+            
+            <div class="pagination top-pagination">
+                <button class="btn btn-outline" disabled><i class="fas fa-chevron-left"></i> Назад</button>
+                <span class="page-info">Сторінка 1 з 1</span>
+                <button class="btn btn-outline" disabled>Вперед <i class="fas fa-chevron-right"></i></button>
+            </div>
+            
+            <div class="products-grid" id="productsGrid">
+                <!-- Товари будуть додані через JavaScript -->
+            </div>
+            
+            <div class="products-list" id="productsList" style="display: none;">
+                <!-- Товари у вигляді списку будуть додані через JavaScript -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Модальні вікна -->
+    <div class="modal" id="productModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div id="modalProductContent"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="cartModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2><i class="fas fa-shopping-cart"></i> Ваш кошик</h2>
+            <div class="cart-items" id="cartItems">
+                <!-- Товари в кошику -->
+            </div>
+            <div class="cart-summary">
+                <div class="summary-row">
+                    <span>Товари:</span>
+                    <span id="cartSubtotal">0 грн</span>
+                </div>
+                <div class="summary-row">
+                    <span>Доставка (Nova Poshta):</span>
+                    <span id="cartShipping">0 грн</span>
+                </div>
+                <div class="summary-row total">
+                    <span>До сплати:</span>
+                    <span id="cartTotal">0 грн</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Сторінки входу та реєстрації (приховані) -->
+    <div id="loginPage" class="auth-page" style="display: none;">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h2><i class="fas fa-sign-in-alt"></i> Вхід в систему</h2>
+                <button class="btn btn-outline back-to-main"><i class="fas fa-arrow-left"></i> Назад до магазину</button>
+            </div>
+            <div class="auth-form">
+                <div class="form-group">
+                    <label for="loginEmail">Email адреса:</label>
+                    <input type="email" id="loginEmail" placeholder="">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Пароль:</label>
+                    <input type="password" id="loginPassword" placeholder="">
+                </div>
+                <button class="btn btn-primary btn-block" id="submitLogin">Увійти</button>
+                <p class="auth-switch">Не маєте облікового запису? <a href="#" class="switch-to-register">Зареєструватися</a></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="registerPage" class="auth-page" style="display: none;">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h2><i class="fas fa-user-plus"></i> Реєстрація</h2>
+                <button class="btn btn-outline back-to-main"><i class="fas fa-arrow-left"></i> Назад до магазину</button>
+            </div>
+            <div class="auth-form">
+                <div class="form-group">
+                    <label for="regFirstName">Ім'я:</label>
+                    <input type="text" id="regFirstName" placeholder="">
+                </div>
+                <div class="form-group">
+                    <label for="regLastName">Прізвище:</label>
+                    <input type="text" id="regLastName" placeholder="">
+                </div>
+                <div class="form-group">
+                    <label for="regEmail">Email адреса:</label>
+                    <input type="email" id="regEmail" placeholder="">
+                </div>
+                <div class="form-group">
+                    <label for="regPhone">Телефон:</label>
+                    <input type="tel" id="regPhone" placeholder="+380 __ ___ __ __">
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">Пароль:</label>
+                    <input type="password" id="regPassword" placeholder="">
+                </div>
+                <div class="form-group">
+                    <label for="regConfirmPassword">Підтвердження паролю:</label>
+                    <input type="password" id="regConfirmPassword" placeholder="">
+                </div>
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="regTerms">
+                    <label for="regTerms" class="checkbox-label">Я погоджуюсь з умовами використання та політикою конфіденційності</label>
+                </div>
+                <button class="btn btn-primary btn-block" id="submitRegister">Зареєструватися</button>
+                <p class="auth-switch">Вже маєте обліковий запис? <a href="#" class="switch-to-login">Увійти</a></p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section contact-info">
+                    <h4>Контактна інформація</h4>
+                    <p><i class="fas fa-map-marker-alt"></i> вул. Університетська, 27, Херсон</p>
+                    <p><i class="fas fa-phone"></i> +380 (55) 222-22-22</p>
+                    <p><i class="fas fa-envelope"></i> souvenirs@kherson.ua</p>
+                    <p><i class="fas fa-clock"></i> Пн-Пт: 9:00-18:00</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
