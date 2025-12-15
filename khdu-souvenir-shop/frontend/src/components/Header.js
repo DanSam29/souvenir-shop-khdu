@@ -16,11 +16,12 @@ function Header() {
         </Link>
         <nav className="nav">
           <Link to="/" className="nav-link">
-            <span className="nav-icon">🏠</span>
             Каталог
           </Link>
-          <Link to="/register" className="nav-link">
-            <span className="nav-icon">👤</span>
+          <Link to="/login" className="nav-link">
+            Увійти
+          </Link>
+          <Link to="/register" className="nav-link nav-link-register">
             Реєстрація
           </Link>
           <Link to="/cart" className="nav-link nav-link-cart">

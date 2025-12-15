@@ -99,6 +99,16 @@
   color: #000;
 }
 
+.nav-link-register {
+  border: 2px solid white;
+  font-weight: 600;
+}
+
+.nav-link-register:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: white;
+}
+
 .cart-badge {
   background: #dc3545;
   color: white;

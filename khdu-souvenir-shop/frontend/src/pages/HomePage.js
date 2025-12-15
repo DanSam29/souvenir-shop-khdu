@@ -1,6 +1,5 @@
 import React from 'react';
 import ProductList from '../components/ProductList';
-import logo from '../assets/khdu-logo.png';
 import './HomePage.css';
 
 function HomePage() {
@@ -8,7 +7,6 @@ function HomePage() {
     <div>
       <section className="hero-banner">
         <div className="hero-content">
-          <img src={logo} alt="Герб ХДУ" className="hero-emblem" />
           <h2 className="hero-title">Сувенірна продукція ХДУ</h2>
           <p className="hero-subtitle">
             Офіційні товари з символікою Херсонського державного університету

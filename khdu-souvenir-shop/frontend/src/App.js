@@ -4,6 +4,7 @@ import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import ProductPage from './pages/ProductPage';
 import RegisterPage from './pages/RegisterPage';
+import LoginPage from './pages/LoginPage';
 import logo from './assets/khdu-logo.png';
 import './App.css';
 
@@ -17,6 +18,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/product/:id" element={<ProductPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/cart" element={
               <div style={{ padding: '2rem', textAlign: 'center' }}>
                 <h2>🛒 Кошик (в розробці)</h2>
@@ -37,13 +39,14 @@ function App() {
             <div className="footer-info">
               <div className="footer-section">
                 <h4>Контакти</h4>
-                <p>📧 info@kspu.edu</p>
-                <p>📞 +38 (0552) 32-64-60</p>
+                <p>📧 office@ksu.ks.ua</p>
+                <p>📞 +380963102636</p>
+                <p>🌐 <a href="https://www.kspu.edu/default.aspx?lang=uk" target="_blank" rel="noopener noreferrer">www.kspu.edu</a></p>
               </div>
               <div className="footer-section">
-                <h4>Навігація</h4>
-                <p><a href="/">Каталог</a></p>
-                <p><a href="/register">Реєстрація</a></p>
+                <h4>Адреси</h4>
+                <p><strong>Юридична:</strong><br />вул. Університетська, 27,<br />м. Херсон, 73003</p>
+                <p><strong>Фактична:</strong><br />вул. Шевченка, 14,<br />м. Івано-Франківськ, 76018</p>
               </div>
             </div>
           </div>
