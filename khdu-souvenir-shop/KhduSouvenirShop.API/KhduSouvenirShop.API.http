@@ -1,0 +1,6 @@
+@KhduSouvenirShop.API_HostAddress = http://localhost:5225
+
+GET {{KhduSouvenirShop.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
