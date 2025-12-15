@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import ProductPage from './pages/ProductPage';
@@ -20,9 +20,13 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/cart" element={
-              <div style={{ padding: '2rem', textAlign: 'center' }}>
-                <h2>🛒 Кошик (в розробці)</h2>
-                <p>Функціонал кошика буде реалізовано в наступній практичній роботі</p>
+              <div className="empty-cart-page">
+                <div className="empty-cart-content">
+                  <div className="cart-icon">🛒</div>
+                  <h2>Ваш кошик порожній</h2>
+                  <p>Додайте товари до кошика, щоб продовжити покупки</p>
+                  <Link to="/" className="back-to-catalog-btn">Перейти до каталогу</Link>
+                </div>
               </div>
             } />
           </Routes>

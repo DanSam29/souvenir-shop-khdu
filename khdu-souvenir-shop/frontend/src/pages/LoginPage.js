@@ -18,9 +18,9 @@ function LoginPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Тут буде логіка авторизації в наступних практичних
+    // Тут буде логіка авторизації
     console.log('Login attempt:', formData);
-    setError('Функціонал авторизації буде реалізовано в наступній практичній роботі');
+    setError('Функціонал авторизації в розробці');
   };
 
   return (

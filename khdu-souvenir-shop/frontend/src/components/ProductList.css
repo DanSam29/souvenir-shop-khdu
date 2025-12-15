@@ -1,36 +1,222 @@
-.product-list-container {
+/* Закріплений пошук */
+.search-bar-sticky {
+  position: sticky;
+  top: 65px;
+  background: white;
+  z-index: 999;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 1rem 0;
+}
+
+.search-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.search-form-sticky {
+  display: flex;
+  gap: 1rem;
+}
+
+.search-input-sticky {
+  flex: 1;
+  padding: 0.85rem;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s;
+}
+
+.search-input-sticky:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.search-btn-sticky {
+  padding: 0.85rem 2rem;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.search-btn-sticky:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 86, 179, 0.3);
+}
+
+.search-input-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+}
+
+.search-input-sticky {
+  padding-right: 2.5rem;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 1.5rem;
+  padding: 0.2rem;
+  line-height: 1;
+  transition: color 0.2s;
+  z-index: 2;
+}
+
+.clear-search-btn:hover {
+  color: #333;
+}
+
+/* Layout з фільтрами */
+.catalog-layout {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem 20px;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 2rem;
 }
 
-.search-form {
+/* Sidebar фільтрів */
+.filters-sidebar {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  height: fit-content;
+  position: sticky;
+  top: 150px;
+}
+
+.filters-header {
   display: flex;
-  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.filters-header h3 {
+  margin: 0;
+  color: #1a1a1a;
+  font-size: 1.3rem;
+}
+
+.reset-btn {
+  padding: 0.5rem 1rem;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #495057;
+  transition: all 0.3s;
+}
+
+.reset-btn:hover {
+  background: #e9ecef;
+}
+
+/* Секції фільтрів */
+.filter-section {
   margin-bottom: 2rem;
 }
 
-.search-input {
-  flex: 1;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+.filter-section h4 {
+  margin: 0 0 1rem 0;
+  color: #495057;
   font-size: 1rem;
+  font-weight: 600;
 }
 
-.search-btn {
-  padding: 0.75rem 2rem;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
+/* Фільтр ціни */
+.price-range {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.price-slider {
+  width: 100%;
   cursor: pointer;
-  font-size: 1rem;
-  transition: background 0.3s;
 }
 
-.search-btn:hover {
-  background: #0056b3;
+.price-labels {
+  display: flex;
+  justify-content: space-between;
+  color: #007bff;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* Фільтр категорій */
+.categories-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.category-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.category-checkbox:hover {
+  background: #f8f9fa;
+}
+
+.category-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.category-checkbox span {
+  color: #495057;
+  font-size: 0.95rem;
+}
+
+/* Контент товарів */
+.products-content {
+  min-height: 400px;
+}
+
+.products-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.products-header h2 {
+  margin: 0;
+  color: #1a1a1a;
+  font-size: 1.8rem;
+}
+
+.products-count {
+  color: #666;
+  font-size: 1rem;
 }
 
 .product-grid {
@@ -63,4 +249,16 @@
   text-align: center;
   padding: 3rem;
   color: #666;
+  font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 968px) {
+  .catalog-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .filters-sidebar {
+    position: static;
+  }
 }

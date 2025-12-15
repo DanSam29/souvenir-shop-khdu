@@ -68,7 +68,7 @@ function RegisterForm() {
       <div className="success-message">
         <h2>✓ Реєстрація успішна!</h2>
         <p>Ви успішно зареєструвалися в системі.</p>
-        <button onClick={() => setSuccess(false)}>Зареєструвати ще</button>
+        <p>Тепер ви можете увійти в свій обліковий запис.</p>
       </div>
     );
   }
