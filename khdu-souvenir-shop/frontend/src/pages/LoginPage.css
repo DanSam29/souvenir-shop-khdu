@@ -1,40 +1,88 @@
 .login-page {
-  min-height: calc(100vh - 200px);
+  min-height: 80vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem 20px;
+  padding: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-.login-form-container {
-  max-width: 450px;
+.login-container {
   width: 100%;
+  max-width: 450px;
 }
 
 .login-form {
   background: white;
   padding: 2.5rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 86, 179, 0.15);
-  border: 1px solid rgba(0, 123, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
 .login-form h2 {
-  margin: 0 0 2rem 0;
-  color: #1a1a1a;
-  font-size: 1.8rem;
+  margin: 0 0 1.5rem 0;
+  font-size: 2rem;
+  color: #333;
   text-align: center;
 }
 
-.info-message {
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.form-group input {
+  width: 100%;
   padding: 0.85rem;
-  margin-bottom: 1.25rem;
-  background: linear-gradient(135deg, #d1ecf1, #bee5eb);
-  color: #0c5460;
+  border: 2px solid #e0e0e0;
   border-radius: 8px;
-  border: 1px solid #bee5eb;
-  font-weight: 500;
-  text-align: center;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.error-message {
+  background: #fee;
+  color: #c33;
+  padding: 0.85rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #c33;
+  font-size: 0.95rem;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .form-footer {
@@ -43,12 +91,12 @@
   color: #666;
 }
 
-.form-footer a {
-  color: #007bff;
+.form-footer .link {
+  color: #667eea;
   text-decoration: none;
   font-weight: 600;
 }
 
-.form-footer a:hover {
+.form-footer .link:hover {
   text-decoration: underline;
 }

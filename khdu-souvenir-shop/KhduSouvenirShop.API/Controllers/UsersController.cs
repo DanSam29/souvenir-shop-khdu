@@ -1,9 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using KhduSouvenirShop.API.Data;
-using KhduSouvenirShop.API.Models;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using KhduSouvenirShop.API.Data;
+using KhduSouvenirShop.API.Models;
 
 namespace KhduSouvenirShop.API.Controllers
 {
@@ -13,11 +17,13 @@ namespace KhduSouvenirShop.API.Controllers
     {
         private readonly AppDbContext _context;
         private readonly ILogger<UsersController> _logger;
+        private readonly IConfiguration _configuration;
 
-        public UsersController(AppDbContext context, ILogger<UsersController> logger)
+        public UsersController(AppDbContext context, ILogger<UsersController> logger, IConfiguration configuration)
         {
             _context = context;
             _logger = logger;
+            _configuration = configuration;
         }
 
         // POST: api/Users/register
@@ -45,7 +51,7 @@ namespace KhduSouvenirShop.API.Controllers
                 return Conflict(new { error = "Цей Email вже зареєстрований" });
             }
 
-            // Хешування паролю (простий варіант для MVP)
+            // Хешування паролю
             var passwordHash = HashPassword(registerDto.Password);
 
             // Створення користувача
@@ -65,14 +71,96 @@ namespace KhduSouvenirShop.API.Controllers
 
             _logger.LogInformation("Користувач {Email} успішно зареєстрований", newUser.Email);
 
-            // Повертаємо дані без паролю
+            // Генеруємо JWT токен
+            var token = GenerateJwtToken(newUser);
+
+            // Повертаємо дані без паролю + токен
             return CreatedAtAction(nameof(GetUser), new { id = newUser.UserId }, new
             {
                 userId = newUser.UserId,
                 firstName = newUser.FirstName,
                 lastName = newUser.LastName,
                 email = newUser.Email,
-                role = newUser.Role
+                phone = newUser.Phone,
+                role = newUser.Role,
+                token = token
+            });
+        }
+
+        // POST: api/Users/login
+        [HttpPost("login")]
+        public async Task<ActionResult> Login([FromBody] LoginDto loginDto)
+        {
+            _logger.LogInformation("Спроба авторизації: {Email}", loginDto.Email);
+
+            // Валідація
+            if (string.IsNullOrWhiteSpace(loginDto.Email) || string.IsNullOrWhiteSpace(loginDto.Password))
+            {
+                return BadRequest(new { error = "Email та пароль обов'язкові" });
+            }
+
+            // Пошук користувача
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
+
+            if (user == null)
+            {
+                _logger.LogWarning("Користувача з email {Email} не знайдено", loginDto.Email);
+                return Unauthorized(new { error = "Невірний email або пароль" });
+            }
+
+            // Перевірка паролю
+            var passwordHash = HashPassword(loginDto.Password);
+            if (user.PasswordHash != passwordHash)
+            {
+                _logger.LogWarning("Невірний пароль для {Email}", loginDto.Email);
+                return Unauthorized(new { error = "Невірний email або пароль" });
+            }
+
+            // Генеруємо JWT токен
+            var token = GenerateJwtToken(user);
+
+            _logger.LogInformation("Користувач {Email} успішно авторизований", user.Email);
+
+            return Ok(new
+            {
+                userId = user.UserId,
+                firstName = user.FirstName,
+                lastName = user.LastName,
+                email = user.Email,
+                phone = user.Phone,
+                role = user.Role,
+                token = token
+            });
+        }
+
+        // GET: api/Users/me - отримання даних поточного користувача
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<ActionResult> GetCurrentUser()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+            if (userId == 0)
+            {
+                return Unauthorized(new { error = "Не авторизовано" });
+            }
+
+            var user = await _context.Users.FindAsync(userId);
+
+            if (user == null)
+            {
+                return NotFound(new { error = "Користувача не знайдено" });
+            }
+
+            return Ok(new
+            {
+                userId = user.UserId,
+                firstName = user.FirstName,
+                lastName = user.LastName,
+                email = user.Email,
+                phone = user.Phone,
+                role = user.Role,
+                createdAt = user.CreatedAt
             });
         }
 
@@ -87,7 +175,6 @@ namespace KhduSouvenirShop.API.Controllers
                 return NotFound(new { error = "Користувача не знайдено" });
             }
 
-            // Повертаємо без паролю
             return Ok(new
             {
                 userId = user.UserId,
@@ -98,6 +185,37 @@ namespace KhduSouvenirShop.API.Controllers
                 role = user.Role,
                 createdAt = user.CreatedAt
             });
+        }
+
+        // Метод генерації JWT токену
+        private string GenerateJwtToken(User user)
+        {
+            var jwtSettings = _configuration.GetSection("Jwt");
+            var jwtKey = jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key не налаштовано");
+            var jwtIssuer = jwtSettings["Issuer"] ?? throw new InvalidOperationException("JWT Issuer не налаштовано");
+            var jwtAudience = jwtSettings["Audience"] ?? throw new InvalidOperationException("JWT Audience не налаштовано");
+            var jwtExpireMinutes = jwtSettings["ExpireMinutes"] ?? "1440";
+            
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
+                new Claim(ClaimTypes.Role, user.Role)
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: jwtIssuer,
+                audience: jwtAudience,
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtExpireMinutes)),
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         // Простий метод хешування (для MVP, пізніше використаємо BCrypt)
@@ -117,5 +235,12 @@ namespace KhduSouvenirShop.API.Controllers
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public string? Phone { get; set; }
+    }
+
+    // DTO для авторизації
+    public class LoginDto
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
     }
 }

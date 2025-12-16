@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { productsAPI } from '../services/api';
 import './ProductPage.css';
@@ -9,11 +9,7 @@ function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    loadProduct();
-  }, [id]);
-
-  const loadProduct = async () => {
+  const loadProduct = useCallback(async () => {
     try {
       setLoading(true);
       const response = await productsAPI.getById(id);
@@ -25,7 +21,11 @@ function ProductPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]); // Залежність: id, оскільки API-запит залежить від нього.
+
+  useEffect(() => {
+    loadProduct();
+  }, [loadProduct]); // Залежність: стабільна функція loadProduct (з useCallback)
 
   if (loading) {
     return <div className="loading">Завантаження...</div>;

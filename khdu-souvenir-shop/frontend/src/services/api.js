@@ -11,6 +11,33 @@ const api = axios.create({
   },
 });
 
+// Interceptor для додавання JWT токену до кожного запиту
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Interceptor для обробки помилок (наприклад, 401 - неавторизовано)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Токен невалідний або закінчився
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 // API функції для Products
 export const productsAPI = {
   // GET всі товари
@@ -40,8 +67,32 @@ export const usersAPI = {
   // POST реєстрація
   register: (userData) => api.post('/Users/register', userData),
   
+  // POST авторизація
+  login: (credentials) => api.post('/Users/login', credentials),
+  
+  // GET поточний користувач (потребує токену)
+  getCurrentUser: () => api.get('/Users/me'),
+  
   // GET користувач за ID
   getById: (id) => api.get(`/Users/${id}`),
+};
+
+// API функції для Cart (потребують авторизації)
+export const cartAPI = {
+  // GET отримати кошик
+  getCart: () => api.get('/Cart'),
+  
+  // POST додати товар до кошика
+  addToCart: (productId, quantity = 1) => api.post('/Cart/add', { productId, quantity }),
+  
+  // PUT оновити кількість товару
+  updateQuantity: (cartItemId, quantity) => api.put(`/Cart/update/${cartItemId}`, { quantity }),
+  
+  // DELETE видалити товар з кошика
+  removeFromCart: (cartItemId) => api.delete(`/Cart/remove/${cartItemId}`),
+  
+  // DELETE очистити кошик
+  clearCart: () => api.delete('/Cart/clear'),
 };
 
 export default api;
