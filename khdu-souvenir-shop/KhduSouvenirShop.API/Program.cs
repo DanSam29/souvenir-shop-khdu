@@ -20,7 +20,6 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
-// *** ДОДАНО: Налаштування JWT Authentication ***
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key не налаштовано в appsettings.json");
 var key = Encoding.UTF8.GetBytes(jwtKey);
@@ -82,7 +81,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 
-// *** ВАЖЛИВО: Порядок middleware! ***
 app.UseAuthentication();  // Спочатку аутентифікація
 app.UseAuthorization();   // Потім авторизація
 

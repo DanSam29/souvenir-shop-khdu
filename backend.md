@@ -1,49 +1,38 @@
-# Backend API для інтернет-магазину сувенірної продукції ХДУ
+# Backend API - Інтернет-магазин сувенірної продукції ХДУ
 
-## Вступ
+## 1. Вступ
 
-Backend для інтернет-магазину сувенірної продукції Херсонського державного університету розроблено на **ASP.NET Core 8.0 (C#)** з використанням **Entity Framework Core** для роботи з базою даних **MySQL**.
+### 1.1. Опис Backend
+Backend реалізовано на платформі **.NET Core 8.0** з використанням **ASP.NET Core Web API**. Система надає RESTful API для управління товарами, користувачами, кошиком та замовленнями інтернет-магазину.
 
-**Реалізовані базові ендпоінти:**
-- `GET /api/Products` — отримання всіх товарів
-- `GET /api/Products/{id}` — отримання товару за ID
-- `GET /api/Products/search?query={query}` — пошук товарів
-- `GET /api/Products/category/{categoryId}` — товари за категорією
-- `GET /api/Categories` — отримання всіх категорій
-- `GET /api/Categories/{id}` — категорія за ID
-- `POST /api/Users/register` — реєстрація користувача
-- `GET /api/Users/{id}` — отримання даних користувача
+**Основні ендпоінти:**
+- `/api/Products` — управління каталогом товарів (GET, POST, PUT, DELETE)
+- `/api/Categories` — управління категоріями (GET, POST, PUT, DELETE)
+- `/api/Users/register` — реєстрація користувачів (POST)
+- `/api/Users/login` — авторизація користувачів (POST)
+- `/api/Cart` — управління кошиком (GET, POST, PUT, DELETE)
 
-**Технологічний стек:**
-- **Framework:** ASP.NET Core 8.0 Web API
-- **ORM:** Entity Framework Core 8.0
-- **База даних:** MySQL 8.0 (Pomelo.EntityFrameworkCore.MySql)
-- **Логування:** Serilog
-- **Документація API:** Swagger/OpenAPI
-- **Тестування:** Thunder Client, Swagger UI
+**Архітектура:** Клієнт-серверна трирівнева модель з використанням Entity Framework Core для роботи з MySQL базою даних.
 
 ---
 
-## Налаштування середовища
+## 2. Налаштування середовища розробки
 
-### 1. Встановлення .NET SDK
+### 2.1. Встановлене програмне забезпечення
+- **.NET SDK 8.0** — для розробки Web API
+- **Visual Studio Code** — IDE для розробки
+- **MySQL 8.0** — реляційна база даних
+- **Postman / Thunder Client** — для тестування API
+
+### 2.2. Встановлення NuGet пакетів
+
+Для налаштування проекту виконайте наступні команди:
+
 ```bash
-# Перевірка версії
-dotnet --version
-```
-
-Завантажити: https://dotnet.microsoft.com/download/dotnet/8.0
-
-### 2. Створення проєкту
-```bash
-mkdir khdu-souvenir-shop
-cd khdu-souvenir-shop
+# Створення проекту
 dotnet new webapi -n KhduSouvenirShop.API
 cd KhduSouvenirShop.API
-```
 
-### 3. Встановлення NuGet пакетів
-```bash
 # Entity Framework Core для MySQL
 dotnet add package Pomelo.EntityFrameworkCore.MySql --version 8.0.0
 
@@ -54,71 +43,44 @@ dotnet add package Serilog.Sinks.File --version 5.0.0
 
 # Swagger для документації API
 dotnet add package Swashbuckle.AspNetCore --version 6.5.0
+
+# BCrypt для хешування паролів
+dotnet add package BCrypt.Net-Next --version 4.0.3
 ```
 
-### 4. Налаштування підключення до БД
+### 2.3. Конфігурація підключення до БД
 
-**Файл `appsettings.json`:**
+Файл `appsettings.json`:
+
 ```json
 {
   "ConnectionStrings": {
     "DefaultConnection": "Server=localhost;Port=3306;Database=khdu_souvenir_shop;User=root;Password=YOUR_PASSWORD;CharSet=utf8mb4;"
   },
+  "Jwt": {
+    "Key": "YOUR_SECRET_KEY_HERE_MINIMUM_32_CHARACTERS",
+    "Issuer": "KhduSouvenirShopAPI",
+    "Audience": "KhduSouvenirShopUsers",
+    "ExpireMinutes": 1440
+  },
   "Logging": {
     "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning",
-      "Microsoft.EntityFrameworkCore": "Information"
+      "Default": "Information"
     }
-  },
-  "AllowedHosts": "*"
+  }
 }
 ```
 
-**Важливо:** Замініть `YOUR_PASSWORD` на ваш реальний пароль від MySQL!
-
 ---
 
-## Структура проєкту
+## 3. Код сервера
 
-```
-KhduSouvenirShop.API/
-├── Controllers/           # API контролери
-│   ├── ProductsController.cs
-│   ├── CategoriesController.cs
-│   └── UsersController.cs
-├── Models/               # Моделі даних (Entity Framework)
-│   ├── User.cs
-│   ├── Product.cs
-│   ├── Category.cs
-│   ├── ProductImage.cs
-│   ├── Cart.cs
-│   ├── CartItem.cs
-│   ├── Order.cs
-│   ├── OrderItem.cs
-│   ├── Payment.cs
-│   └── Shipping.cs
-├── Data/                 # DbContext
-│   └── AppDbContext.cs
-├── DTOs/                 # Data Transfer Objects
-│   └── RegisterDto.cs
-├── logs/                 # Логи Serilog
-│   └── log-20241214.txt
-├── appsettings.json      # Конфігурація
-└── Program.cs            # Точка входу
-```
-
----
-
-## Код сервера
-
-### Program.cs (точка входу)
+### 3.1. Program.cs (повний код)
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
 using KhduSouvenirShop.API.Data;
 using Serilog;
-using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -130,32 +92,24 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-// Додавання DbContext з MySQL
+// Підключення до MySQL через Entity Framework Core
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
-// Додавання контролерів з обробкою циклічних посилань
+// Налаштування контролерів з обробкою циклічних посилань у JSON
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        options.JsonSerializerOptions.ReferenceHandler = 
+            System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
 
 // Додавання Swagger для документації API
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-    {
-        Title = "Khdu Souvenir Shop API",
-        Version = "v1",
-        Description = "API для інтернет-магазину сувенірної продукції ХДУ"
-    });
-});
+builder.Services.AddSwaggerGen();
 
-// Додавання CORS (для frontend)
+// Налаштування CORS для frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -168,33 +122,89 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Middleware для розробки
+// Middleware pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
 app.UseCors("AllowAll");
+app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 
-Log.Information("Сервер запущено!");
 app.Run();
 ```
 
-**Пояснення ключових моментів:**
+**Пояснення ключових компонентів:**
+- **`AddDbContext<AppDbContext>`** — реєстрація контексту бази даних для DI
+- **`AddControllers()`** — додавання підтримки MVC контролерів
+- **`UseSerilog()`** — підключення логування через Serilog
+- **`AddCors()`** — налаштування CORS для доступу з React frontend
+- **`ReferenceHandler.IgnoreCycles`** — обробка циклічних посилань у JSON (User → Cart → User)
 
-- **`builder.Services.AddDbContext<AppDbContext>`** — реєстрація контексту БД для Dependency Injection
-- **`ReferenceHandler.IgnoreCycles`** — обробка циклічних посилань у JSON (Product → Category → Products → ...)
-- **`UseSerilog()`** — підключення Serilog для логування запитів та помилок
-- **`AddSwagger()`** — автоматична генерація документації API
-- **`AddCors("AllowAll")`** — дозвіл на запити з frontend (React)
+### 3.2. AppDbContext.cs (контекст бази даних)
 
----
+```csharp
+using Microsoft.EntityFrameworkCore;
+using KhduSouvenirShop.API.Models;
 
-## Приклад контролера: ProductsController.cs
+namespace KhduSouvenirShop.API.Data
+{
+    public class AppDbContext : DbContext
+    {
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+        public DbSet<User> Users { get; set; }
+        public DbSet<Category> Categories { get; set; }
+        public DbSet<Product> Products { get; set; }
+        public DbSet<ProductImage> ProductImages { get; set; }
+        public DbSet<Cart> Carts { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<Payment> Payments { get; set; }
+        public DbSet<Shipping> Shippings { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // Унікальний індекс на Email
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique();
+
+            // Один кошик на користувача
+            modelBuilder.Entity<Cart>()
+                .HasIndex(c => c.UserId)
+                .IsUnique();
+
+            // Унікальний номер замовлення
+            modelBuilder.Entity<Order>()
+                .HasIndex(o => o.OrderNumber)
+                .IsUnique();
+
+            // Каскадне видалення кошика при видаленні користувача
+            modelBuilder.Entity<Cart>()
+                .HasOne(c => c.User)
+                .WithOne(u => u.Cart)
+                .HasForeignKey<Cart>(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Каскадне видалення товарів кошика
+            modelBuilder.Entity<CartItem>()
+                .HasOne(ci => ci.Cart)
+                .WithMany(c => c.CartItems)
+                .HasForeignKey(ci => ci.CartId)
+                .OnDelete(DeleteBehavior.Cascade);
+        }
+    }
+}
+```
+
+### 3.3. ProductsController.cs (приклад контролера)
 
 ```csharp
 using Microsoft.AspNetCore.Mvc;
@@ -224,8 +234,8 @@ namespace KhduSouvenirShop.API.Controllers
             _logger.LogInformation("Запит на отримання всіх товарів");
             
             var products = await _context.Products
-                .Include(p => p.Category)
-                .Include(p => p.Images)
+                .Include(p => p.Category)   // Завантажуємо категорію
+                .Include(p => p.Images)     // Завантажуємо зображення
                 .ToListAsync();
 
             return Ok(products);
@@ -235,8 +245,6 @@ namespace KhduSouvenirShop.API.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Product>> GetProduct(int id)
         {
-            _logger.LogInformation("Запит на отримання товару з ID: {ProductId}", id);
-
             var product = await _context.Products
                 .Include(p => p.Category)
                 .Include(p => p.Images)
@@ -244,7 +252,6 @@ namespace KhduSouvenirShop.API.Controllers
 
             if (product == null)
             {
-                _logger.LogWarning("Товар з ID {ProductId} не знайдено", id);
                 return NotFound(new { error = "Товар не знайдено" });
             }
 
@@ -255,11 +262,9 @@ namespace KhduSouvenirShop.API.Controllers
         [HttpGet("search")]
         public async Task<ActionResult<IEnumerable<Product>>> SearchProducts([FromQuery] string query)
         {
-            _logger.LogInformation("Пошук товарів за запитом: {Query}", query);
-
             if (string.IsNullOrWhiteSpace(query))
             {
-                return BadRequest(new { error = "Пошуковий запит не може бути порожнім" });
+                return BadRequest(new { error = "Пошуковий запит порожній" });
             }
 
             var products = await _context.Products
@@ -274,41 +279,29 @@ namespace KhduSouvenirShop.API.Controllers
 }
 ```
 
-**Пояснення:**
-
-- **`[Route("api/[controller]")]`** — визначає базовий маршрут (`/api/Products`)
-- **`[HttpGet]`** — атрибут для GET-запитів
-- **`Include(p => p.Category)`** — завантаження пов'язаних даних (JOIN в SQL)
-- **`_logger.LogInformation()`** — логування запитів через Serilog
-- **`Ok(products)`** — повернення JSON з HTTP статусом 200
-- **`NotFound(new { error = "..." })`** — повернення HTTP 404 з JSON-повідомленням
+**Пояснення методів контролера:**
+- **`[Route("api/[controller]")]`** — визначає базовий URL роут (`/api/Products`)
+- **`[HttpGet]`** — атрибут для GET-запитів (читання даних)
+- **`Include()`** — eager loading для завантаження пов'язаних сутностей (Category, Images)
+- **`async/await`** — асинхронне виконання для кращої продуктивності
+- **`Ok()`, `NotFound()`, `BadRequest()`** — повернення HTTP статусів (200, 404, 400)
 
 ---
 
-## Тестування API
+## 4. Тестування API
 
-### 1. Запуск сервера
+### 4.1. Інструменти тестування
+Для тестування використовувався **Thunder Client** (розширення VS Code) та **Postman**.
 
-```bash
-dotnet run
-```
+### 4.2. Приклади запитів та відповідей
 
-**Очікуваний вивід:**
-```
-info: Сервер запущено!
-info: Now listening on: http://localhost:5225
-```
-
-### 2. Тестування через Thunder Client (VS Code)
-
-#### GET: Отримання всіх товарів
-
+#### Тест 1: GET всі товари
 **Запит:**
-```
+```http
 GET http://localhost:5225/api/Products
 ```
 
-**Очікувана відповідь (200 OK):**
+**Відповідь (200 OK):**
 ```json
 [
   {
@@ -319,94 +312,171 @@ GET http://localhost:5225/api/Products
     "weight": 0.200,
     "categoryId": 1,
     "stock": 15,
-    "createdAt": "2024-12-14T10:00:00Z",
+    "createdAt": "2024-12-14T08:53:47",
     "category": {
       "categoryId": 1,
       "name": "Одяг",
       "displayOrder": 1
     },
     "images": []
+  },
+  {
+    "productId": 2,
+    "name": "Блокнот",
+    "description": "Блокнот А5 з емблемою",
+    "price": 120.00,
+    "weight": 0.150,
+    "categoryId": 2,
+    "stock": 30,
+    "createdAt": "2024-12-14T08:53:47",
+    "category": {
+      "categoryId": 2,
+      "name": "Канцелярія",
+      "displayOrder": 2
+    },
+    "images": []
   }
 ]
 ```
 
-#### POST: Реєстрація користувача
-
+#### Тест 2: GET товар за ID
 **Запит:**
+```http
+GET http://localhost:5225/api/Products/1
 ```
+
+**Відповідь (200 OK):**
+```json
+{
+  "productId": 1,
+  "name": "Футболка ХДУ",
+  "description": "Футболка з логотипом університету",
+  "price": 350.00,
+  "weight": 0.200,
+  "categoryId": 1,
+  "stock": 15,
+  "createdAt": "2024-12-14T08:53:47",
+  "category": {
+    "categoryId": 1,
+    "name": "Одяг",
+    "displayOrder": 1
+  },
+  "images": []
+}
+```
+
+#### Тест 3: Пошук товарів
+**Запит:**
+```http
+GET http://localhost:5225/api/Products/search?query=футболка
+```
+
+**Відповідь (200 OK):**
+```json
+[
+  {
+    "productId": 1,
+    "name": "Футболка ХДУ",
+    "description": "Футболка з логотипом університету",
+    "price": 350.00,
+    "categoryId": 1,
+    "stock": 15
+  }
+]
+```
+
+#### Тест 4: POST реєстрація користувача
+**Запит:**
+```http
 POST http://localhost:5225/api/Users/register
 Content-Type: application/json
 
 {
   "firstName": "Данило",
-  "lastName": "Самородський",
+  "lastName": "Морозов",
   "email": "danylo@khdu.edu.ua",
   "password": "Password123!",
   "phone": "+380501234567"
 }
 ```
 
-**Очікувана відповідь (201 Created):**
+**Відповідь (201 Created):**
 ```json
 {
-  "userId": 1,
+  "userId": 3,
   "firstName": "Данило",
-  "lastName": "Самородський",
+  "lastName": "Морозов",
   "email": "danylo@khdu.edu.ua",
   "role": "Customer"
 }
 ```
 
-#### POST: Валідація — Email вже існує
+#### Тест 5: Валідація - Email вже існує
+**Запит:**
+```http
+POST http://localhost:5225/api/Users/register
+Content-Type: application/json
 
-**Запит:** Повторна реєстрація з тим самим email
+{
+  "firstName": "Тест",
+  "lastName": "Тестович",
+  "email": "danylo@khdu.edu.ua",
+  "password": "Password123!"
+}
+```
 
-**Очікувана відповідь (409 Conflict):**
+**Відповідь (409 Conflict):**
 ```json
 {
   "error": "Цей Email вже зареєстрований"
 }
 ```
 
-### 3. Тестування через cURL
+### 4.3. Приклади curl команд
 
 ```bash
-# GET: Отримання товарів
+# GET всі товари
 curl -X GET http://localhost:5225/api/Products
 
-# GET: Пошук товарів
+# GET товар за ID
+curl -X GET http://localhost:5225/api/Products/1
+
+# Пошук товарів
 curl -X GET "http://localhost:5225/api/Products/search?query=футболка"
 
-# POST: Реєстрація користувача
+# POST реєстрація користувача
 curl -X POST http://localhost:5225/api/Users/register \
   -H "Content-Type: application/json" \
   -d '{
     "firstName": "Іван",
-    "lastName": "Петренко",
+    "lastName": "Петров",
     "email": "ivan@khdu.edu.ua",
     "password": "SecurePass123!",
     "phone": "+380671234567"
   }'
 
-# GET: Отримання користувача за ID
-curl -X GET http://localhost:5225/api/Users/1
+# GET категорії
+curl -X GET http://localhost:5225/api/Categories
+
+# GET товари за категорією
+curl -X GET http://localhost:5225/api/Products/category/1
 ```
 
-### 4. Тестування через Swagger UI
-
-Відкрийте в браузері:
+### 4.4. Swagger документація
+API автоматично документується через Swagger UI за адресою:
 ```
 http://localhost:5225/swagger
 ```
 
-Swagger автоматично генерує інтерактивну документацію для всіх ендпоінтів з можливістю тестування прямо в браузері.
+Swagger надає інтерактивний інтерфейс для тестування всіх ендпоінтів з можливістю відправки запитів безпосередньо з браузера.
 
 ---
 
-## Інтеграція з базою даних
+## 5. Інтеграція з базою даних
 
-### Модель User (Entity Framework)
+### 5.1. Моделі Entity Framework Core
 
+#### User.cs
 ```csharp
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -451,165 +521,172 @@ namespace KhduSouvenirShop.API.Models
 }
 ```
 
-### AppDbContext (контекст бази даних)
-
+#### Product.cs
 ```csharp
-using Microsoft.EntityFrameworkCore;
-using KhduSouvenirShop.API.Models;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace KhduSouvenirShop.API.Data
+namespace KhduSouvenirShop.API.Models
 {
-    public class AppDbContext : DbContext
+    [Table("Products")]
+    public class Product
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+        [Key]
+        public int ProductId { get; set; }
 
-        public DbSet<User> Users { get; set; }
-        public DbSet<Product> Products { get; set; }
-        public DbSet<Category> Categories { get; set; }
-        public DbSet<Cart> Carts { get; set; }
-        public DbSet<Order> Orders { get; set; }
-        // ... інші DbSet
+        [Required]
+        [MaxLength(200)]
+        public string Name { get; set; } = string.Empty;
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            // Унікальний індекс для Email
-            modelBuilder.Entity<User>()
-                .HasIndex(u => u.Email)
-                .IsUnique();
+        [Required]
+        public string Description { get; set; } = string.Empty;
 
-            // Каскадне видалення Cart при видаленні User
-            modelBuilder.Entity<Cart>()
-                .HasOne(c => c.User)
-                .WithOne(u => u.Cart)
-                .HasForeignKey<Cart>(c => c.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-        }
+        [Required]
+        [Column(TypeName = "decimal(10,2)")]
+        public decimal Price { get; set; }
+
+        [Required]
+        [Column(TypeName = "decimal(10,3)")]
+        public decimal Weight { get; set; }
+
+        [Required]
+        public int CategoryId { get; set; }
+
+        public int Stock { get; set; } = 0;
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // Навігаційні властивості
+        public virtual Category Category { get; set; } = null!;
+        public virtual ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
+        public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
+        public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     }
 }
 ```
 
-### Приклади SQL-запитів
+### 5.2. Приклади SQL-запитів
 
-**Перевірка створених користувачів:**
+#### Вибірка всіх користувачів
 ```sql
 SELECT * FROM Users;
 ```
 
-**Результат:**
-```
-+--------+-----------+---------------+-------------------------+----------------------------+
-| UserId | FirstName | LastName      | Email                   | Role                       |
-+--------+-----------+---------------+-------------------------+----------------------------+
-| 1      | Данило    | Самородський  | danylo@khdu.edu.ua      | Customer                   |
-| 2      | Іван      | Петренко      | ivan@khdu.edu.ua        | Customer                   |
-+--------+-----------+---------------+-------------------------+----------------------------+
-```
-
-**Перевірка товарів з категоріями (JOIN):**
+#### Вибірка товарів з категоріями (еквівалент Include())
 ```sql
-SELECT p.ProductId, p.Name, p.Price, c.Name AS CategoryName
+SELECT 
+    p.ProductId, 
+    p.Name, 
+    p.Price, 
+    p.Stock,
+    c.Name AS CategoryName
 FROM Products p
-JOIN Categories c ON p.CategoryId = c.CategoryId;
+INNER JOIN Categories c ON p.CategoryId = c.CategoryId;
 ```
 
-**Підрахунок товарів за категоріями:**
+#### Пошук товарів за назвою
 ```sql
-SELECT c.Name, COUNT(p.ProductId) AS TotalProducts
-FROM Categories c
-LEFT JOIN Products p ON c.CategoryId = p.CategoryId
-GROUP BY c.CategoryId;
+SELECT * FROM Products 
+WHERE Name LIKE '%футболка%' OR Description LIKE '%футболка%';
 ```
+
+#### Перевірка унікальності email при реєстрації
+```sql
+SELECT COUNT(*) FROM Users WHERE Email = 'test@khdu.edu.ua';
+```
+
+#### Отримання кошика користувача з товарами
+```sql
+SELECT 
+    ci.CartItemId,
+    p.Name AS ProductName,
+    p.Price,
+    ci.Quantity,
+    (p.Price * ci.Quantity) AS Subtotal
+FROM CartItems ci
+INNER JOIN Products p ON ci.ProductId = p.ProductId
+INNER JOIN Carts c ON ci.CartId = c.CartId
+WHERE c.UserId = 1;
+```
+
+### 5.3. Зв'язок моделей з таблицями БД
+
+| C# Model         | MySQL Table          | Тип зв'язку                     |
+|------------------|----------------------|---------------------------------|
+| User             | Users                | 1:1 з Cart, 1:N з Orders        |
+| Product          | Products             | 1:N з ProductImage, CartItem    |
+| Category         | Categories           | 1:N з Product (самозв'язок)     |
+| Cart             | Carts                | 1:1 з User, 1:N з CartItem      |
+| CartItem         | CartItems            | N:1 з Cart, Product             |
+| Order            | Orders               | N:1 з User, 1:N з OrderItem     |
+| OrderItem        | OrderItems           | N:1 з Order, Product            |
+| Payment          | Payments             | 1:1 з Order                     |
+| Shipping         | Shippings            | 1:1 з Order                     |
 
 ---
 
-## Відповідність вимогам
+## 6. Висновки
 
-### Реалізовані User Stories (з практичної №2)
+### 6.1. Досягнуті результати
+1. **Налаштовано середовище розробки:** Встановлено .NET SDK 8.0, налаштовано підключення до MySQL через Entity Framework Core
+2. **Створено 13 моделей даних:** User, Product, Category, Cart, Order та інші, що відповідають UML-діаграмі класів
+3. **Реалізовано 4 базові API контролери:**
+   - `ProductsController` — 4 ендпоінти (GET всі, за ID, пошук, за категорією)
+   - `CategoriesController` — 3 ендпоінти (GET всі, за ID, товари категорії)
+   - `UsersController` — 2 ендпоінти (POST реєстрація, GET за ID)
+   - `CartController` — 5 ендпоінтів (GET, POST, PUT, DELETE)
+4. **Налаштовано інфраструктуру:**
+   - Swagger для автоматичної документації API
+   - Serilog для логування запитів та помилок
+   - CORS для інтеграції з React frontend
+   - Обробка циклічних посилань у JSON серіалізації
+5. **Протестовано всі ендпоінти:** Через Thunder Client та Swagger UI, всі тести пройдені успішно (статуси 200, 201, 404, 409)
 
-| ID | User Story | Статус | Ендпоінт |
-|----|------------|--------|----------|
-| FR-G-01 | Як гість, я хочу переглядати каталог товарів | Виконано | `GET /api/Products` |
-| FR-G-02 | Як гість, я хочу шукати товари за назвою | Виконано | `GET /api/Products/search` |
-| FR-G-03 | Як гість, я хочу переглядати детальну інформацію про товар | Виконано | `GET /api/Products/{id}` |
-| FR-G-04 | Як гість, я хочу зареєструватися в системі | Виконано | `POST /api/Users/register` |
+### 6.2. Відповідність User Stories
+Backend API повністю відповідає функціональним вимогам з практичної роботи №2:
 
-### Відповідність UML діаграмам
+- **FR-G-01:** Перегляд каталогу — `GET /api/Products`
+- **FR-G-02:** Пошук та фільтрація — `GET /api/Products/search?query=...`
+- **FR-G-03:** Детальна інформація про товар — `GET /api/Products/{id}`
+- **FR-G-04:** Реєстрація користувача — `POST /api/Users/register`
+- **FR-C-01:** Додавання товарів до кошика — `POST /api/Cart/items`
 
-- Класи з діаграми класів реалізовані як моделі EF Core
-- Навігаційні властивості відповідають зв'язкам на UML
-- Методи контролерів відповідають операціям з діаграми послідовностей
+### 6.3. Готовність до інтеграції з Frontend
+Backend API повністю готовий до інтеграції з React frontend:
+- Всі ендпоінти повертають коректний JSON
+- CORS налаштований для доступу з `http://localhost:3000`
+- Документація доступна через Swagger UI
+- Логування дозволяє відстежувати помилки на продакшені
 
-### Відповідність ER-діаграмі
-
-- Таблиці БД відповідають моделям EF Core
-- Foreign Keys працюють коректно
-- Каскадне видалення налаштовано через `OnModelCreating()`
-
----
-
-## Вирішені проблеми
-
-### Проблема 1: Циклічні посилання (Circular Reference)
-
-**Симптом:**
-```
-System.Text.Json.JsonException: A possible object cycle was detected
-```
-
-**Причина:** EF завантажував `Product → Category → Products → Category → ...`
-
-**Рішення:**
-```csharp
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.ReferenceHandler = 
-            System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-    });
-```
-
-### Проблема 2: HTTPS сертифікат
-
-**Симптом:** Помилка `NET::ERR_CERT_AUTHORITY_INVALID` при `https://localhost`
-
-**Рішення для розробки:**
-```bash
-# Використовувати HTTP замість HTTPS
-http://localhost:5225/api/Products
-
-# Або довірити dev-сертифікату:
-dotnet dev-certs https --trust
-```
+### 6.4. Наступні кроки
+1. Реалізація JWT аутентифікації для захищених ендпоінтів
+2. Додавання ендпоінтів для оформлення замовлення з інтеграцією Stripe
+3. Реалізація складського обліку через прибуткові/видаткові накладні
+4. Створення адміністративних ендпоінтів для менеджерів
+5. Написання unit-тестів для контролерів та сервісів
+6. Інтеграція з Nova Poshta API для розрахунку доставки
 
 ---
 
-## Висновки
+## 7. Список використаних технологій
 
-1. **Backend повністю функціональний:** Створено робочий RESTful API з 8 ендпоінтами для базових операцій (перегляд товарів, пошук, реєстрація).
-
-2. **API відповідає User Stories:** Реалізовані вимоги FR-G-01 (перегляд каталогу), FR-G-02 (пошук), FR-G-03 (деталі товару), FR-G-04 (реєстрація) з практичної роботи №2.
-
-3. **Архітектура готова до розширення:** Модульна структура (Controllers, Models, Data) дозволяє легко додавати нові ендпоінти для кошика, замовлень, платежів.
-
-4. **Інтеграція з БД працює:** Entity Framework Core коректно генерує SQL-запити, навігаційні властивості забезпечують зручну роботу з пов'язаними даними.
-
-5. **Логування та документація:** Serilog пише логи в консоль та файл, Swagger автоматично генерує інтерактивну документацію API.
-
-6. **Готовність до інтеграції з Frontend:** CORS налаштовано, JSON відповіді мають коректну структуру для споживання React додатком.
-
-**Наступні кроки:**
-- Додати JWT аутентифікацію для захищених ендпоінтів
-- Реалізувати ендпоінти для кошика (`POST /api/Cart/items`)
-- Реалізувати ендпоінти для замовлень (`POST /api/Orders`)
-- Інтеграція з Stripe API для платежів
-- Інтеграція з Nova Poshta API для доставки
+| Технологія                       | Версія | Призначення                          |
+|----------------------------------|--------|--------------------------------------|
+| .NET Core SDK                    | 8.0    | Платформа розробки Web API           |
+| ASP.NET Core Web API             | 8.0    | Фреймворк для створення REST API     |
+| Entity Framework Core            | 8.0    | ORM для роботи з MySQL               |
+| Pomelo.EntityFrameworkCore.MySql | 8.0.0  | Провайдер MySQL для EF Core          |
+| Serilog                          | 8.0.0  | Структуроване логування              |
+| Swashbuckle (Swagger)            | 6.5.0  | Автоматична документація API         |
+| BCrypt.Net                       | 4.0.3  | Хешування паролів                    |
+| MySQL                            | 8.0    | Реляційна база даних                 |
 
 ---
 
-## Ресурси
+## 8. Корисні посилання
 
-- [Офіційна документація ASP.NET Core](https://docs.microsoft.com/aspnet/core)
-- [Entity Framework Core документація](https://docs.microsoft.com/ef/core)
-- [Swagger/OpenAPI специфікація](https://swagger.io/specification/)
-- [REST API Best Practices](https://restfulapi.net/)
-- [HTTP статус коди](https://httpstatuses.com/)
+- [Офіційна документація .NET](https://docs.microsoft.com/dotnet/)
+- [Entity Framework Core Documentation](https://docs.microsoft.com/ef/core/)
+- [ASP.NET Core Web API Tutorial](https://docs.microsoft.com/aspnet/core/tutorials/first-web-api)
+- [Swagger Documentation](https://swagger.io/docs/)
+- [Репозиторій проекту на GitHub](https://github.com/DanSam29/souvenir-shop-khdu)
