@@ -18,7 +18,6 @@ namespace KhduSouvenirShop.API.Models
 
         public bool IsPrimary { get; set; } = false;
 
-        [Column("Order")]
         public int DisplayOrder { get; set; } = 0;
 
         // Навігаційні властивості

@@ -23,7 +23,8 @@ namespace KhduSouvenirShop.API.Models
 
         [Required]
         [MaxLength(255)]
-        public string PasswordHash { get; set; } = string.Empty;
+        [Column("Password")]
+        public string Password { get; set; } = string.Empty;
 
         [MaxLength(20)]
         public string? Phone { get; set; }
@@ -31,6 +32,15 @@ namespace KhduSouvenirShop.API.Models
         [Required]
         [MaxLength(50)]
         public string Role { get; set; } = "Customer"; // Guest, Customer, Manager, Administrator, SuperAdmin
+
+        [MaxLength(20)]
+        public string StudentStatus { get; set; } = "NONE";
+
+        [Column(TypeName = "decimal(3,2)")]
+        public decimal? GPA { get; set; }
+
+        public DateTime? StudentVerifiedAt { get; set; }
+        public DateTime? StudentExpiresAt { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

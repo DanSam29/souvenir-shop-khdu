@@ -32,6 +32,7 @@ namespace KhduSouvenirShop.API.Models
         public int Stock { get; set; } = 0;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
 
         // Навігаційні властивості
         [ForeignKey("CategoryId")]

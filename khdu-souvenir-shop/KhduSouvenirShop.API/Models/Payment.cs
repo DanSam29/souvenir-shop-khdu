@@ -28,6 +28,7 @@ namespace KhduSouvenirShop.API.Models
         public string? TransactionId { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
 
         // Навігаційні властивості
         [ForeignKey("OrderId")]

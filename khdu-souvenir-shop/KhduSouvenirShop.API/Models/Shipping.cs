@@ -20,13 +20,19 @@ namespace KhduSouvenirShop.API.Models
         [MaxLength(50)]
         public string WarehouseNumber { get; set; } = string.Empty;
 
-        [Required]
-        [MaxLength(20)]
-        public string Phone { get; set; } = string.Empty;
+        [MaxLength(100)]
+        public string? CityRef { get; set; }
+
+        [MaxLength(100)]
+        public string? WarehouseRef { get; set; }
 
         [Required]
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal DeliveryCost { get; set; }
+        [MaxLength(100)]
+        public string RecipientName { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(20)]
+        public string RecipientPhone { get; set; } = string.Empty;
 
         [MaxLength(100)]
         public string? TrackingNumber { get; set; }

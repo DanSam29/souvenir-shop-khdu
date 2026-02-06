@@ -15,8 +15,14 @@ namespace KhduSouvenirShop.API.Models
 
         public int? ParentCategoryId { get; set; }
 
-        [Column("Order")]
         public int DisplayOrder { get; set; } = 0;
+
+        [MaxLength(500)]
+        public string? Description { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public DateTime? UpdatedAt { get; set; }
 
         // Навігаційні властивості
         [ForeignKey("ParentCategoryId")]

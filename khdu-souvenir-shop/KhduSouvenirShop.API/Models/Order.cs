@@ -24,7 +24,11 @@ namespace KhduSouvenirShop.API.Models
         [Column(TypeName = "decimal(10,2)")]
         public decimal TotalAmount { get; set; }
 
+        [Column(TypeName = "decimal(10,2)")]
+        public decimal ShippingCost { get; set; } = 0;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
 
         // Навігаційні властивості
         [ForeignKey("UserId")]

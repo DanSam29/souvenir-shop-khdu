@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
+using BCrypt.Net;
 
 namespace KhduSouvenirShop.API.Controllers
 {
@@ -52,7 +53,7 @@ namespace KhduSouvenirShop.API.Controllers
             }
 
             // Хешування паролю
-            var passwordHash = HashPassword(registerDto.Password);
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password, workFactor: 12);
 
             // Створення користувача
             var newUser = new User
@@ -60,7 +61,7 @@ namespace KhduSouvenirShop.API.Controllers
                 FirstName = registerDto.FirstName,
                 LastName = registerDto.LastName,
                 Email = registerDto.Email,
-                PasswordHash = passwordHash,
+                Password = passwordHash,
                 Phone = registerDto.Phone,
                 Role = "Customer",
                 CreatedAt = DateTime.UtcNow
@@ -109,8 +110,8 @@ namespace KhduSouvenirShop.API.Controllers
             }
 
             // Перевірка паролю
-            var passwordHash = HashPassword(loginDto.Password);
-            if (user.PasswordHash != passwordHash)
+            var isValid = BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password);
+            if (!isValid)
             {
                 _logger.LogWarning("Невірний пароль для {Email}", loginDto.Email);
                 return Unauthorized(new { error = "Невірний email або пароль" });
@@ -218,13 +219,9 @@ namespace KhduSouvenirShop.API.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        // Простий метод хешування (для MVP, пізніше використаємо BCrypt)
-        private string HashPassword(string password)
-        {
-            using var sha256 = SHA256.Create();
-            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return Convert.ToBase64String(bytes);
-        }
+        // Хешування через BCrypt (workFactor=12)
+        // Збережено для можливих міграцій або альтернативних сценаріїв
+        private string HashPassword(string password) => BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
     }
 
     // DTO для реєстрації

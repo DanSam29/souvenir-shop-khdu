@@ -20,7 +20,17 @@ namespace KhduSouvenirShop.API.Models
 
         [Required]
         [Column(TypeName = "decimal(10,2)")]
-        public decimal Price { get; set; }
+        public decimal OriginalPrice { get; set; }
+
+        public int? AppliedPromotionId { get; set; }
+
+        [Required]
+        [Column(TypeName = "decimal(10,2)")]
+        public decimal DiscountAmount { get; set; } = 0;
+
+        [Required]
+        [Column(TypeName = "decimal(10,2)")]
+        public decimal FinalPrice { get; set; }
 
         // Навігаційні властивості
         [ForeignKey("OrderId")]
