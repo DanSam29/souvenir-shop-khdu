@@ -1,0 +1,75 @@
+2026-02-06 14:19:03.197 +02:00 [INF] Сервер запущено!
+2026-02-06 14:19:03.363 +02:00 [INF] User profile is available. Using 'C:\Users\Danchik\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2026-02-06 14:19:03.465 +02:00 [INF] Now listening on: http://localhost:5225
+2026-02-06 14:19:03.469 +02:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-02-06 14:19:03.470 +02:00 [INF] Hosting environment: Development
+2026-02-06 14:19:03.472 +02:00 [INF] Content root path: C:\Users\Danchik\Desktop\souvenir-shop-khdu\khdu-souvenir-shop\KhduSouvenirShop.API
+2026-02-06 14:34:26.712 +02:00 [INF] Application is shutting down...
+2026-02-06 14:34:34.526 +02:00 [INF] Сервер запущено!
+2026-02-06 14:34:34.577 +02:00 [INF] User profile is available. Using 'C:\Users\Danchik\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2026-02-06 14:34:34.641 +02:00 [INF] Now listening on: http://localhost:5225
+2026-02-06 14:34:34.643 +02:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-02-06 14:34:34.643 +02:00 [INF] Hosting environment: Development
+2026-02-06 14:34:34.644 +02:00 [INF] Content root path: C:\Users\Danchik\Desktop\souvenir-shop-khdu\khdu-souvenir-shop\KhduSouvenirShop.API
+2026-02-06 14:34:48.191 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Categories - null null
+2026-02-06 14:34:48.191 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Products - null null
+2026-02-06 14:34:48.224 +02:00 [WRN] Failed to determine the https port for redirect.
+2026-02-06 14:34:48.226 +02:00 [INF] CORS policy execution successful.
+2026-02-06 14:34:48.226 +02:00 [INF] CORS policy execution successful.
+2026-02-06 14:34:48.276 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API)'
+2026-02-06 14:34:48.276 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API)'
+2026-02-06 14:34:48.292 +02:00 [INF] Route matched with {action = "GetCategories", controller = "Categories"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Collections.Generic.IEnumerable`1[KhduSouvenirShop.API.Models.Category]]] GetCategories() on controller KhduSouvenirShop.API.Controllers.CategoriesController (KhduSouvenirShop.API).
+2026-02-06 14:34:48.292 +02:00 [INF] Route matched with {action = "GetProducts", controller = "Products"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Collections.Generic.IEnumerable`1[KhduSouvenirShop.API.Models.Product]]] GetProducts() on controller KhduSouvenirShop.API.Controllers.ProductsController (KhduSouvenirShop.API).
+2026-02-06 14:34:48.797 +02:00 [INF] Запит на отримання всіх товарів
+2026-02-06 14:34:48.798 +02:00 [INF] Запит на отримання всіх категорій
+2026-02-06 14:34:49.618 +02:00 [INF] Executed DbCommand (18ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `c`.`CategoryId`, `c`.`Order`, `c`.`Name`, `c`.`ParentCategoryId`, `c0`.`CategoryId`, `c0`.`Order`, `c0`.`Name`, `c0`.`ParentCategoryId`
+FROM `Categories` AS `c`
+LEFT JOIN `Categories` AS `c0` ON `c`.`CategoryId` = `c0`.`ParentCategoryId`
+WHERE `c`.`ParentCategoryId` IS NULL
+ORDER BY `c`.`Order`, `c`.`CategoryId`
+2026-02-06 14:34:49.618 +02:00 [INF] Executed DbCommand (18ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `p`.`ProductId`, `p`.`CategoryId`, `p`.`CreatedAt`, `p`.`Description`, `p`.`Name`, `p`.`Price`, `p`.`Stock`, `p`.`Weight`, `c`.`CategoryId`, `c`.`Order`, `c`.`Name`, `c`.`ParentCategoryId`, `p0`.`ImageId`, `p0`.`Order`, `p0`.`ImageURL`, `p0`.`IsPrimary`, `p0`.`ProductId`
+FROM `Products` AS `p`
+INNER JOIN `Categories` AS `c` ON `p`.`CategoryId` = `c`.`CategoryId`
+LEFT JOIN `ProductImages` AS `p0` ON `p`.`ProductId` = `p0`.`ProductId`
+ORDER BY `p`.`ProductId`, `c`.`CategoryId`
+2026-02-06 14:34:49.643 +02:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[KhduSouvenirShop.API.Models.Product, KhduSouvenirShop.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-02-06 14:34:49.643 +02:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[KhduSouvenirShop.API.Models.Category, KhduSouvenirShop.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-02-06 14:34:49.690 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Categories - null null
+2026-02-06 14:34:49.690 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API) in 1394.0631ms
+2026-02-06 14:34:49.690 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API) in 1393.338ms
+2026-02-06 14:34:49.691 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Products - null null
+2026-02-06 14:34:49.694 +02:00 [INF] CORS policy execution successful.
+2026-02-06 14:34:49.695 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API)'
+2026-02-06 14:34:49.696 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API)'
+2026-02-06 14:34:49.699 +02:00 [INF] CORS policy execution successful.
+2026-02-06 14:34:49.701 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API)'
+2026-02-06 14:34:49.702 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API)'
+2026-02-06 14:34:49.703 +02:00 [INF] Route matched with {action = "GetCategories", controller = "Categories"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Collections.Generic.IEnumerable`1[KhduSouvenirShop.API.Models.Category]]] GetCategories() on controller KhduSouvenirShop.API.Controllers.CategoriesController (KhduSouvenirShop.API).
+2026-02-06 14:34:49.704 +02:00 [INF] Route matched with {action = "GetProducts", controller = "Products"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Collections.Generic.IEnumerable`1[KhduSouvenirShop.API.Models.Product]]] GetProducts() on controller KhduSouvenirShop.API.Controllers.ProductsController (KhduSouvenirShop.API).
+2026-02-06 14:34:49.709 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Categories - 200 null application/json; charset=utf-8 1519.4431ms
+2026-02-06 14:34:49.709 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Products - 200 null application/json; charset=utf-8 1519.4461ms
+2026-02-06 14:34:49.712 +02:00 [INF] Запит на отримання всіх товарів
+2026-02-06 14:34:49.712 +02:00 [INF] Запит на отримання всіх категорій
+2026-02-06 14:34:49.783 +02:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `c`.`CategoryId`, `c`.`Order`, `c`.`Name`, `c`.`ParentCategoryId`, `c0`.`CategoryId`, `c0`.`Order`, `c0`.`Name`, `c0`.`ParentCategoryId`
+FROM `Categories` AS `c`
+LEFT JOIN `Categories` AS `c0` ON `c`.`CategoryId` = `c0`.`ParentCategoryId`
+WHERE `c`.`ParentCategoryId` IS NULL
+ORDER BY `c`.`Order`, `c`.`CategoryId`
+2026-02-06 14:34:49.783 +02:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `p`.`ProductId`, `p`.`CategoryId`, `p`.`CreatedAt`, `p`.`Description`, `p`.`Name`, `p`.`Price`, `p`.`Stock`, `p`.`Weight`, `c`.`CategoryId`, `c`.`Order`, `c`.`Name`, `c`.`ParentCategoryId`, `p0`.`ImageId`, `p0`.`Order`, `p0`.`ImageURL`, `p0`.`IsPrimary`, `p0`.`ProductId`
+FROM `Products` AS `p`
+INNER JOIN `Categories` AS `c` ON `p`.`CategoryId` = `c`.`CategoryId`
+LEFT JOIN `ProductImages` AS `p0` ON `p`.`ProductId` = `p0`.`ProductId`
+ORDER BY `p`.`ProductId`, `c`.`CategoryId`
+2026-02-06 14:34:49.786 +02:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[KhduSouvenirShop.API.Models.Category, KhduSouvenirShop.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-02-06 14:34:49.788 +02:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[KhduSouvenirShop.API.Models.Product, KhduSouvenirShop.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-02-06 14:34:49.789 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API) in 82.4126ms
+2026-02-06 14:34:49.791 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API) in 82.1278ms
+2026-02-06 14:34:49.792 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API)'
+2026-02-06 14:34:49.793 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API)'
+2026-02-06 14:34:49.795 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Categories - 200 null application/json; charset=utf-8 104.5437ms
+2026-02-06 14:34:49.796 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Products - 200 null application/json; charset=utf-8 104.6735ms
+2026-02-06 14:35:07.590 +02:00 [INF] Application is shutting down...
