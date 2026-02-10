@@ -188,9 +188,9 @@ function CartPage() {
             <span>Загальна сума:</span>
             <span className="total-amount">{cart.totalAmount.toFixed(2)} грн</span>
           </div>
-          <button className="checkout-btn">
+          <Link to="/checkout" className="checkout-btn">
             Оформити замовлення
-          </button>
+          </Link>
         </div>
       </div>
     </div>

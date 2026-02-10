@@ -1,0 +1,81 @@
+@startuml "State Machine Diagram - OutgoingDocument (Видаткова накладна)"
+
+[*] --> Created : Створення видаткової накладної
+
+state Created {
+    state "Створено" as Cr
+    state AutoCreated <<choice>>
+    state ManualCreated <<choice>>
+  
+    [*] --> AutoCreated : [Reason = ORDER] Автоматично при замовленні
+    [*] --> ManualCreated : [Reason != ORDER] Вручну менеджером
+  
+    AutoCreated --> Cr : Система створює через WarehouseService
+    note left: CompanyId = NULL для замовлень
+
+    ManualCreated --> Cr : Менеджер/Адмін створює через форму
+    note left
+        CompanyId обов'язковий якщо Reason = RETURN
+        CompanyId = NULL для інших причин
+    end note  
+
+    Cr : entry / INSERT INTO OutgoingDocuments
+    Cr : entry / (з companyId якщо reason=RETURN)
+    Cr : entry / UPDATE Products SET Stock = Stock - quantity
+    Cr : entry / Логувати в Serilog
+    Cr : entry / Додати запис в AuditLog
+}
+
+Created --> Active : Замовлення переходить в "Processing"
+
+state Active {
+    state "Активна" as Act
+    [*] --> Act
+    Act : do / Товар зарезервовано
+    Act : do / Stock зменшено
+}
+
+Active --> Cancelled : Замовлення скасовано
+Active --> Completed : Замовлення доставлено
+
+state Cancelled {
+    state "Скасовано" as Canc
+    [*] --> Canc
+    Canc : entry / DELETE FROM OutgoingDocuments WHERE orderId = ?
+    Canc : entry / UPDATE Products SET Stock = Stock + quantity
+    Canc : entry / Логувати скасування в Serilog
+}
+
+state Completed {
+    state "Завершено" as Comp
+    [*] --> Comp
+    Comp : entry / Товар списано остаточно
+    Comp : do / Залишається в БД для аудиту
+}
+
+Cancelled --> [*]
+Completed --> [*]
+
+note right of Created
+    Створюється автоматично при замовленні (companyId=NULL)
+    або вручну менеджером для списання:
+    - DAMAGED, LOST, INVENTORY (companyId=NULL)
+    - RETURN (companyId ОБОВ'ЯЗКОВИЙ - повернення фірмі)
+end note
+
+note right of Active
+    Товар зарезервовано для замовлення.
+    Stock вже зменшено в Products.
+end note
+
+note right of Cancelled
+    Замовлення скасовано - накладна видаляється,
+    Stock повертається.
+end note
+
+note right of Completed
+    Фінальний стан - товар списано.
+    Документ залишається для історії.
+end note
+
+@enduml

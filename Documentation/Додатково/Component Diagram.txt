@@ -1,0 +1,282 @@
+@startuml
+!define LIGHTGREEN #00FF00
+!define DARKGREEN #008000
+!define VERYDARKGREEN #004F00
+!define LIGHTBLUE #00BFFF
+!define DARKBLUE #0000CC
+!define LIGHTPINK #FFCCCC
+!define PINK #CC0066
+!define PURPLE #4C0099
+!define ORANGE #FFA500
+!define YELLOW #FFFF00
+!define BROWN #6A4F30
+!define GRAY #5A6E5A
+!define LIGHTGRAY #89707B
+!define LIGHTPURPLE #9999FF
+
+' Frontend Layer
+package "Frontend Layer" {
+    [Web Application]
+    [Router]
+    [State Management]
+    [HTTP Client Axios]
+  
+    package "UI Components" {
+        [Catalog Components]
+        [Cart Components]
+        [Checkout Components]
+        [User Components]
+        [Admin Components]
+    }
+}
+
+' Backend Layer
+package "Backend Layer" {
+    [API Gateway]
+  
+    package "Controllers" {
+        [Authentication Middleware]
+        [CORS Middleware]
+        [Rate Limiter]
+        [ShippingController]
+        [PaymentController]
+        [CartController]
+        [OrderController]
+        [CategoryController]
+        [AuthController]
+        [UserController]
+        [AdminController]
+        [ProductController]
+        [WarehouseController]
+        [PromotionController]
+        [AnalyticsController]
+    }
+  
+    package "Services" {
+        [OrderService] ORANGE
+        [CategoryService] YELLOW
+        [AuthService] LIGHTGREEN
+        [UserService] DARKGREEN
+        [ReportService] VERYDARKGREEN
+        [ShippingService] LIGHTBLUE
+        [PaymentService] DARKBLUE
+        [NotificationService] LIGHTPINK
+        [CartService] PINK
+        [ProductService] PURPLE
+        [WarehouseService] BROWN
+        [PromotionService] LIGHTGREEN
+        [AnalyticsService] LIGHTBLUE
+    }
+  
+    package "Integrations" {
+        [Nova Poshta Integration] BROWN
+        [Stripe Integration] GRAY
+        [Email Integration] LIGHTGRAY
+        [MinIO Integration] LIGHTPURPLE
+        [University Integration] DARKGREEN
+    
+        [Nova Poshta Client]
+        [Stripe Client]
+        [Webhook Handler]
+        [SMTP Client]
+        [MinIO Client]
+        [University Client]
+    }
+  
+    package "Infrastructure" {
+        [Validation]
+        [Configuration]
+        [Logging Serilog]
+        [Caching InMemory]
+        [JWT Service]
+    }
+  
+    package "Repositories" {
+        [Product Repository]
+        [Payment Repository]
+        [Order Repository]
+        [User Repository]
+        [Incoming Repository]
+        [Outgoing Repository]
+        [Company Repository]
+        [DbContext EF Core]
+        [Promotion Repository]
+        [UserPromotion Repository]
+    }
+}
+
+' Database
+database "Database" {
+    [Payments]
+    [Cart]
+    [CartItems]
+    [Shipping]
+    [Orders]
+    [OrderItems]
+    [Users]
+    [Products]
+    [Categories]
+    [ProductImages]
+    [IncomingDocuments]
+    [OutgoingDocuments]
+    [Companies]
+    [Promotions]
+    [UserPromotions]
+}
+
+' External Services
+package "External Services" {
+    [Nova Poshta API]
+    [Stripe API]
+    [Email Service]
+    [MinIO Storage]
+    [University API]
+}
+
+' Frontend connections
+[Web Application] --> [Router]
+[Web Application] --> [State Management]
+[Web Application] --> [HTTP Client Axios]
+[HTTP Client Axios] --> [API Gateway] : HTTP/HTTPS
+
+' API Gateway to Controllers
+[API Gateway] --> [Authentication Middleware]
+[API Gateway] --> [CORS Middleware]
+[API Gateway] --> [Rate Limiter]
+[API Gateway] --> [ShippingController]
+[API Gateway] --> [PaymentController]
+[API Gateway] --> [CartController]
+[API Gateway] --> [OrderController]
+[API Gateway] --> [CategoryController]
+[API Gateway] --> [AuthController]
+[API Gateway] --> [UserController]
+[API Gateway] --> [AdminController]
+[API Gateway] --> [ProductController]
+[API Gateway] --> [WarehouseController]
+[API Gateway] --> [PromotionController]
+[API Gateway] --> [AnalyticsController]
+
+' Controllers to Services
+[AdminController] --> [ReportService]
+[UserController] --> [UserService]
+[AuthController] --> [AuthService]
+[CategoryController] --> [CategoryService]
+[OrderController] --> [OrderService]
+[ShippingController] --> [ShippingService]
+[PaymentController] --> [PaymentService]
+[CartController] --> [CartService]
+[ProductController] --> [ProductService]
+[WarehouseController] --> [WarehouseService]
+[PromotionController] --> [PromotionService]
+[AnalyticsController] --> [AnalyticsService]
+
+' Service connections
+[CartService] -[#CC0066]-> [ProductService]
+[OrderService] -[#FFA500]-> [ShippingService]
+[OrderService] -[#FFA500]-> [PaymentService]
+[OrderService] -[#FFA500]-> [NotificationService]
+[OrderService] -[#FFA500]-> [CartService]
+[OrderService] -[#FFA500]-> [WarehouseService]
+[OrderService] -[#FFA500]-> [PromotionService]
+[ShippingService] -[#00BFFF]-> [OrderService]
+[PaymentService] -[#0000CC]-> [OrderService]
+[WarehouseService] -[#6A4F30]-> [ProductService]
+[PromotionService] -[#00FF00]-> [OrderService]
+[UserService] -[#008000]-> [PromotionService]
+[AuthService] -[#00FF00]-> [University Integration]
+[AnalyticsService] -[#00BFFF]-> [OrderService]
+[AnalyticsService] -[#00BFFF]-> [ProductService]
+[AnalyticsService] -[#00BFFF]-> [PromotionService]
+[AnalyticsService] -[#00BFFF]-> [UserService]
+[AnalyticsService] -[#00BFFF]-> [ReportService]
+
+' Services to Integrations
+[ShippingService] -[#00BFFF]-> [Nova Poshta Integration]
+[PaymentService] -[#0000CC]-> [Stripe Integration]
+[NotificationService] -[#FFCCCC]-> [Email Integration]
+[ProductService] -[#4C0099]-> [MinIO Integration]
+
+' Integrations to Clients
+[Nova Poshta Integration] -[#6A4F30]-> [Nova Poshta Client]
+[Stripe Integration] -[#5A6E5A]-> [Stripe Client]
+[Stripe Integration] -[#5A6E5A]-> [Webhook Handler]
+[Email Integration] -[#89707B]-> [SMTP Client]
+[MinIO Integration] -[#9999FF]-> [MinIO Client]
+[University Integration] -[#004F00]-> [University Client]
+
+' Integrations to Infrastructure (dashed)
+[Nova Poshta Integration] .[#6A4F30].> [Configuration]
+[Nova Poshta Integration] .[#6A4F30].> [Logging Serilog]
+[Stripe Integration] .[#5A6E5A].> [Configuration]
+[Stripe Integration] .[#5A6E5A].> [Logging Serilog]
+[Email Integration] .[#89707B].> [Configuration]
+[ProductService] .[#4C0099].> [Logging Serilog]
+[ProductService] .[#4C0099].> [Caching InMemory]
+[CategoryService] .[#FFFF00].> [Caching InMemory]
+[PaymentService] .[#0000CC].> [Logging Serilog]
+[OrderService] .[#FFA500].> [Logging Serilog]
+[AuthService] .[#00FF00].> [JWT Service]
+[WarehouseService] .[#6A4F30].> [Logging Serilog]
+[WarehouseService] .[#6A4F30].> [Validation]
+[University Integration] .[#004F00].> [Configuration]
+[University Integration] .[#004F00].> [Logging Serilog]
+[PromotionService] .[#00FF00].> [Logging Serilog]
+[PromotionService] .[#00FF00].> [Caching InMemory]
+[PromotionService] .[#00FF00].> [Validation]
+[AnalyticsService] .[#00BFFF].> [Logging Serilog]
+[AnalyticsService] .[#00BFFF].> [Caching InMemory]
+[AnalyticsService] .[#00BFFF].> [Validation]
+
+' Clients to External Services
+[Nova Poshta Client] --> [Nova Poshta API]
+[Stripe Client] --> [Stripe API]
+[SMTP Client] --> [Email Service]
+[MinIO Client] --> [MinIO Storage]
+[University Client] --> [University API]
+
+' Services to Repositories
+[ProductService] -[#4C0099]-> [Product Repository]
+[PaymentService] -[#0000CC]-> [Payment Repository]
+[OrderService] -[#FFA500]-> [Order Repository]
+[AuthService] -[#00FF00]-> [User Repository]
+[UserService] -[#008000]-> [User Repository]
+[WarehouseService] -[#6A4F30]-> [Incoming Repository]
+[WarehouseService] -[#6A4F30]-> [Outgoing Repository]
+[WarehouseService] -[#6A4F30]-> [Company Repository]
+[PromotionService] -[#00FF00]-> [Promotion Repository]
+[PromotionService] -[#00FF00]-> [UserPromotion Repository]
+[AnalyticsService] -[#00BFFF]-> [Order Repository]
+[AnalyticsService] -[#00BFFF]-> [Product Repository]
+[AnalyticsService] -[#00BFFF]-> [Promotion Repository]
+[AnalyticsService] -[#00BFFF]-> [User Repository]
+[AnalyticsService] -[#00BFFF]-> [Incoming Repository]
+
+' Repositories to DbContext
+[Product Repository] --> [DbContext EF Core]
+[Payment Repository] --> [DbContext EF Core]
+[Order Repository] --> [DbContext EF Core]
+[User Repository] --> [DbContext EF Core]
+[Incoming Repository] --> [DbContext EF Core]
+[Outgoing Repository] --> [DbContext EF Core]
+[Company Repository] --> [DbContext EF Core]
+[Promotion Repository] --> [DbContext EF Core]
+[UserPromotion Repository] --> [DbContext EF Core]
+
+' DbContext to Database
+[DbContext EF Core] --> [Payments]
+[DbContext EF Core] --> [Cart]
+[DbContext EF Core] --> [CartItems]
+[DbContext EF Core] --> [Shipping]
+[DbContext EF Core] --> [Orders]
+[DbContext EF Core] --> [OrderItems]
+[DbContext EF Core] --> [Users]
+[DbContext EF Core] --> [Products]
+[DbContext EF Core] --> [Categories]
+[DbContext EF Core] --> [ProductImages]
+[DbContext EF Core] --> [IncomingDocuments]
+[DbContext EF Core] --> [OutgoingDocuments]
+[DbContext EF Core] --> [Companies]
+[DbContext EF Core] --> [Promotions]
+[DbContext EF Core] --> [UserPromotions]
+
+@enduml

@@ -1,0 +1,377 @@
+@startuml
+title Sequence Diagram: Оформлення прибуткової накладної
+
+actor "Менеджер" as Manager
+participant "Admin Panel" as AdminPanel
+participant "WarehouseController" as WarehouseCtrl
+participant "WarehouseService" as WarehouseSvc
+participant "ProductService" as ProductSvc
+participant "ValidationService" as Validation
+participant "Serilog" as Logger
+database "Database" as DB
+
+== Вхід в систему ==
+Manager -> AdminPanel: Входить в адмін-панель
+AdminPanel -> AdminPanel: Перевіряє JWT токен
+note right: Role: MANAGER або ADMIN
+
+== Перехід до складського обліку ==
+Manager -> AdminPanel: Переходить до розділу\n"Складський облік"
+AdminPanel --> Manager: Відображає меню
+note right
+    - Оформити прибуткову накладну
+    - Переглянути історію надходжень
+    - Переглянути поточні залишки
+end note
+
+Manager -> AdminPanel: Натискає\n"Оформити прибуткову накладну"
+
+== Завантаження форми ==
+AdminPanel -> WarehouseCtrl: GET /api/admin/products
+note right: Для заповнення випадаючого списку
+WarehouseCtrl -> ProductSvc: getAll()
+ProductSvc -> DB: SELECT id, name, stock FROM Products
+DB --> ProductSvc: Products list
+ProductSvc --> WarehouseCtrl: Products[]
+WarehouseCtrl --> AdminPanel: Product options
+note right
+    [
+        { id: 1, name: "Футболка ХДУ", stock: 45 },
+        { id: 2, name: "Худі ХДУ", stock: 12 },
+        ...
+    ]
+end note
+
+AdminPanel --> Manager: Відображає форму
+
+== Завантаження списку фірм-постачальників ==
+AdminPanel -> WarehouseCtrl: GET /api/warehouse/companies?isActive=true
+WarehouseCtrl -> WarehouseSvc: getCompanies(isActive=true)
+WarehouseSvc -> DB: SELECT * FROM Companies WHERE isActive = true
+DB --> WarehouseSvc: Companies list
+note right
+    [
+        { id: 1, name: "ТОВ Текстиль+", contactPerson: "Іванов І.І." },
+        { id: 2, name: "ПП Сувеніри", contactPerson: "Петренко П.П." },
+        ...
+    ]
+end note
+WarehouseSvc --> WarehouseCtrl: List<Company>
+WarehouseCtrl --> AdminPanel: Companies options
+AdminPanel --> Manager: Відображає форму з випадаючим списком фірм
+note right
+    Поля:
+    - Товар (випадаючий список)
+    - Кількість
+    - Закупівельна ціна за одиницю
+    - Постачальник
+    - Дата надходження
+    - Примітки (опціонально)
+end note
+
+== Заповнення форми ==
+Manager -> AdminPanel: Обирає товар зі списку
+AdminPanel -> WarehouseCtrl: GET /api/warehouse/stock/{productId}
+WarehouseCtrl -> WarehouseSvc: getCurrentStock(productId)
+WarehouseSvc -> DB: SELECT stock FROM Products WHERE id = ?
+DB --> WarehouseSvc: Current stock value
+WarehouseSvc --> WarehouseCtrl: Stock: 45
+WarehouseCtrl --> AdminPanel: Current stock
+AdminPanel --> Manager: Відображає поточний залишок: 45 шт
+Manager -> AdminPanel: Вводить кількість: 100
+Manager -> AdminPanel: Вводить закупівельну ціну: 250.00 грн
+Manager -> AdminPanel: Обирає фірму-постачальника зі списку
+alt Фірми немає в списку
+Manager -> AdminPanel: Натискає "Додати нову фірму"
+
+== Створення нової фірми ==
+AdminPanel --> Manager: Відображає форму створення фірми
+note right
+    Поля:
+    - Назва фірми
+    - Контактна особа
+    - Телефон
+    - Email
+    - Адреса
+    - Примітки
+end note
+
+Manager -> AdminPanel: Заповнює дані фірми
+Manager -> AdminPanel: Натискає "Зберегти фірму"
+
+AdminPanel -> WarehouseCtrl: POST /api/warehouse/companies
+note right
+    {
+        name: "ТОВ Новий Постачальник",
+        contactPerson: "Сидоренко С.С.",
+        phone: "+380501234567",
+        email: "info@supplier.ua",
+        address: "м. Київ, вул. Хрещатик, 1",
+        notes: "Новий постачальник текстилю"
+    }
+end note
+
+WarehouseCtrl -> WarehouseCtrl: Перевіряє роль (Manager/Admin)
+WarehouseCtrl -> WarehouseSvc: createCompany(companyDTO)
+activate WarehouseSvc
+
+WarehouseSvc -> DB: SELECT * FROM Companies WHERE name = ? OR email = ?
+DB --> WarehouseSvc: Result (check duplicates)
+
+alt Назва або email вже існують
+    WarehouseSvc --> WarehouseCtrl: 409 Conflict
+    WarehouseCtrl --> AdminPanel: Error: "Фірма з такою назвою або email вже існує"
+    AdminPanel --> Manager: Показує помилку
+else Фірма нова
+    WarehouseSvc -> DB: INSERT INTO Companies
+    note right
+        {
+            name: "ТОВ Новий Постачальник",
+            contactPerson: "Сидоренко С.С.",
+            phone: "+380501234567",
+            email: "info@supplier.ua",
+            address: "м. Київ, вул. Хрещатик, 1",
+            notes: "...",
+            isActive: true,
+            createdAt: NOW()
+        }
+    end note
+    DB --> WarehouseSvc: companyId = 3
+    
+    WarehouseSvc --> WarehouseCtrl: Company created
+    deactivate WarehouseSvc
+    WarehouseCtrl --> AdminPanel: 201 Created {companyId: 3, name: "ТОВ Новий Постачальник"}
+    AdminPanel --> Manager: Фірму додано, повернення до форми накладної
+    AdminPanel -> AdminPanel: Автоматично обирає нову фірму (companyId=3)
+end
+else Фірма є в списку
+    Manager -> AdminPanel: Обирає "ТОВ Текстиль+" (companyId=1)
+end
+Manager -> AdminPanel: Встановлює дату надходження
+note left: За замовчуванням - поточна дата
+Manager -> AdminPanel: Додає примітки (опціонально)
+note left: "Перша партія весняної колекції"
+
+== Валідація на Frontend ==
+Manager -> AdminPanel: Натискає "Зберегти накладну"
+AdminPanel -> AdminPanel: Валідує поля
+
+alt Товар не вибрано
+    AdminPanel --> Manager: Помилка: "Оберіть товар зі списку"
+    note right: Підсвічує поле червоним
+else Кількість <= 0
+    AdminPanel --> Manager: Помилка: "Кількість має бути більше 0"
+else Ціна <= 0
+    AdminPanel --> Manager: Помилка: "Ціна має бути більше 0"
+else Фірма-постачальник не обрана
+    AdminPanel --> Manager: Помилка: "Оберіть фірму-постачальника"
+else Валідація пройдена
+    AdminPanel --> Manager: Відображає попередній перегляд
+    note right
+        Товар: Футболка ХДУ
+        Кількість: 100 шт
+        Ціна за одиницю: 250.00 грн
+        Загальна сума: 25,000.00 грн
+        Фірма-постачальник: ТОВ Текстиль+ (ID: 1)
+        Дата: 29.12.2024
+    end note
+    
+    AdminPanel --> Manager: Запитує підтвердження
+    
+    alt Менеджер скасовує
+        Manager -> AdminPanel: "Скасувати"
+        AdminPanel --> Manager: Повертається до форми
+    else Менеджер підтверджує
+        Manager -> AdminPanel: "Підтвердити"
+    end
+end
+
+== Відправка на Backend ==
+AdminPanel -> WarehouseCtrl: POST /api/warehouse/incoming
+note right
+    {
+        productId: 1,
+        quantity: 100,
+        purchasePrice: 250.00,
+        companyId: 1,
+        documentDate: "2024-12-29",
+        notes: "Перша партія..."
+    }
+end note
+
+WarehouseCtrl -> WarehouseCtrl: Перевіряє роль
+note right: MANAGER або ADMIN
+
+alt Недостатньо прав
+    WarehouseCtrl --> AdminPanel: 403 Forbidden
+    AdminPanel --> Manager: "Недостатньо прав"
+else Права достатні
+    WarehouseCtrl -> Validation: validate(IncomingDTO)
+    
+    alt Валідація не пройдена
+        Validation --> WarehouseCtrl: ValidationError[]
+        WarehouseCtrl --> AdminPanel: 400 Bad Request
+        AdminPanel --> Manager: Показує помилки валідації
+    else Валідація пройдена
+        Validation --> WarehouseCtrl: Valid
+        
+        WarehouseCtrl -> WarehouseSvc: createIncomingDocument(dto, managerId)
+        activate WarehouseSvc
+        
+        == Перевірка існування фірми ==
+        WarehouseSvc -> DB: SELECT * FROM Companies WHERE id = ? AND isActive = true
+        DB --> WarehouseSvc: Company data
+        
+        alt Фірма не існує або неактивна
+            WarehouseSvc --> WarehouseCtrl: NotFoundError
+            WarehouseCtrl --> AdminPanel: 404 Not Found
+            AdminPanel --> Manager: "Фірму не знайдено або вона деактивована"
+        else Фірма існує
+
+        == Перевірка існування товару ==
+        WarehouseSvc -> DB: SELECT * FROM Products WHERE id = ?
+        DB --> WarehouseSvc: Product data
+        
+        alt Товар не існує
+            WarehouseSvc --> WarehouseCtrl: NotFoundError
+            WarehouseCtrl --> AdminPanel: 404 Not Found
+            AdminPanel --> Manager: "Товар не знайдено"
+        else Товар існує
+            == Транзакція БД ==
+            WarehouseSvc -> DB: BEGIN TRANSACTION
+            
+            == Створення прибуткової накладної ==
+            WarehouseSvc -> DB: INSERT INTO IncomingDocuments
+            note right
+                {
+                    productId: 1,
+                    quantity: 100,
+                    purchasePrice: 250.00,
+                    companyId: 1,
+                    documentDate: "2024-12-29",
+                    notes: "Перша партія...",
+                    createdAt: NOW(),
+                    createdBy: managerId
+                }
+            end note
+            DB --> WarehouseSvc: documentId = 42
+            
+            == Оновлення залишків товару ==
+            WarehouseSvc -> DB: SELECT stock FROM Products WHERE id = 1
+            DB --> WarehouseSvc: Current stock: 45
+            
+            WarehouseSvc -> WarehouseSvc: Розраховує новий stock
+            note right: newStock = 45 + 100 = 145
+            
+            WarehouseSvc -> DB: UPDATE Products SET stock = 145 WHERE id = 1
+            DB --> WarehouseSvc: Rows affected: 1
+            
+            == Логування в audit log ==
+            WarehouseSvc -> DB: INSERT INTO AuditLog
+            note right
+                {
+                    action: "INCOMING_DOCUMENT_CREATED",
+                    entityType: "IncomingDocument",
+                    entityId: 42,
+                    userId: managerId,
+                    changes: {
+                        productId: 1,
+                        oldStock: 45,
+                        newStock: 145,
+                        quantity: 100
+                    },
+                    timestamp: NOW()
+                }
+            end note
+            DB --> WarehouseSvc: OK
+            
+            WarehouseSvc -> DB: COMMIT TRANSACTION
+            
+            alt Транзакція не вдалася
+                DB --> WarehouseSvc: Error
+                WarehouseSvc -> DB: ROLLBACK TRANSACTION
+                WarehouseSvc -> Logger: LogError("Transaction failed", error)
+                note right
+                    {
+                        action: "incoming_doc_failed",
+                        productId: 1,
+                        managerId: managerId,
+                        error: error.message
+                    }
+                end note
+                
+                WarehouseSvc --> WarehouseCtrl: 500 Internal Error
+                WarehouseCtrl --> AdminPanel: Error response
+                AdminPanel --> Manager: "Не вдалося зберегти накладну"
+                
+            else Транзакція успішна
+                DB --> WarehouseSvc: Success
+                
+                == Логування успіху ==
+                WarehouseSvc -> Logger: LogInformation("Incoming document created")
+                note right
+                    {
+                        action: "incoming_doc_created",
+                        documentId: 42,
+                        productId: 1,
+                        productName: "Футболка ХДУ",
+                        quantity: 100,
+                        oldStock: 45,
+                        newStock: 145,
+                        companyId: 1,
+                        companyName: "ТОВ Текстиль+",
+                        totalCost: 25000.00,
+                        managerId: managerId
+                    }
+                end note
+                
+                WarehouseSvc --> WarehouseCtrl: Success response
+                note right
+                    {
+                        documentId: 42,
+                        message: "Прибуткову накладну оформлено",
+                        previousStock: 45,
+                        receivedQuantity: 100,
+                        newStock: 145
+                    }
+                end note
+                deactivate WarehouseSvc
+                
+                WarehouseCtrl --> AdminPanel: 201 Created
+                AdminPanel --> Manager: Показує повідомлення
+                note right
+                    "Прибуткова накладна успішно оформлена"
+                    
+                    Номер накладної: #42
+                    Попередній залишок: 45 шт
+                    Надійшло: +100 шт
+                    Новий залишок: 145 шт
+                end note
+            end
+        end
+    end
+end
+
+== Подальші дії ==
+Manager -> AdminPanel: Переглядає оновлені дані
+
+alt Менеджер хоче додати ще накладну
+    Manager -> AdminPanel: "Додати ще накладну"
+    AdminPanel --> Manager: Очищає форму та відображає знову
+else Менеджер завершує роботу
+    Manager -> AdminPanel: Переходить до\n"Поточні залишки"
+    AdminPanel -> WarehouseCtrl: GET /api/warehouse/stock
+    WarehouseCtrl -> WarehouseSvc: getCurrentStock()
+    WarehouseSvc -> DB: SELECT * FROM Products WITH updated stock
+    DB --> WarehouseSvc: Products with stock
+    WarehouseSvc --> WarehouseCtrl: Stock report
+    WarehouseCtrl --> AdminPanel: Products list
+    AdminPanel --> Manager: Відображає оновлені залишки
+    note right
+        Футболка ХДУ: 145 шт (було 45)
+        Худі ХДУ: 12 шт
+        ...
+    end note
+end
+
+@enduml

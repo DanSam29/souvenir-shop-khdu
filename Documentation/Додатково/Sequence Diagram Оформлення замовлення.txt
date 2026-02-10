@@ -1,0 +1,497 @@
+@startuml
+title Sequence Diagram: Оформлення замовлення
+
+actor "Користувач" as User
+participant "Frontend" as Frontend
+participant "CartController" as CartCtrl
+participant "OrderController" as OrderCtrl
+participant "OrderService" as OrderSvc
+participant "CartService" as CartSvc
+participant "ShippingService" as ShipSvc
+participant "PaymentService" as PaySvc
+participant "WarehouseService" as WarehouseSvc
+participant "NotificationService" as NotifSvc
+participant "Nova Poshta API" as NovaAPI
+participant "Stripe API" as StripeAPI
+participant "Email Service" as EmailSvc
+database "Database" as DB
+
+== Перегляд кошика ==
+User -> Frontend: Натискає "Оформити замовлення"
+Frontend -> CartCtrl: GET /api/cart
+CartCtrl -> CartSvc: getCart(userId)
+CartSvc -> DB: SELECT * FROM Cart, CartItems
+DB --> CartSvc: Cart data
+CartSvc --> CartCtrl: Cart with items
+CartCtrl --> Frontend: { items[], total }
+Frontend --> User: Відображає список товарів
+
+== Перевірка наявності ==
+Frontend -> OrderCtrl: POST /api/orders/validate
+OrderCtrl -> OrderSvc: validateStock(items)
+OrderSvc -> DB: SELECT Stock FROM Products
+DB --> OrderSvc: Stock values
+
+alt Товари недоступні
+    OrderSvc --> OrderCtrl: ValidationError
+    OrderCtrl --> Frontend: 400 Bad Request
+    Frontend --> User: "Товар недоступний"
+else Товари доступні
+    OrderSvc --> OrderCtrl: Success
+end
+
+== Перевірка та застосування автоматичних знижок ==
+Frontend -> OrderCtrl: GET /api/promotions/applicable
+note right
+    {
+        userId: 5,
+        cartItems: 
+        [
+            {productId: 1, quantity: 2},
+            {productId: 3, quantity: 1}
+        ]
+    }
+end note
+
+OrderCtrl -> OrderSvc: getApplicablePromotions(userId, cartItems)
+activate OrderSvc
+
+OrderSvc -> OrderSvc: Отримати дані користувача з БД
+OrderSvc -> DB: SELECT studentStatus, gpa FROM Users WHERE id = ?
+DB --> OrderSvc: User data
+
+OrderSvc -> OrderSvc: Перевірити чи активний studentStatus
+note right
+    Якщо studentExpiresAt < now(),
+    студентські знижки не застосовуються
+end note
+
+alt studentStatus активний
+    OrderSvc -> DB: SELECT * FROM Promotions\nWHERE audienceType = 'STUDENTS'\nAND isActive = true\nAND startDate <= now()\nAND endDate >= now()
+    DB --> OrderSvc: Student promotions[]
+    note right
+        Знижки залежно від studentStatus:
+        - REGULAR: базова студентська знижка
+        - SCHOLARSHIP: підвищена знижка  
+        - HIGH_ACHIEVER (GPA >= 4.5): максимальна знижка
+    end note
+end
+
+OrderSvc -> DB: SELECT p.* FROM Promotions p\nJOIN UserPromotions up ON p.id = up.promotionId\nWHERE up.userId = ?\nAND p.isActive = true
+DB --> OrderSvc: Personal promotions[]
+
+OrderSvc -> DB: SELECT * FROM Promotions\nWHERE (targetType = 'PRODUCT' AND targetId IN (?))\nOR (targetType = 'CATEGORY' AND targetId IN (?))\nOR targetType = 'CART'\nAND audienceType = 'ALL'\nAND isActive = true
+DB --> OrderSvc: Product/Category/Cart promotions[]
+
+OrderSvc -> OrderSvc: Об'єднати всі знижки та відсортувати за пріоритетом
+note right
+    Пріоритет знижок:
+    1. Персональні (найвищий)
+    2. Студентські (за studentStatus)
+    3. Товарні/Категорійні
+    4. Загальні акції
+end note
+
+OrderSvc -> OrderSvc: Для кожного товару вибрати найвигіднішу знижку
+OrderSvc -> OrderSvc: Розрахувати попередні ціни з урахуванням стакування
+
+OrderSvc --> OrderCtrl: Applicable promotions with calculated prices
+deactivate OrderSvc
+
+OrderCtrl --> Frontend: { promotions[], itemsWithDiscounts[] }
+note right
+    {
+        promotions: 
+        [
+            {id: 5, name: "Студентська знижка 10%", type: "PERCENTAGE", value: 10},
+            {id: 12, name: "Акція на футболки", type: "PERCENTAGE", value: 15}
+        ],
+        itemsWithDiscounts: 
+        [{
+            productId: 1,
+            originalPrice: 450.00,
+            appliedPromotionId: 12,
+            discountAmount: 67.50,
+            finalPrice: 382.50
+        }]
+    }
+end note
+
+Frontend --> User: Відображає деталізацію цін зі знижками
+
+== Вибір доставки ==
+User -> Frontend: Вибирає місто
+Frontend -> ShipSvc: GET /api/shipping/cities?search=Київ
+ShipSvc -> NovaAPI: POST /v2.0/json/ (getCities)
+NovaAPI --> ShipSvc: { cities[] }
+ShipSvc --> Frontend: { cities[] }
+Frontend --> User: Відображає список міст
+
+User -> Frontend: Обирає місто та відділення
+Frontend -> ShipSvc: GET /api/shipping/warehouses?cityRef=xxx
+ShipSvc -> NovaAPI: POST /v2.0/json/ (getWarehouses)
+NovaAPI --> ShipSvc: { warehouses[] }
+ShipSvc --> Frontend: { warehouses[] }
+Frontend --> User: Відображає список відділень
+
+User -> Frontend: Обирає відділення
+Frontend -> ShipSvc: POST /api/shipping/calculate
+note right: { cityRef, weight }
+ShipSvc -> NovaAPI: POST /v2.0/json/ (getDocumentPrice)
+NovaAPI --> ShipSvc: { cost: 85.00 }
+ShipSvc --> Frontend: { cost: 85.00, estimatedDays: 1-2 }
+Frontend --> User: "Вартість доставки: 85 грн"
+
+== Введення промокоду (опціонально) ==
+Frontend --> User: Відображає поле для введення промокоду
+
+alt Користувач вводить промокод
+    User -> Frontend: Вводить промокод "KSU2026"
+    Frontend -> OrderCtrl: POST /api/promotions/validate-code
+    note right
+        {
+            promoCode: "KSU2026",
+            userId: 5,
+            cartItems: [...]
+        }
+    end note
+    
+    OrderCtrl -> OrderSvc: validatePromoCode(code, userId, items)
+    activate OrderSvc
+    
+    OrderSvc -> DB: SELECT * FROM Promotions\nWHERE promoCode = ?\nAND isActive = true
+    DB --> OrderSvc: Promotion or NULL
+    
+    alt Промокод не знайдено
+        OrderSvc --> OrderCtrl: { valid: false, error: "Промокод не знайдено" }
+        OrderCtrl --> Frontend: 400 Bad Request
+        Frontend --> User: "Промокод не знайдено"
+        
+    else Промокод знайдено
+        OrderSvc -> OrderSvc: Перевірити валідність
+        note right
+            Перевірки:
+            - startDate <= now() <= endDate
+            - currentUsage < usageLimit (якщо є)
+            - Відповідає умовам (мін. сума, мін. кількість)
+        end note
+        
+        alt Промокод невалідний
+            alt Закінчився термін
+                OrderSvc --> OrderCtrl: { valid: false, error: "Термін дії промокоду закінчився" }
+                OrderCtrl --> Frontend: 400 Bad Request
+                Frontend --> User: "Термін дії промокоду закінчився"
+            else Вичерпано ліміт
+                OrderSvc --> OrderCtrl: { valid: false, error: "Промокод вичерпано" }
+                OrderCtrl --> Frontend: 400 Bad Request
+                Frontend --> User: "Промокод вичерпано"
+            else Не відповідає умовам
+                OrderSvc --> OrderCtrl: { valid: false, error: "Мінімальна сума замовлення 500 грн" }
+                OrderCtrl --> Frontend: 400 Bad Request
+                Frontend --> User: "Для цього промокоду потрібна мінімальна сума замовлення"
+            end
+            
+        else Промокод валідний
+            OrderSvc -> OrderSvc: Застосувати промокод поверх автоматичних знижок
+            note right
+                Стакування знижок:
+                1. Спочатку автоматичні знижки (студентські, персональні, акційні)
+                2. Потім промокод (якщо введено)
+                
+                Для кожного товару:
+                - originalPrice = базова ціна
+                - appliedPromotionId = ID промокоду (вищий пріоритет)
+                - discountAmount = сума ВСІХ знижок (авто + промокод)
+                - finalPrice = originalPrice - discountAmount
+            end note
+            
+            OrderSvc -> OrderSvc: Перерахувати фінальні ціни з промокодом
+            
+            OrderSvc --> OrderCtrl: { valid: true, updatedPrices[] }
+            deactivate OrderSvc
+            
+            OrderCtrl --> Frontend: 200 OK
+            note right
+                {
+                    valid: true,
+                    promoCodeDiscount: 50.00,
+                    itemsWithDiscounts: 
+                    [{
+                        productId: 1,
+                        originalPrice: 450.00,
+                        autoDiscountAmount: 67.50,
+                        promoCodeDiscount: 25.00,
+                        totalDiscountAmount: 92.50,
+                        appliedPromotionId: 15,
+                        finalPrice: 357.50
+                    }],
+                    newTotal: 1542.50
+                }
+            end note
+            
+            Frontend --> User: "Промокод застосовано! Додаткова знижка: 50 грн"
+            Frontend --> User: Оновлює деталізацію замовлення з промокодом
+        end
+    end
+else Користувач не вводить промокод
+    note over User, Frontend: Продовжити з автоматичними знижками
+end
+
+== Оформлення замовлення ==
+User -> Frontend: Обирає спосіб оплати\nта підтверджує
+
+alt Оплата карткою онлайн
+    Frontend -> OrderCtrl: POST /api/orders
+    note right
+        {
+            items: [{productId, quantity}],
+            shippingAddress: {...},
+            paymentMethod: "CARD_ONLINE"
+        }
+    end note
+    
+    OrderCtrl -> OrderSvc: createOrder(dto)
+    
+    activate OrderSvc
+    OrderSvc -> DB: BEGIN TRANSACTION
+    
+    OrderSvc -> DB: INSERT INTO Orders
+    note right
+        status: "PENDING_PAYMENT"
+        totalAmount: сума з урахуванням всіх знижок
+    end note
+    DB --> OrderSvc: orderId
+    
+    OrderSvc -> DB: INSERT INTO OrderItems з повною інформацією про знижки
+    note right
+        Для кожного товару:
+        {
+            orderId: 123,
+            productId: 1,
+            quantity: 2,
+            originalPrice: 450.00,
+            appliedPromotionId: 15,
+            discountAmount: 92.50,
+            finalPrice: 357.50
+        }
+    end note
+    DB --> OrderSvc: OK
+    
+    OrderSvc -> DB: INSERT INTO OrderItems з інформацією про знижки
+    DB --> OrderSvc: OK
+    
+    alt Використано промокод
+        OrderSvc -> DB: UPDATE Promotions\nSET currentUsage = currentUsage + 1\nWHERE id = ?
+        note right: Збільшуємо лічильник використання промокоду
+        DB --> OrderSvc: OK
+        
+        OrderSvc -> DB: INSERT INTO UserPromotions\nIF NOT EXISTS
+        note right
+            {
+                userId: 5,
+                promotionId: 15,
+                assignedAt: now(),
+                usedCount: 1
+            }
+            Або UPDATE usedCount = usedCount + 1
+        end note
+        DB --> OrderSvc: OK
+    end
+    
+    OrderSvc -> WarehouseSvc: createOutgoingDocument(orderId, items)
+    activate WarehouseSvc
+    WarehouseSvc -> DB: INSERT INTO OutgoingDocuments
+    note right: reason: "ORDER"
+    DB --> WarehouseSvc: documentId
+    WarehouseSvc -> DB: UPDATE Products SET Stock = Stock - quantity
+    DB --> WarehouseSvc: OK
+    WarehouseSvc --> OrderSvc: { success: true }
+    deactivate WarehouseSvc
+    
+    OrderSvc -> PaySvc: createPaymentSession(orderId, amount)
+    activate PaySvc
+    PaySvc -> StripeAPI: POST /v1/checkout/sessions
+    note right
+        {
+            payment_method_types: ["card"],
+            line_items: [...],
+            mode: "payment"
+        }
+    end note
+    
+    alt Stripe недоступний
+        StripeAPI --> PaySvc: Error
+        PaySvc --> OrderSvc: Error
+        OrderSvc -> DB: ROLLBACK TRANSACTION
+        OrderSvc --> OrderCtrl: 500 Internal Error
+        OrderCtrl --> Frontend: { error: "Платіжна система недоступна" }
+        Frontend --> User: Показує помилку
+    else Stripe доступний
+        StripeAPI --> PaySvc: { sessionId, url }
+        PaySvc -> DB: INSERT INTO Payments
+        note right: status: "PENDING"
+        DB --> PaySvc: paymentId
+        PaySvc --> OrderSvc: { sessionId, paymentUrl }
+        
+        OrderSvc -> DB: COMMIT TRANSACTION
+        deactivate OrderSvc
+        OrderSvc --> OrderCtrl: { orderId, paymentUrl }
+        OrderCtrl --> Frontend: { orderId, paymentUrl }
+        Frontend --> User: Перенаправляє на Stripe
+        
+        User -> StripeAPI: Вводить дані картки
+        StripeAPI -> StripeAPI: Обробляє платіж
+        
+        alt Платіж успішний
+            StripeAPI -> PaySvc: POST /api/webhooks/stripe
+            note right: payment_intent.succeeded
+            activate PaySvc
+            PaySvc -> PaySvc: Перевіряє підпис webhook
+            PaySvc -> DB: UPDATE Payments SET status = "PAID"
+            DB --> PaySvc: OK
+            PaySvc -> DB: UPDATE Orders SET status = "PROCESSING"
+            DB --> PaySvc: OK
+            PaySvc -> DB: INSERT INTO OrderHistory
+            DB --> PaySvc: OK
+            
+            PaySvc -> NotifSvc: sendOrderConfirmation(orderId)
+            activate NotifSvc
+            NotifSvc -> NotifSvc: Формує Email з деталізацією замовлення
+            note right of NotifSvc
+                Subject: "Замовлення №ORD-20241229-00123 оплачено"
+                
+                Деталі замовлення:
+                - Список товарів з цінами
+                - Вартість товарів (без знижок): 1750.00 грн
+                - Застосовані знижки:
+                  * Студентська знижка 10%: -67.50 грн
+                  * Промокод KSU2026: -50.00 грн
+                - Проміжна сума товарів: 1632.50 грн
+                - Вартість доставки: 85.00 грн
+                - Підсумок оплачено: 1717.50 грн
+            end note
+            
+            NotifSvc -> EmailSvc: SMTP send
+            EmailSvc --> NotifSvc: { sent: true }
+            NotifSvc --> PaySvc: OK
+            deactivate NotifSvc
+            
+            PaySvc -> CartSvc: clearCart(userId)
+            CartSvc -> DB: DELETE FROM CartItems
+            DB --> CartSvc: OK
+            CartSvc --> PaySvc: OK
+            
+            PaySvc --> StripeAPI: 200 OK
+            deactivate PaySvc
+            
+            StripeAPI --> User: Перенаправляє на success_url
+            Frontend --> User: "Замовлення успішно створено!"
+            
+        else Платіж відхилено
+            StripeAPI -> PaySvc: POST /api/webhooks/stripe
+            note right: payment_intent.payment_failed
+            PaySvc -> DB: UPDATE Payments SET status = "FAILED"
+            PaySvc -> DB: UPDATE Orders SET status = "CANCELLED"
+            PaySvc -> WarehouseSvc: returnStock(orderId)
+            WarehouseSvc -> DB: DELETE FROM OutgoingDocuments
+            WarehouseSvc -> DB: UPDATE Products SET Stock = Stock + quantity
+            PaySvc --> StripeAPI: 200 OK
+            StripeAPI --> User: Перенаправляє на cancel_url
+            Frontend --> User: "Оплата відхилена"
+        end
+    end
+    deactivate PaySvc
+    
+else Оплата при отриманні
+    Frontend -> OrderCtrl: POST /api/orders
+    note right
+        {
+            items: [{productId, quantity}],
+            shippingAddress: {...},
+            paymentMethod: "CASH_ON_DELIVERY"
+        }
+    end note
+    
+    OrderCtrl -> OrderSvc: createOrder(dto)
+    activate OrderSvc
+    OrderSvc -> DB: BEGIN TRANSACTION
+    OrderSvc -> DB: INSERT INTO Orders
+    note right
+        status: "PROCESSING"
+        totalAmount: сума з урахуванням всіх знижок
+    end note
+    DB --> OrderSvc: orderId
+    
+    OrderSvc -> DB: INSERT INTO OrderItems з повною інформацією про знижки
+    note right
+        Для кожного товару зберігаємо:
+        - originalPrice
+        - appliedPromotionId
+        - discountAmount
+        - finalPrice
+    end note
+    
+    OrderSvc -> DB: INSERT INTO Shipping
+    OrderSvc -> DB: INSERT INTO Payments
+    note right: status: "PENDING", method: "CASH_ON_DELIVERY"
+
+    alt Використано промокод
+        OrderSvc -> DB: UPDATE Promotions\nSET currentUsage = currentUsage + 1\nWHERE id = ?
+        note right: Збільшуємо лічильник використання промокоду
+        DB --> OrderSvc: OK
+        
+        OrderSvc -> DB: INSERT INTO UserPromotions\nIF NOT EXISTS
+        note right
+            {
+                userId: 5,
+                promotionId: 15,
+                assignedAt: now(),
+                usedCount: 1
+            }
+            Або UPDATE usedCount = usedCount + 1
+        end note
+        DB --> OrderSvc: OK
+    end
+    
+    OrderSvc -> WarehouseSvc: createOutgoingDocument(orderId, items)
+    WarehouseSvc -> DB: INSERT INTO OutgoingDocuments
+    WarehouseSvc -> DB: UPDATE Products SET Stock = Stock - quantity
+    WarehouseSvc --> OrderSvc: { success: true }
+    
+    OrderSvc -> DB: COMMIT TRANSACTION
+    deactivate OrderSvc
+    
+    OrderSvc -> NotifSvc: sendOrderConfirmation(orderId)
+    activate NotifSvc
+    NotifSvc -> NotifSvc: Формує Email з деталізацією
+    note right of NotifSvc
+        Subject: "Замовлення №ORD-20241229-00123 створено"
+        
+        Деталі замовлення:
+        - Список товарів з цінами
+        - Вартість товарів (без знижок): 1750.00 грн
+        - Застосовані знижки:
+          * Студентська знижка 10%: -67.50 грн
+          * Промокод KSU2026: -50.00 грн
+        - Проміжна сума товарів: 1632.50 грн
+        - Вартість доставки: 85.00 грн
+        - Сума до оплати при отриманні: 1717.50 грн
+        - Адреса відділення Nova Poshta
+        - Інструкції з оплати
+    end note
+    
+    NotifSvc -> EmailSvc: SMTP send
+    EmailSvc --> NotifSvc: { sent: true }
+    NotifSvc --> OrderSvc: OK
+    deactivate NotifSvc
+    
+    OrderSvc -> CartSvc: clearCart(userId)
+    CartSvc -> DB: DELETE FROM CartItems
+    CartSvc --> OrderSvc: OK
+    
+    OrderSvc --> OrderCtrl: { orderId }
+    OrderCtrl --> Frontend: { orderId, orderNumber }
+    Frontend --> User: "Замовлення створено!\nОплатіть при отриманні"
+end
+
+@enduml

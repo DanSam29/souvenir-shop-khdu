@@ -1,0 +1,75 @@
+workspace "Інтернет-магазин сувенірної продукції ХДУ" "C1: System Context - Контекст системи" {
+    !identifiers hierarchical
+    
+    model {
+        # Актори
+        guest = person "Гість" "Неавторизований відвідувач сайту"
+        customer = person "Користувач" "Зареєстрований клієнт магазину"
+        manager = person "Менеджер" "Співробітник, що керує каталогом"
+        admin = person "Адміністратор" "Керує замовленнями та користувачами"
+        superadmin = person "СуперАдмін" "Технічний адміністратор системи"
+        
+        # Головна система
+        eshop = softwareSystem "Інтернет-магазин ХДУ" "Система електронної комерції для продажу сувенірної продукції" {
+            tags "Main System"
+        }
+        
+        # Зовнішні системи
+        stripe = softwareSystem "Stripe API" "Платіжний шлюз для обробки онлайн-платежів" {
+            tags "External System"
+        }
+        novaposhta = softwareSystem "Nova Poshta API" "Служба доставки для розрахунку вартості та відстеження посилок" {
+            tags "External System"
+        }
+        email = softwareSystem "Email Service" "SMTP сервіс для відправки сповіщень" {
+            tags "External System"
+        }
+        minio = softwareSystem "MinIO Storage" "Об'єктне сховище для зберігання зображень товарів" {
+            tags "External System"
+	}
+	university = softwareSystem "University API" "API університету для верифікації студентів та отримання академічних даних" {
+    	    tags "External System"
+        }
+        
+        # Взаємодії користувачів з системою
+        guest -> eshop "Переглядає каталог товарів, шукає та фільтрує, реєструється"
+        customer -> eshop "Додає товари до кошика, оформлює замовлення, відстежує статус, керує профілем"
+        manager -> eshop "Керує товарами, категоріями, зображеннями, акціями, складським обліком, переглядає аналітику"
+        admin -> eshop "Керує замовленнями, користувачами, переглядає аналітику та звіти, налаштовує систему"
+        superadmin -> eshop "Керує ролями, інтеграціями, безпекою, логами, резервним копіюванням"
+        
+        # Взаємодії системи з зовнішніми сервісами
+        eshop -> stripe "Створює платіжні сесії, обробляє webhook про статус оплати"
+        eshop -> novaposhta "Отримує список міст та відділень, розраховує вартість доставки"
+        eshop -> email "Відправляє Email-сповіщення про замовлення, зміну статусу, реєстрацію"
+        eshop -> minio "Завантажує, зберігає та видаляє зображення товарів"
+        eshop -> university "Верифікує статус студента, отримує GPA та інформацію про стипендію"
+    }
+    
+    views {
+        systemContext eshop "SystemContext" "Діаграма контексту системи інтернет-магазину" {
+            include *
+            autolayout tb
+        }
+        
+        styles {
+            element "Person" {
+                shape person
+                background #08427b
+                color #ffffff
+            }
+            element "Main System" {
+                background #1168bd
+                color #ffffff
+            }
+            element "External System" {
+                background #999999
+                color #ffffff
+            }
+            relationship "Relationship" {
+                thickness 2
+                color #707070
+            }
+        }
+    }
+}

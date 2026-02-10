@@ -1,0 +1,285 @@
+@startuml
+title Sequence Diagram: Зміна статусу замовлення
+
+actor "Адміністратор" as Admin
+participant "Admin Panel" as AdminPanel
+participant "AdminController" as AdminCtrl
+participant "OrderService" as OrderSvc
+participant "WarehouseService" as WarehouseSvc
+participant "NotificationService" as NotifSvc
+participant "ValidationService" as Validation
+participant "Email Service" as EmailSvc
+participant "Serilog" as Logger
+database "Database" as DB
+
+== Вхід в систему ==
+Admin -> AdminPanel: Входить в адмін-панель
+AdminPanel -> AdminPanel: Перевіряє JWT токен
+note right: Role: ADMIN або SUPERADMIN
+
+== Перегляд списку замовлень ==
+Admin -> AdminPanel: Переходить до\n"Керування замовленнями"
+AdminPanel -> AdminCtrl: GET /api/admin/orders
+note right
+    ?status=processing
+    &page=1&limit=20
+end note
+
+AdminCtrl -> OrderSvc: getAllOrders(filters)
+OrderSvc -> DB: SELECT * FROM Orders\nWHERE status = 'PROCESSING'\nLIMIT 20 OFFSET 0
+DB --> OrderSvc: Orders[]
+OrderSvc --> AdminCtrl: { orders[], total, pages }
+AdminCtrl --> AdminPanel: { orders[] }
+AdminPanel --> Admin: Відображає список замовлень
+
+== Вибір замовлення ==
+Admin -> AdminPanel: Клікає на замовлення
+AdminPanel -> AdminCtrl: GET /api/admin/orders/{id}
+AdminCtrl -> OrderSvc: getOrderById(orderId)
+activate OrderSvc
+
+OrderSvc -> DB: SELECT * FROM Orders WHERE id = ?
+DB --> OrderSvc: Order data
+
+OrderSvc -> DB: SELECT * FROM OrderItems\nWHERE orderId = ?
+DB --> OrderSvc: OrderItems[]
+
+OrderSvc -> DB: SELECT * FROM Users WHERE id = ?
+DB --> OrderSvc: User data
+
+OrderSvc -> DB: SELECT * FROM Shipping\nWHERE orderId = ?
+DB --> OrderSvc: Shipping data
+
+OrderSvc -> DB: SELECT * FROM Payments\nWHERE orderId = ?
+DB --> OrderSvc: Payment data
+
+OrderSvc -> DB: SELECT * FROM OrderHistory\nWHERE orderId = ?\nORDER BY timestamp DESC
+DB --> OrderSvc: History[]
+
+OrderSvc --> AdminCtrl: { order, items, user, shipping, payment, history }
+deactivate OrderSvc
+
+AdminCtrl --> AdminPanel: Complete order data
+AdminPanel --> Admin: Відображає детальну інформацію
+
+== Зміна статусу ==
+Admin -> AdminPanel: Натискає "Змінити статус"
+AdminPanel --> Admin: Відображає випадаючий список:\n- Processing\n- Shipped\n- Delivered\n- Cancelled
+
+Admin -> AdminPanel: Обирає новий статус
+note left: Наприклад: "Shipped"
+
+AdminPanel -> AdminPanel: Перевіряє дозволений перехід
+note right of AdminPanel
+    Дозволені переходи:
+    PENDING_PAYMENT -> PROCESSING | CANCELLED
+    PROCESSING -> SHIPPED | CANCELLED
+    SHIPPED -> DELIVERED | CANCELLED
+    CANCELLED -> (немає переходів)
+    DELIVERED -> (немає переходів)
+end note
+
+alt Перехід недозволений
+    AdminPanel --> Admin: Показує помилку:\n"Неможливо змінити статус"
+    note right: Показує список дозволених переходів
+else Перехід дозволений
+    alt Статус = "Cancelled"
+        AdminPanel --> Admin: Попередження:\n"Товари будуть повернені на склад"
+        AdminPanel --> Admin: Показує поле\n"Причина скасування"
+        Admin -> AdminPanel: Вводить причину
+        Admin -> AdminPanel: Підтверджує
+    end
+    
+    AdminPanel --> Admin: Показує поле для коментаря
+    Admin -> AdminPanel: Вводить коментар (наприклад ТТН)
+    Admin -> AdminPanel: Натискає "Підтвердити"
+end
+
+== Відправка на Backend ==
+AdminPanel -> AdminCtrl: PUT /api/admin/orders/{id}/status
+note right
+    {
+        newStatus: "SHIPPED",
+        comment: "ТТН: 1234567890",
+        reason: null
+    }
+end note
+
+AdminCtrl -> AdminCtrl: Перевіряє роль (ADMIN)
+
+alt Недостатньо прав
+    AdminCtrl --> AdminPanel: 403 Forbidden
+    AdminPanel --> Admin: "Недостатньо прав"
+else Права достатні
+    AdminCtrl -> Validation: validate(UpdateStatusDTO)
+    
+    alt Валідація не пройдена
+        Validation --> AdminCtrl: ValidationError[]
+        AdminCtrl --> AdminPanel: 400 Bad Request
+        AdminPanel --> Admin: Показує помилки
+    else Валідація пройдена
+        Validation --> AdminCtrl: Valid
+        
+        AdminCtrl -> OrderSvc: updateStatus(orderId, dto, adminId)
+        activate OrderSvc
+        
+        == Перевірка існування ==
+        OrderSvc -> DB: SELECT * FROM Orders WHERE id = ?
+        DB --> OrderSvc: Order data
+        
+        alt Замовлення не існує
+            OrderSvc --> AdminCtrl: NotFoundError
+            AdminCtrl --> AdminPanel: 404 Not Found
+            AdminPanel --> Admin: "Замовлення не знайдено"
+        else Замовлення існує
+            OrderSvc -> OrderSvc: Перевіряє поточний статус
+            
+            alt Статус вже встановлений
+                OrderSvc --> AdminCtrl: { message: "Статус вже встановлений" }
+                AdminCtrl --> AdminPanel: 200 OK (no changes)
+                AdminPanel --> Admin: "Замовлення вже має цей статус"
+            else Статус інший
+                == Обробка зміни статусу ==
+                OrderSvc -> DB: BEGIN TRANSACTION
+                
+                alt Новий статус = "CANCELLED"
+                    OrderSvc -> DB: UPDATE Orders\nSET status = 'CANCELLED'
+                    DB --> OrderSvc: OK
+                    
+                    OrderSvc -> DB: INSERT INTO OrderCancellations
+                    note right
+                        {
+                            orderId: 123,
+                            reason: "Товар пошкоджений",
+                            cancelledBy: adminId,
+                            cancelledAt: NOW()
+                        }
+                    end note
+                    DB --> OrderSvc: OK
+                    
+                    == Повернення товарів на склад ==
+                    OrderSvc -> WarehouseSvc: returnStock(orderId)
+                    activate WarehouseSvc
+                    
+                    WarehouseSvc -> DB: SELECT * FROM OrderItems\nWHERE orderId = ?
+                    DB --> WarehouseSvc: OrderItems[]
+                    
+                    loop Для кожного товару
+                        WarehouseSvc -> DB: DELETE FROM OutgoingDocuments\nWHERE orderId = ? AND productId = ?
+                        note right: Видаляємо автоматично створені документи
+                        DB --> WarehouseSvc: OK
+                        
+                        WarehouseSvc -> DB: UPDATE Products\nSET stock = stock + quantity\nWHERE id = ?
+                        DB --> WarehouseSvc: OK
+                    end
+                    
+                    WarehouseSvc -> Logger: LogInformation("Stock returned", orderId)
+                    WarehouseSvc --> OrderSvc: { success: true }
+                    deactivate WarehouseSvc
+                    
+                else Інші статуси
+                    OrderSvc -> DB: UPDATE Orders\nSET status = ?\nWHERE id = ?
+                    note right: newStatus = "SHIPPED"
+                    DB --> OrderSvc: OK
+                end
+                
+                == Збереження історії ==
+                OrderSvc -> DB: INSERT INTO OrderHistory
+                note right
+                    {
+                        orderId: 123,
+                        oldStatus: "PROCESSING",
+                        newStatus: "SHIPPED",
+                        changedBy: adminId,
+                        comment: "ТТН: 1234567890",
+                        timestamp: NOW()
+                    }
+                end note
+                DB --> OrderSvc: historyId
+                
+                OrderSvc -> DB: COMMIT TRANSACTION
+                
+                alt Транзакція не вдалася
+                    DB --> OrderSvc: Error
+                    OrderSvc -> DB: ROLLBACK TRANSACTION
+                    OrderSvc -> Logger: LogError("Status update failed", error)
+                    OrderSvc --> AdminCtrl: 500 Internal Error
+                    AdminCtrl --> AdminPanel: { error: "Помилка БД" }
+                    AdminPanel --> Admin: "Не вдалося змінити статус"
+                    
+                else Транзакція успішна
+                    DB --> OrderSvc: Success
+                    
+                    == Відправка Email-сповіщення ==
+                    OrderSvc -> NotifSvc: sendStatusUpdate(orderId, newStatus)
+                    activate NotifSvc
+                    
+                    NotifSvc -> DB: SELECT email FROM Users\nWHERE id = ?
+                    DB --> NotifSvc: user.email
+                    
+                    NotifSvc -> NotifSvc: Формує Email з новим статусом
+                    note right of NotifSvc
+                        Subject: "Статус замовлення №123 змінено"
+                        Body:
+                        "Ваше замовлення №ORD-20241215-00123
+                        перейшло в статус: Відправлено
+                        ТТН: 1234567890"
+                    end note
+                    
+                    NotifSvc -> EmailSvc: SMTP send(to, subject, body)
+                    
+                    alt Email не відправлено
+                        EmailSvc --> NotifSvc: Error
+                        NotifSvc -> Logger: LogWarning("Email send failed", orderId)
+                        NotifSvc -> DB: INSERT INTO EmailQueue\nFOR retry
+                        note right: Створюємо задачу для повторної спроби
+                        DB --> NotifSvc: OK
+                        NotifSvc --> OrderSvc: { sent: false, queued: true }
+                    else Email відправлено
+                        EmailSvc --> NotifSvc: { sent: true, messageId }
+                        NotifSvc -> Logger: LogInformation("Email sent", orderId)
+                        NotifSvc --> OrderSvc: { sent: true }
+                    end
+                    deactivate NotifSvc
+                    
+                    == Логування ==
+                    OrderSvc -> Logger: LogInformation("Order status updated")
+                    note right
+                        {
+                            orderId: 123,
+                            oldStatus: "PROCESSING",
+                            newStatus: "SHIPPED",
+                            adminId: 5,
+                            comment: "ТТН: 1234567890"
+                        }
+                    end note
+                    
+                    OrderSvc --> AdminCtrl: { success: true, newStatus }
+                    deactivate OrderSvc
+                    
+                    AdminCtrl --> AdminPanel: 200 OK
+                    note right
+                        {
+                            message: "Статус оновлено",
+                            newStatus: "SHIPPED",
+                            updatedAt: "2025-12-31T15:30:00"
+                        }
+                    end note
+                    
+                    AdminPanel --> Admin: Повідомлення:\n"Статус успішно змінено"
+                    
+                    == Оновлення інтерфейсу ==
+                    AdminPanel -> AdminCtrl: GET /api/admin/orders/{id}
+                    AdminCtrl -> OrderSvc: getOrderById(orderId)
+                    OrderSvc -> DB: SELECT with updated data
+                    DB --> OrderSvc: Updated order
+                    OrderSvc --> AdminCtrl: Complete data
+                    AdminCtrl --> AdminPanel: Updated order
+                    AdminPanel --> Admin: Відображає оновлені дані
+                end
+            end
+        end
+    end
+end
+
+@enduml

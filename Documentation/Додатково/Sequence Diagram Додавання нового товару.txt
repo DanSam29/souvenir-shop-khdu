@@ -1,0 +1,254 @@
+@startuml
+title Sequence Diagram: Додавання нового товару
+
+actor "Менеджер" as Manager
+participant "Admin Panel" as AdminPanel
+participant "ProductController" as ProductCtrl
+participant "ProductService" as ProductSvc
+participant "CategoryService" as CategorySvc
+participant "MinIOIntegration" as MinIO
+participant "ValidationService" as Validation
+participant "CacheService" as Cache
+participant "Serilog" as Logger
+participant "MinIO Storage" as MinIOStorage
+database "Database" as DB
+
+== Вхід в систему ==
+Manager -> AdminPanel: Входить в адмін-панель
+AdminPanel -> AdminPanel: Перевіряє JWT токен
+AdminPanel -> ProductCtrl: GET /api/admin/products
+ProductCtrl -> ProductSvc: getAll()
+ProductSvc -> DB: SELECT * FROM Products
+DB --> ProductSvc: Products list
+ProductSvc --> ProductCtrl: Products[]
+ProductCtrl --> AdminPanel: { products[] }
+AdminPanel --> Manager: Відображає список товарів
+
+== Початок додавання ==
+Manager -> AdminPanel: Натискає "Додати товар"
+AdminPanel -> CategorySvc: GET /api/categories
+CategorySvc -> Cache: get("categories")
+
+alt Категорії в кеші
+    Cache --> CategorySvc: Categories[]
+else Категорій немає в кеші
+    CategorySvc -> DB: SELECT * FROM Categories
+    DB --> CategorySvc: Categories[]
+    CategorySvc -> Cache: set("categories", data, ttl: 300)
+end
+
+CategorySvc --> AdminPanel: { categories[] }
+AdminPanel --> Manager: Відображає форму з полями
+
+== Заповнення форми ==
+Manager -> AdminPanel: Заповнює поля:\n- Назва\n- Опис\n- Ціна\n- Вага\n- Категорія
+Manager -> AdminPanel: Завантажує зображення (1-10 файлів)
+
+AdminPanel -> AdminPanel: Валідація на фронтенді
+note right of AdminPanel
+    - Формат: JPEG/PNG/WebP
+    - Розмір <= 5 MB
+    - Ціна > 0
+    - Вага > 0
+    - Всі поля заповнені
+end note
+
+alt Валідація не пройдена
+    AdminPanel --> Manager: Показує помилки валідації
+    note right: Підсвічує поля червоним
+else Валідація пройдена
+    AdminPanel --> Manager: Відображає превью зображень
+    Manager -> AdminPanel: Встановлює головне зображення
+    Manager -> AdminPanel: Натискає "Зберегти товар"
+end
+
+== Відправка на Backend ==
+AdminPanel -> ProductCtrl: POST /api/admin/products
+note right
+    Content-Type: multipart/form-data
+    {
+        name: "Футболка ХДУ",
+        description: "...",
+        price: 450.00,
+        weight: 0.250,
+        categoryId: 3,
+        images: [File, File, ...]
+    }
+end note
+
+ProductCtrl -> ProductCtrl: Перевіряє роль (Manager/Admin)
+
+alt Роль недостатня
+    ProductCtrl --> AdminPanel: 403 Forbidden
+    AdminPanel --> Manager: "Недостатньо прав"
+else Роль достатня
+    ProductCtrl -> Validation: validate(ProductDTO)
+    
+    Validation -> Validation: Перевіряє обов'язкові поля
+    Validation -> Validation: Перевіряє формат зображень
+    Validation -> Validation: Перевіряє розміри файлів
+    
+    alt Валідація не пройдена
+        Validation --> ProductCtrl: ValidationError[]
+        ProductCtrl --> AdminPanel: 400 Bad Request
+        AdminPanel --> Manager: Показує помилки
+    else Валідація пройдена
+        Validation --> ProductCtrl: Valid
+        
+        ProductCtrl -> ProductSvc: create(productDTO, images)
+        activate ProductSvc
+        
+        == Перевірка дублікату ==
+        ProductSvc -> DB: SELECT * FROM Products\nWHERE name = ? AND categoryId = ?
+        DB --> ProductSvc: Existing product or NULL
+        
+        alt Товар з такою назвою існує
+            ProductSvc --> ProductCtrl: Warning: "Товар існує"
+            ProductCtrl --> AdminPanel: 409 Conflict
+            AdminPanel --> Manager: Попередження:\n"Товар вже існує"
+            Manager -> AdminPanel: Підтверджує продовження
+            AdminPanel -> ProductCtrl: POST /api/admin/products?force=true
+            ProductCtrl -> ProductSvc: create(productDTO, images, force=true)
+        end
+        
+        == Завантаження зображень в MinIO ==
+        loop Для кожного зображення
+            ProductSvc -> MinIO: uploadFile(bucketName, fileName, stream)
+            activate MinIO
+            MinIO -> MinIO: Генерує UUID для імені файлу
+            note right: uuid-v4 + original extension
+            MinIO -> MinIOStorage: PUT /products/{uuid}.jpg
+            
+            alt MinIO недоступний
+                MinIOStorage --> MinIO: Error
+                MinIO --> ProductSvc: { success: false, error }
+                ProductSvc -> Logger: LogError("MinIO upload failed")
+                ProductSvc --> ProductCtrl: 500 Internal Error
+                ProductCtrl --> AdminPanel: { error: "Помилка завантаження" }
+                AdminPanel --> Manager: "Помилка завантаження зображення"
+                deactivate MinIO
+                deactivate ProductSvc
+            else MinIO доступний
+                MinIOStorage --> MinIO: 200 OK
+                MinIO -> MinIO: Генерує публічний URL
+                note right: https://minio.../products/{uuid}.jpg
+                MinIO --> ProductSvc: { url: "https://..." }
+                deactivate MinIO
+            end
+        end
+        
+        == Збереження в базу даних ==
+        ProductSvc -> DB: BEGIN TRANSACTION
+        
+        ProductSvc -> DB: INSERT INTO Products
+        note right
+            {
+                name: "Футболка ХДУ",
+                description: "...",
+                price: 450.00,
+                weight: 0.250,
+                categoryId: 3,
+                stock: 0,
+                createdAt: NOW()
+            }
+        end note
+        DB --> ProductSvc: productId = 42
+        
+        loop Для кожного зображення
+            ProductSvc -> DB: INSERT INTO ProductImages
+            note right
+                {
+                    productId: 42,
+                    imageUrl: "https://...",
+                    isPrimary: (index == 0),
+                    order: index
+                }
+            end note
+            DB --> ProductSvc: imageId
+        end
+        
+        ProductSvc -> DB: COMMIT TRANSACTION
+        
+        alt Транзакція не вдалася
+            DB --> ProductSvc: Error
+            ProductSvc -> DB: ROLLBACK TRANSACTION
+            ProductSvc -> Logger: LogError("Transaction failed", error)
+            
+            loop Видалення завантажених зображень
+                ProductSvc -> MinIO: deleteFile(bucketName, fileName)
+                MinIO -> MinIOStorage: DELETE /products/{uuid}.jpg
+                MinIOStorage --> MinIO: OK
+                MinIO --> ProductSvc: Deleted
+            end
+            
+            ProductSvc --> ProductCtrl: 500 Internal Error
+            ProductCtrl --> AdminPanel: { error: "Помилка БД" }
+            AdminPanel --> Manager: "Не вдалося зберегти товар"
+            
+        else Транзакція успішна
+            DB --> ProductSvc: Success
+            
+            == Логування та очищення кешу ==
+            ProductSvc -> Logger: LogInformation("Product created", productId)
+            ProductSvc -> Cache: delete("products")
+            ProductSvc -> Cache: delete("categories")
+            note right: Очищаємо кеш для оновлення списків
+            
+            ProductSvc --> ProductCtrl: { productId: 42, name: "..." }
+            deactivate ProductSvc
+            ProductCtrl --> AdminPanel: 201 Created
+            note right
+                {
+                    productId: 42,
+                    name: "Футболка ХДУ",
+                    imageUrls: ["https://..."],
+                    message: "Товар створено"
+                }
+            end note
+            
+            AdminPanel --> Manager: Повідомлення:\n"Товар успішно додано"
+            
+            == Пропозиція оформити надходження або створити акцію ==
+            AdminPanel --> Manager: Запитує:\n"1. Оформити надходження на склад?\n2. Створити акцію для товару?"
+            
+            alt Менеджер обирає "Оформити надходження"
+                Manager -> AdminPanel: "Оформити надходження"
+                AdminPanel -> AdminPanel: Перенаправляє на форму\nприбуткової накладної
+                note right: Pre-fill productId = 42
+
+                note right of AdminPanel
+                    При оформленні прибуткової накладної
+                    менеджер обирає фірму-постачальника
+                    через CompanyService.getCompanies()
+                end note
+                
+            else Менеджер обирає "Створити акцію"
+                Manager -> AdminPanel: "Створити акцію"
+                AdminPanel -> AdminPanel: Перенаправляє на форму\nстворення акції
+                note right: Pre-fill targetType = PRODUCT, targetId = 42
+                
+                note right of AdminPanel
+                    Форма створення акції дозволяє:
+                    - Вибрати тип знижки (%, фіксована, спеціальна ціна)
+                    - Встановити значення знижки
+                    - Налаштувати дати дії
+                    - Згенерувати промокод (опціонально)
+                    - Встановити цільову аудиторію
+                    - Визначити умови (мін. сума, кількість)
+                end note
+                
+            else Менеджер відмовляється
+                Manager -> AdminPanel: "Ні, перейти до списку"
+                AdminPanel -> ProductCtrl: GET /api/admin/products
+                ProductCtrl -> ProductSvc: getAll()
+                ProductSvc -> DB: SELECT * FROM Products
+                DB --> ProductSvc: Products[]
+                ProductSvc --> ProductCtrl: Products[]
+                ProductCtrl --> AdminPanel: { products[] }
+                AdminPanel --> Manager: Оновлений список товарів
+            end
+        end
+    end
+end
+
+@enduml

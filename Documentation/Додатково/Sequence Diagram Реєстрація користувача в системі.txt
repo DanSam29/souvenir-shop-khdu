@@ -1,0 +1,455 @@
+@startuml
+title Sequence Diagram: Реєстрація користувача в системі
+
+actor "Гість" as Guest
+participant "Frontend" as Frontend
+participant "AuthController" as AuthCtrl
+participant "AuthService" as AuthSvc
+participant "UserService" as UserSvc
+participant "JWTService" as JWTSvc
+participant "ValidationService" as Validation
+participant "EncryptionService" as Encryption
+participant "NotificationService" as NotifSvc
+participant "Email Service" as EmailSvc
+participant "Serilog" as Logger
+database "Database" as DB
+
+== Початок реєстрації ==
+Guest -> Frontend: Переходить на сайт
+Frontend --> Guest: Відображає головну сторінку
+
+Guest -> Frontend: Натискає "Реєстрація"
+Frontend --> Guest: Відображає форму реєстрації
+note right
+    Поля:
+    - Ім'я
+    - Прізвище
+    - Email
+    - Пароль
+    - Підтвердження паролю
+    - Телефон (опціонально)
+    - Згода з умовами
+end note
+
+== Заповнення форми ==
+Guest -> Frontend: Заповнює ім'я
+Guest -> Frontend: Заповнює прізвище
+Guest -> Frontend: Вводить email
+Guest -> Frontend: Вводить пароль
+Guest -> Frontend: Підтверджує пароль
+Guest -> Frontend: Вводить телефон (опціонально)
+Guest -> Frontend: Встановлює прапорець\n"Згоден з умовами"
+
+Guest -> Frontend: Натискає "Зареєструватись"
+
+== Валідація на Frontend ==
+Frontend -> Frontend: Валідує введені дані
+
+alt Email некоректний
+    Frontend --> Guest: Помилка: "Email некоректний"
+    note right: Підсвічує поле червоним
+else Пароль < 8 символів
+    Frontend --> Guest: Помилка: "Пароль має містити мінімум 8 символів"
+else Пароль не містить букви та цифри
+    Frontend --> Guest: Помилка: "Пароль має містити букви та цифри"
+else Паролі не співпадають
+    Frontend --> Guest: Помилка: "Паролі не співпадають"
+else Згода не встановлена
+    Frontend --> Guest: Помилка: "Прийміть умови використання"
+else Валідація пройдена
+    Frontend -> AuthCtrl: POST /api/auth/register
+    note right
+        {
+            firstName: "Іван",
+            lastName: "Петренко",
+            email: "ivan.petrenko@example.com",
+            password: "SecurePass123",
+            confirmPassword: "SecurePass123",
+            phone: "+380501234567",
+            acceptTerms: true
+        }
+    end note
+end
+
+== Обробка на Backend ==
+AuthCtrl -> Validation: validate(RegisterDTO)
+activate Validation
+
+Validation -> Validation: Перевіряє обов'язкові поля
+Validation -> Validation: Перевіряє формат email
+Validation -> Validation: Перевіряє довжину паролю
+Validation -> Validation: Перевіряє складність паролю
+Validation -> Validation: Перевіряє співпадіння паролів
+Validation -> Validation: Перевіряє формат телефону
+
+alt Валідація не пройдена
+    Validation --> AuthCtrl: ValidationError[]
+    deactivate Validation
+    AuthCtrl --> Frontend: 400 Bad Request
+    note right
+        {
+            errors: 
+            [
+                {field: "email", message: "..."},
+                {field: "password", message: "..."}
+            ]
+        }
+    end note
+    Frontend --> Guest: Відображає помилки валідації
+else Валідація пройдена
+    Validation --> AuthCtrl: Valid
+    deactivate Validation
+    
+    AuthCtrl -> AuthSvc: register(registerDTO)
+    activate AuthSvc
+    
+    == Перевірка унікальності email ==
+    AuthSvc -> DB: SELECT * FROM Users WHERE email = ?
+    DB --> AuthSvc: Existing user or NULL
+    
+    alt Email вже існує
+        AuthSvc --> AuthCtrl: ConflictError
+        AuthCtrl --> Frontend: 409 Conflict
+        note right
+            {
+                error: "Email вже використовується"
+            }
+        end note
+        Frontend --> Guest: "Цей Email вже зареєстрований"
+        Frontend --> Guest: Пропонує перейти до авторизації
+        
+    else Email унікальний
+        == Хешування паролю ==
+        AuthSvc -> Encryption: hashPassword(password)
+        activate Encryption
+        Encryption -> Encryption: Генерує salt
+        Encryption -> Encryption: Хешує з bcrypt (rounds: 12)
+        Encryption --> AuthSvc: passwordHash
+        deactivate Encryption
+        
+        == Створення користувача ==
+        AuthSvc -> DB: BEGIN TRANSACTION
+        
+        AuthSvc -> DB: INSERT INTO Users
+        note right
+            {
+                firstName: "Іван",
+                lastName: "Петренко",
+                email: "ivan.petrenko@example.com",
+                passwordHash: "$2b$12$...",
+                phone: "+380501234567",
+                role: "CUSTOMER",
+                status: "ACTIVE",
+                createdAt: NOW()
+            }
+        end note
+        DB --> AuthSvc: userId = 42
+        
+        == Створення порожнього кошика ==
+        AuthSvc -> DB: INSERT INTO Cart
+        note right
+            {
+                userId: 42,
+                createdAt: NOW()
+            }
+        end note
+        DB --> AuthSvc: cartId = 15
+        
+        == Верифікація студентського статусу ==
+        AuthSvc -> AuthSvc: Перевірити чи email університетський
+        note right
+            Перевірка домену: @ksu.edu.ua або @student.ksu.edu.ua
+        end note
+        
+        alt Email університетський
+            participant "UniversityIntegration" as UniIntegration
+            participant "University API" as UniAPI
+            
+            AuthSvc -> UniIntegration: verifyStudent(email)
+            activate UniIntegration
+            
+            UniIntegration -> UniAPI: GET /api/students/{email}
+            note right
+                Authorization: Bearer {UNIVERSITY_API_KEY}
+                Content-Type: application/json
+            end note
+            
+            alt University API доступний
+                UniAPI --> UniIntegration: 200 OK
+                note right
+                    {
+                        found: true,
+                        studentId: "ST2024001234",
+                        firstName: "Іван",
+                        lastName: "Петренко",
+                        email: "ivan.petrenko@student.ksu.edu.ua",
+                        gpa: 4.7,
+                        scholarshipStatus: "ACTIVE",
+                        studentStatus: "HIGH_ACHIEVER",
+                        enrollmentYear: 2021,
+                        faculty: "Інформаційні технології",
+                        specialty: "Комп'ютерні науки"
+                    }
+                end note
+                
+                alt Студент знайдений
+                    UniIntegration -> UniIntegration: Мапити studentStatus з University API
+                    note right
+                        Логіка визначення studentStatus:
+                        - GPA >= 4.5 && scholarshipStatus = ACTIVE → HIGH_ACHIEVER
+                        - scholarshipStatus = ACTIVE → SCHOLARSHIP
+                        - інакше → REGULAR
+                    end note
+                    
+                    UniIntegration --> AuthSvc: Student data
+                    deactivate UniIntegration
+                    
+                    AuthSvc -> DB: UPDATE Users SET\nstudentStatus = ?,\ngpa = ?,\nstudentVerifiedAt = NOW(),\nstudentExpiresAt = NOW() + INTERVAL 4 MONTH\nWHERE id = ?
+                    note right
+                        {
+                            studentStatus: "HIGH_ACHIEVER",
+                            gpa: 4.7,
+                            studentVerifiedAt: NOW(),
+                            studentExpiresAt: NOW() + 4 місяці (до кінця семестру)
+                        }
+                    end note
+                    DB --> AuthSvc: Updated
+                    
+                    == Призначення студентських знижок ==
+                    participant "PromotionService" as PromotionSvc
+                    
+                    AuthSvc -> PromotionSvc: assignStudentPromotions(userId, studentStatus)
+                    activate PromotionSvc
+                    
+                    PromotionSvc -> DB: SELECT * FROM Promotions\nWHERE audienceType = 'STUDENTS'\nAND isActive = true
+                    DB --> PromotionSvc: Student promotions[]
+                    note right
+                        Знайдено акції:
+                        - Базова студентська знижка 5% (REGULAR)
+                        - Знижка для стипендіатів 10% (SCHOLARSHIP)
+                        - Знижка для відмінників 15% (HIGH_ACHIEVER)
+                    end note
+                    
+                    PromotionSvc -> PromotionSvc: Вибрати відповідні знижки за studentStatus
+                    note right
+                        Для HIGH_ACHIEVER призначається знижка 15%
+                    end note
+                    
+                    loop Для кожної відповідної знижки
+                        PromotionSvc -> DB: INSERT INTO UserPromotions\nIF NOT EXISTS
+                        note right
+                            {
+                                userId: 42,
+                                promotionId: 8,
+                                assignedAt: NOW(),
+                                usedCount: 0
+                            }
+                        end note
+                        DB --> PromotionSvc: OK
+                    end
+                    
+                    PromotionSvc -> Logger: LogInformation("Student promotions assigned")
+                    note right
+                        {
+                            action: "student_promotions_assigned",
+                            userId: 42,
+                            studentStatus: "HIGH_ACHIEVER",
+                            promotionsAssigned: [8],
+                            gpa: 4.7
+                        }
+                    end note
+                    
+                    PromotionSvc --> AuthSvc: { promotionsAssigned: [8], totalDiscount: "15%" }
+                    deactivate PromotionSvc
+                    
+                else Студент не знайдений в University API
+                    UniIntegration --> AuthSvc: { found: false }
+                    deactivate UniIntegration
+                    
+                    AuthSvc -> Logger: LogWarning("University email but student not found")
+                    note right
+                        {
+                            action: "student_not_found_in_api",
+                            userId: 42,
+                            email: "ivan.petrenko@student.ksu.edu.ua"
+                        }
+                    end note
+                    
+                    AuthSvc -> DB: UPDATE Users SET studentStatus = 'NONE' WHERE id = ?
+                    DB --> AuthSvc: Updated
+                end
+                
+            else University API недоступний
+                UniAPI --> UniIntegration: Error (timeout/500/503)
+                UniIntegration --> AuthSvc: API Error
+                deactivate UniIntegration
+                
+                AuthSvc -> Logger: LogError("University API unavailable")
+                note right
+                    {
+                        action: "university_api_error",
+                        userId: 42,
+                        email: "ivan.petrenko@student.ksu.edu.ua",
+                        error: error.message
+                    }
+                end note
+                
+                AuthSvc -> DB: INSERT INTO StudentVerificationQueue
+                note right
+                    Створюємо задачу для повторної перевірки через 1 годину
+                    {
+                        userId: 42,
+                        email: "ivan.petrenko@student.ksu.edu.ua",
+                        retryCount: 0,
+                        nextRetryAt: NOW() + INTERVAL 1 HOUR
+                    }
+                end note
+                DB --> AuthSvc: Queued
+                
+                AuthSvc -> DB: UPDATE Users SET studentStatus = 'NONE' WHERE id = ?
+                note right: Тимчасово, до успішної верифікації
+                DB --> AuthSvc: Updated
+            end
+            
+        else Email не університетський
+            AuthSvc -> DB: UPDATE Users SET studentStatus = 'NONE' WHERE id = ?
+            DB --> AuthSvc: Updated
+        end
+        
+        AuthSvc -> DB: COMMIT TRANSACTION
+        
+        alt Транзакція не вдалася
+            DB --> AuthSvc: Error
+            AuthSvc -> DB: ROLLBACK TRANSACTION
+            AuthSvc -> Logger: LogError("Registration failed", error)
+            AuthSvc --> AuthCtrl: 500 Internal Error
+            AuthCtrl --> Frontend: Error response
+            Frontend --> Guest: "Помилка реєстрації. Спробуйте пізніше"
+            
+        else Транзакція успішна
+            DB --> AuthSvc: Success
+            
+            == Генерація JWT токену ==
+            AuthSvc -> JWTSvc: generateToken(userId, role)
+            activate JWTSvc
+            JWTSvc -> JWTSvc: Створює payload
+            note right
+                {
+                    userId: 42,
+                    email: "ivan.petrenko@example.com",
+                    role: "CUSTOMER",
+                    iat: timestamp,
+                    exp: timestamp + 3600
+                }
+            end note
+            JWTSvc -> JWTSvc: Підписує токен (JWT_SECRET)
+            JWTSvc --> AuthSvc: JWT token
+            deactivate JWTSvc
+            
+            == Відправка Email-підтвердження ==
+            AuthSvc -> NotifSvc: sendRegistrationConfirmation(userId, email)
+            activate NotifSvc
+            
+            NotifSvc -> NotifSvc: Формує Email з урахуванням студентського статусу
+            note right of NotifSvc
+                Subject: "Ласкаво просимо до інтернет-магазину ХДУ!"
+                
+                Body (якщо studentStatus активний):
+                "Вітаємо, Іван!
+                
+                Ваш обліковий запис успішно створено.
+                Email: ivan.petrenko@student.ksu.edu.ua
+                
+                Ви верифіковані як студент ХДУ!
+                Статус: Відмінник (GPA: 4.7)
+                
+                Доступні знижки:
+                - Знижка для відмінників: 15% на весь асортимент
+                - Термін дії знижки: до [дата закінчення семестру]
+                
+                Знижки застосовуються автоматично при оформленні замовлення.
+                Також ви можете використовувати промокоди для додаткової економії!
+                
+                Дякуємо за реєстрацію!"
+                
+                ---
+                
+                Body (якщо studentStatus = NONE):
+                "Вітаємо, Іван!
+                
+                Ваш обліковий запис успішно створено.
+                Email: ivan.petrenko@example.com
+                
+                Дякуємо за реєстрацію!"
+            end note
+            
+            NotifSvc -> EmailSvc: SMTP send(to, subject, body)
+            
+            alt Email не відправлено
+                EmailSvc --> NotifSvc: Error
+                NotifSvc -> Logger: LogWarning("Registration email failed")
+                note right
+                    {
+                        action: "registration_email_failed",
+                        userId: 42,
+                        email: "ivan.petrenko@example.com",
+                        error: error.message
+                    }
+                end note
+                NotifSvc -> DB: INSERT INTO EmailQueue
+                note right: Створює задачу для повторної спроби
+                DB --> NotifSvc: Queued
+                NotifSvc --> AuthSvc: Email queued
+            else Email відправлено
+                EmailSvc --> NotifSvc: Sent successfully
+                NotifSvc -> Logger: LogInformation("Registration email sent")
+                NotifSvc --> AuthSvc: Email sent
+            end
+            deactivate NotifSvc
+            
+            == Логування успішної реєстрації ==
+            AuthSvc -> Logger: LogInformation("User registered")
+            note right
+                {
+                    action: "user_registered",
+                    userId: 42,
+                    email: "ivan.petrenko@example.com",
+                    role: "CUSTOMER",
+                    registeredAt: timestamp
+                }
+            end note
+            
+            AuthSvc --> AuthCtrl: Success response
+            note right
+                {
+                    userId: 42,
+                    token: "eyJhbGciOiJIUzI1NiIs...",
+                    role: "CUSTOMER",
+                    expiresAt: timestamp + 3600,
+                    message: "Реєстрація успішна"
+                }
+            end note
+            deactivate AuthSvc
+            
+            AuthCtrl --> Frontend: 201 Created
+            
+            == Збереження токену та перенаправлення ==
+            Frontend -> Frontend: Зберігає JWT токен в memory
+            note right: sessionStorage або state management
+            Frontend -> Frontend: Оновлює стан користувача
+            note right: isAuthenticated = true
+            
+            Frontend --> Guest: Перенаправляє на головну сторінку
+            Frontend --> Guest: Показує повідомлення
+            note right
+                "Реєстрація успішна!
+                Перевірте Email для підтвердження"
+            end note
+            
+            Guest -> Frontend: Переглядає сайт як\nавторизований користувач
+            note left: Тепер може додавати товари в кошик
+        end
+    end
+end
+
+@enduml

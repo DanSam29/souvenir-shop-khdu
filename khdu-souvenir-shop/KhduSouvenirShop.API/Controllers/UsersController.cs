@@ -67,6 +67,15 @@ namespace KhduSouvenirShop.API.Controllers
                 CreatedAt = DateTime.UtcNow
             };
 
+            // MVP: Автовизначення студентського статусу за доменом email
+            var emailLower = (newUser.Email ?? string.Empty).ToLowerInvariant();
+            if (emailLower.EndsWith("@ksu.edu.ua") || emailLower.EndsWith("@student.ksu.edu.ua"))
+            {
+                newUser.StudentStatus = "STUDENT";
+                newUser.StudentVerifiedAt = DateTime.UtcNow;
+                newUser.StudentExpiresAt = DateTime.UtcNow.AddYears(1);
+            }
+
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
@@ -84,6 +93,9 @@ namespace KhduSouvenirShop.API.Controllers
                 email = newUser.Email,
                 phone = newUser.Phone,
                 role = newUser.Role,
+                studentStatus = newUser.StudentStatus,
+                studentVerifiedAt = newUser.StudentVerifiedAt,
+                studentExpiresAt = newUser.StudentExpiresAt,
                 token = token
             });
         }
@@ -117,6 +129,16 @@ namespace KhduSouvenirShop.API.Controllers
                 return Unauthorized(new { error = "Невірний email або пароль" });
             }
 
+            // MVP: Автовизначення студентського статусу за доменом email при вході
+            var emailLower = (user.Email ?? string.Empty).ToLowerInvariant();
+            if ((emailLower.EndsWith("@ksu.edu.ua") || emailLower.EndsWith("@student.ksu.edu.ua")) && user.StudentStatus == "NONE")
+            {
+                user.StudentStatus = "STUDENT";
+                user.StudentVerifiedAt = DateTime.UtcNow;
+                user.StudentExpiresAt = DateTime.UtcNow.AddYears(1);
+                await _context.SaveChangesAsync();
+            }
+
             // Генеруємо JWT токен
             var token = GenerateJwtToken(user);
 
@@ -130,6 +152,9 @@ namespace KhduSouvenirShop.API.Controllers
                 email = user.Email,
                 phone = user.Phone,
                 role = user.Role,
+                studentStatus = user.StudentStatus,
+                studentVerifiedAt = user.StudentVerifiedAt,
+                studentExpiresAt = user.StudentExpiresAt,
                 token = token
             });
         }
@@ -161,7 +186,11 @@ namespace KhduSouvenirShop.API.Controllers
                 email = user.Email,
                 phone = user.Phone,
                 role = user.Role,
-                createdAt = user.CreatedAt
+                createdAt = user.CreatedAt,
+                studentStatus = user.StudentStatus,
+                studentVerifiedAt = user.StudentVerifiedAt,
+                studentExpiresAt = user.StudentExpiresAt,
+                gpa = user.GPA
             });
         }
 
@@ -184,7 +213,11 @@ namespace KhduSouvenirShop.API.Controllers
                 email = user.Email,
                 phone = user.Phone,
                 role = user.Role,
-                createdAt = user.CreatedAt
+                createdAt = user.CreatedAt,
+                studentStatus = user.StudentStatus,
+                studentVerifiedAt = user.StudentVerifiedAt,
+                studentExpiresAt = user.StudentExpiresAt,
+                gpa = user.GPA
             });
         }
 

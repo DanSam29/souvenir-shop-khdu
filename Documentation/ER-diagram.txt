@@ -1,0 +1,393 @@
+// ========================================
+// КОРИСТУВАЧІ ТА РОЛІ
+// ========================================
+
+Table Users {
+  UserId int [pk, increment, note: 'Первинний ключ користувача']
+  FirstName varchar(50) [not null]
+  LastName varchar(50) [not null]
+  Email varchar(100) [unique, not null]
+  PasswordHash varchar(255) [not null, note: 'Хешований пароль (bcrypt)']
+  Phone varchar(20)
+  Role enum('Guest', 'Customer', 'Manager', 'Administrator', 'SuperAdmin') [not null, default: 'Customer']
+  StudentStatus enum('NONE', 'REGULAR', 'SCHOLARSHIP', 'HIGH_ACHIEVER') [not null, default: 'NONE', note: 'Статус студента для знижок']
+  GPA decimal(3,2) [null, note: 'Середній бал (Grade Point Average), від 0.00 до 5.00']
+  StudentVerifiedAt timestamp [null, note: 'Дата верифікації студентського статусу через University API']
+  StudentExpiresAt timestamp [null, note: 'Дата закінчення студентського статусу (кінець семестру)']
+  CreatedAt timestamp [default: `now()`, not null]
+  
+  Indexes {
+    Email [unique]
+    Role
+    StudentStatus
+    StudentExpiresAt
+  }
+  
+  Note: 'Таблиця користувачів системи. Підтримує 5 ролей: Guest, Customer, Manager, Administrator, SuperAdmin. StudentStatus визначає доступні студентські знижки'
+}
+
+// ========================================
+// КАТАЛОГ ТОВАРІВ
+// ========================================
+
+Table Categories {
+  CategoryId int [pk, increment]
+  Name varchar(100) [not null]
+  ParentCategoryId int [null, ref: > Categories.CategoryId, note: 'FK для ієрархії категорій']
+  Order int [default: 0, note: 'Порядок відображення']
+  
+  Indexes {
+    Name
+    ParentCategoryId
+  }
+  
+  Note: 'Категорії товарів з підтримкою ієрархії (батьківська категорія)'
+}
+
+Table Products {
+  ProductId int [pk, increment]
+  Name varchar(200) [not null]
+  Description text [not null]
+  Price decimal(10,2) [not null, note: 'Ціна в грн']
+  Weight decimal(10,3) [not null, note: 'Вага в кг для розрахунку доставки']
+  CategoryId int [not null, ref: > Categories.CategoryId]
+  Stock int [not null, default: 0, note: 'Поточний залишок на складі (розраховується автоматично)']
+  CreatedAt timestamp [default: `now()`, not null]
+  
+  Indexes {
+    Name
+    CategoryId
+    Stock
+    Price
+  }
+  
+  Note: 'Товари магазину. Stock розраховується на основі IncomingDocuments та OutgoingDocuments'
+}
+
+Table ProductImages {
+  ImageId int [pk, increment]
+  ProductId int [not null, ref: > Products.ProductId]
+  ImageURL varchar(500) [not null, note: 'URL зображення в MinIO Storage']
+  IsPrimary boolean [default: false, note: 'Головне зображення товару']
+  Order int [default: 0, note: 'Порядок відображення']
+  
+  Indexes {
+    ProductId
+    IsPrimary
+  }
+  
+  Note: 'Зображення товарів. Кожен товар може мати декілька зображень'
+}
+
+// ========================================
+// КОШИК
+// ========================================
+
+Table Cart {
+  CartId int [pk, increment]
+  UserId int [not null, unique, ref: > Users.UserId, note: 'Один кошик на користувача']
+  CreatedAt timestamp [default: `now()`, not null]
+  
+  Indexes {
+    UserId [unique]
+  }
+  
+  Note: 'Кошики користувачів. Зв\'язок 1:1 з Users'
+}
+
+Table CartItems {
+  CartItemId int [pk, increment]
+  CartId int [not null, ref: > Cart.CartId]
+  ProductId int [not null, ref: > Products.ProductId]
+  Quantity int [not null, default: 1, note: 'Кількість товару в кошику']
+  AddedAt timestamp [default: `now()`, not null]
+  
+  Indexes {
+    (CartId, ProductId) [unique, note: 'Унікальна пара: один товар раз у кошику']
+  }
+  
+  Note: 'Товари в кошику. Композиція з Cart (при видаленні кошика видаляються items)'
+}
+
+// ========================================
+// ЗАМОВЛЕННЯ
+// ========================================
+
+Table Orders {
+  OrderId int [pk, increment]
+  UserId int [not null, ref: > Users.UserId]
+  OrderNumber varchar(50) [unique, not null, note: 'Унікальний номер замовлення для клієнта']
+  Status enum('Processing', 'Shipped', 'Delivered', 'Cancelled') [not null, default: 'Processing']
+  TotalAmount decimal(10,2) [not null, note: 'Загальна сума (товари + доставка)']
+  CreatedAt timestamp [default: `now()`, not null]
+  
+  Indexes {
+    UserId
+    OrderNumber [unique]
+    Status
+    CreatedAt
+  }
+  
+  Note: 'Замовлення клієнтів. Статуси: Processing, Shipped, Delivered, Cancelled'
+}
+
+Table OrderItems {
+  OrderItemId int [pk, increment]
+  OrderId int [not null, ref: > Orders.OrderId]
+  ProductId int [not null, ref: > Products.ProductId]
+  Quantity int [not null]
+  OriginalPrice decimal(10,2) [not null, note: 'Базова ціна товару (без знижок)']
+  AppliedPromotionId int [null, ref: > Promotions.PromotionId, note: 'ID застосованої знижки (найвигідніша або промокод)']
+  DiscountAmount decimal(10,2) [not null, default: 0, note: 'Сума знижки в грн']
+  FinalPrice decimal(10,2) [not null, note: 'Фінальна ціна після знижки (OriginalPrice - DiscountAmount)']
+  
+  Indexes {
+    OrderId
+    ProductId
+    AppliedPromotionId
+  }
+  
+  Note: 'Товари в замовленні. Зберігає повну інформацію про ціни та застосовані знижки для фінансової звітності та аналізу ефективності акцій'
+}
+
+Table OrderHistory {
+  HistoryId int [pk, increment]
+  OrderId int [not null, ref: > Orders.OrderId]
+  OldStatus varchar(50) [null]
+  NewStatus varchar(50) [not null]
+  ChangedBy int [null, ref: > Users.UserId, note: 'Хто змінив (Admin/Manager)']
+  Comment text [null, note: 'Коментар, наприклад ТТН']
+  Timestamp timestamp [default: `now()`, not null]
+  
+  Indexes {
+    OrderId
+    Timestamp
+  }
+  
+  Note: 'Історія змін статусів замовлення для аудиту'
+}
+
+// ========================================
+// ДОСТАВКА
+// ========================================
+
+Table Shipping {
+  ShippingId int [pk, increment]
+  OrderId int [unique, not null, ref: > Orders.OrderId, note: 'Один запис доставки на замовлення']
+  City varchar(100) [not null, note: 'Населений пункт Nova Poshta']
+  WarehouseNumber varchar(50) [not null, note: 'Номер відділення Nova Poshta']
+  Phone varchar(20) [not null]
+  DeliveryCost decimal(10,2) [not null, note: 'Вартість доставки з Nova Poshta API']
+  TrackingNumber varchar(100) [null, note: 'ТТН Nova Poshta']
+  
+  Indexes {
+    OrderId [unique]
+  }
+  
+  Note: 'Інформація про доставку. Зв\'язок 1:1 з Orders'
+}
+
+// ========================================
+// ПЛАТЕЖІ
+// ========================================
+
+Table Payments {
+  PaymentId int [pk, increment]
+  OrderId int [unique, not null, ref: > Orders.OrderId]
+  Amount decimal(10,2) [not null]
+  Method enum('Card', 'CashOnDelivery') [not null]
+  Status enum('Pending', 'Completed', 'Failed', 'Refunded') [not null, default: 'Pending']
+  TransactionId varchar(255) [null, note: 'ID транзакції Stripe']
+  CreatedAt timestamp [default: `now()`, not null]
+  
+  Indexes {
+    OrderId [unique]
+    Status
+    TransactionId
+  }
+  
+  Note: 'Платежі. Method: Card (Stripe онлайн) або CashOnDelivery (оплата при отриманні)'
+}
+
+// ========================================
+// СКЛАДСЬКИЙ ОБЛІК
+// ========================================
+
+Table IncomingDocuments {
+  DocumentId int [pk, increment]
+  ProductId int [not null, ref: > Products.ProductId]
+  Quantity int [not null, note: 'Кількість надходження на склад']
+  PurchasePrice decimal(10,2) [not null, note: 'Закупівельна ціна за одиницю']
+  CompanyId int [not null, ref: > Companies.CompanyId, note: 'Фірма-постачальник']
+  DocumentDate date [not null]
+  CreatedBy int [not null, ref: > Users.UserId, note: 'Менеджер, який створив накладну']
+  Notes text [null]
+  CreatedAt timestamp [default: `now()`, not null]
+  
+  Indexes {
+    ProductId
+    CompanyId
+    DocumentDate
+    CreatedBy
+  }
+  
+  Note: 'Прибуткові накладні для фіксації надходження товару на склад від фірм-постачальників'
+}
+
+Table OutgoingDocuments {
+  DocumentId int [pk, increment]
+  ProductId int [not null, ref: > Products.ProductId]
+  Quantity int [not null, note: 'Кількість списання зі складу']
+  OrderId int [null, ref: > Orders.OrderId, note: 'Якщо списання через замовлення']
+  CompanyId int [null, ref: > Companies.CompanyId, note: 'Фірма-постачальник (обов\'язкове для повернень)']
+  Reason varchar(200) [not null, note: 'Причина: Order, Damaged, Lost, Return, Inventory']
+  OriginalPrice decimal(10,2) [null, note: 'Базова ціна товару (тільки для Reason=Order)']
+  AppliedPromotionId int [null, ref: > Promotions.PromotionId, note: 'ID застосованої знижки (тільки для Reason=Order)']
+  DiscountAmount decimal(10,2) [null, note: 'Сума знижки в грн (тільки для Reason=Order)']
+  FinalPrice decimal(10,2) [null, note: 'Фінальна ціна після знижки (тільки для Reason=Order)']
+  DocumentDate date [not null]
+  CreatedBy int [null, ref: > Users.UserId, note: 'Менеджер/Адміністратор або NULL (авто)']
+  Notes text [null]
+  CreatedAt timestamp [default: `now()`, not null]
+  
+  Indexes {
+    ProductId
+    OrderId
+    CompanyId
+    AppliedPromotionId
+    DocumentDate
+    Reason
+  }
+  
+  Note: 'Видаткові накладні. Створюються автоматично при замовленні або вручну менеджером. Для Reason=Order зберігається інформація про знижки з OrderItems для фінансової звітності. CompanyId обов\'язковий при поверненні товару   постачальнику (Reason=Return)'
+}
+
+// ========================================
+// ФІРМИ
+// ========================================
+
+Table Companies {
+  CompanyId int [pk, increment, note: 'Первинний ключ фірми-постачальника']
+  Name varchar(200) [unique, not null, note: 'Назва фірми']
+  ContactPerson varchar(100) [null, note: 'Контактна особа']
+  Phone varchar(20) [null, note: 'Телефон']
+  Email varchar(100) [unique, null, note: 'Email']
+  Address varchar(500) [null, note: 'Адреса']
+  Notes text [null, note: 'Примітки']
+  IsActive boolean [not null, default: true, note: 'Чи активна фірма']
+  CreatedAt timestamp [default: `now()`, not null]
+  UpdatedAt timestamp [default: `now()`, not null]
+  
+  Indexes {
+    Name [unique]
+    Email [unique]
+    IsActive
+  }
+  
+  Note: 'Фірми-постачальники для складського обліку. Використовується в прибуткових накладних та при поверненнях товарів'
+}
+
+// ========================================
+// АКЦІЇ ТА ЗНИЖКИ
+// ========================================
+
+Table Promotions {
+  PromotionId int [pk, increment, note: 'Первинний ключ акції/знижки']
+  Name varchar(200) [not null, note: 'Назва акції']
+  Description text [null, note: 'Опис акції']
+  Type enum('PERCENTAGE', 'FIXED_AMOUNT', 'SPECIAL_PRICE') [not null, note: 'Тип знижки: відсоток, фіксована сума, спеціальна ціна']
+  Value decimal(10,2) [not null, note: 'Значення знижки (%, грн або спеціальна ціна)']
+  TargetType enum('PRODUCT', 'CATEGORY', 'CART', 'SHIPPING') [not null, note: 'Область застосування']
+  TargetId int [null, note: 'ID товару або категорії (NULL для CART/SHIPPING)']
+  AudienceType enum('ALL', 'STUDENTS', 'STAFF', 'ALUMNI', 'CUSTOM') [not null, default: 'ALL', note: 'Цільова аудиторія']
+  StartDate timestamp [null, note: 'Дата початку дії (NULL = без обмеження)']
+  EndDate timestamp [null, note: 'Дата закінчення дії (NULL = без обмеження)']
+  PromoCode varchar(50) [unique, null, note: 'Промокод для активації (опціонально)']
+  MinOrderAmount decimal(10,2) [null, note: 'Мінімальна сума замовлення для застосування']
+  MinQuantity int [null, note: 'Мінімальна кількість товару для застосування']
+  Priority int [not null, default: 0, note: 'Пріоритет застосування (вищий = важливіший)']
+  UsageLimit int [null, note: 'Ліміт використань (NULL = необмежено)']
+  CurrentUsage int [not null, default: 0, note: 'Поточна кількість використань']
+  IsActive boolean [not null, default: true, note: 'Чи активна акція']
+  CreatedBy int [not null, ref: > Users.UserId, note: 'Менеджер, який створив акцію']
+  CreatedAt timestamp [default: `now()`, not null]
+  UpdatedAt timestamp [default: `now()`, not null]
+  
+  Indexes {
+    Name
+    Type
+    TargetType
+    AudienceType
+    PromoCode [unique]
+    IsActive
+    StartDate
+    EndDate
+    Priority
+  }
+  
+  Note: 'Акції та знижки. Підтримує різні типи знижок, цільові аудиторії, промокоди та умови застосування. Стакування знижок відбувається за пріоритетом'
+}
+
+Table UserPromotions {
+  UserPromotionId int [pk, increment, note: 'Первинний ключ зв\'язку']
+  UserId int [not null, ref: > Users.UserId, note: 'Користувач']
+  PromotionId int [not null, ref: > Promotions.PromotionId, note: 'Акція/знижка']
+  AssignedAt timestamp [default: `now()`, not null, note: 'Дата призначення знижки']
+  UsedCount int [not null, default: 0, note: 'Кількість використань цієї знижки користувачем']
+  
+  Indexes {
+    (UserId, PromotionId) [unique, note: 'Унікальна пара: користувач-акція']
+    UserId
+    PromotionId
+  }
+  
+  Note: 'Персональні знижки користувачів (many-to-many). Автоматично призначаються для студентів при верифікації'
+}
+
+
+
+// ========================================
+// ЗВ'ЯЗКИ (RELATIONSHIPS)
+// ========================================
+
+// Користувачі
+// User 1:1 Cart
+// User 1:N Orders
+// User 1:N IncomingDocuments (створені менеджером)
+// User 1:N OutgoingDocuments (створені менеджером)
+// User 1:N OrderHistory
+// User 1:N UserPromotions (персональні знижки)
+// User 1:N Promotions (створені менеджером)
+
+// Каталог
+// Category 1:N Products
+// Category 1:N Categories (рекурсивна для ієрархії)
+// Product 1:N ProductImages
+// Category 1:N Promotions (знижки на категорію, якщо TargetType=CATEGORY)
+// Product 1:N Promotions (знижки на товар, якщо TargetType=PRODUCT)
+
+// Кошик
+// Cart 1:N CartItems (композиція)
+// Product 1:N CartItems
+
+// Замовлення
+// Order 1:N OrderItems (композиція)
+// Order 1:1 Shipping
+// Order 1:1 Payment
+// Order 1:N OrderHistory
+// Order 1:N OutgoingDocuments (автоматично при замовленні)
+// Product 1:N OrderItems
+// Promotion 1:N OrderItems (знижка застосована до товару в замовленні)
+
+// Складський облік
+// Product 1:N IncomingDocuments
+// Product 1:N OutgoingDocuments
+// Company 1:N IncomingDocuments (фірма надає товари)
+// Company 1:N OutgoingDocuments (фірма приймає повернення)
+// Promotion 1:N OutgoingDocuments (знижка застосована при списанні для замовлення)
+
+// Акції та знижки
+// Promotion 1:N UserPromotions (many-to-many через проміжну таблицю)
+// User 1:N UserPromotions (many-to-many через проміжну таблицю)
+// Promotion 1:N OrderItems (застосовані знижки в замовленнях)
+// Promotion 1:N OutgoingDocuments (застосовані знижки при списанні)

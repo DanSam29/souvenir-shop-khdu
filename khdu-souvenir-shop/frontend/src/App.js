@@ -8,6 +8,9 @@ import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
 import ProfilePage from './pages/ProfilePage';
 import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/CheckoutPage';
+import CategoriesAdmin from './pages/admin/CategoriesAdmin';
+import ProductsAdmin from './pages/admin/ProductsAdmin';
 import logo from './assets/khdu-logo.png';
 import './App.css';
 
@@ -25,6 +28,9 @@ function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/cart" element={<CartPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/admin/categories" element={<CategoriesAdmin />} />
+              <Route path="/admin/products" element={<ProductsAdmin />} />
             </Routes>
           </main>
           <footer className="footer">

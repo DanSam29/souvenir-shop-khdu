@@ -1,0 +1,200 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "СуперАдмін" as SuperAdmin
+actor "Адміністратор" as Admin
+
+actor "Email сервіс" as EmailService <<external system>>
+actor "Serilog" as Serilog <<external system>>
+actor "Stripe API" as StripeAPI <<external system>>
+actor "Nova Poshta API" as NovaPoshtaAPI <<external system>>
+actor "Система резервного копіювання" as BackupSystem <<external system>>
+actor "University API" as UniversityAPI <<external system>>
+
+SuperAdmin --|> Admin
+
+rectangle "Адміністративна панель інтернет-магазину (технічний рівень)" #FFCCCC {
+  
+    package "Керування ролями та дозволами" #FFD699 {
+        usecase "Створити нову роль" as UC_CreateRole
+        usecase "Редагувати існуючу роль" as UC_EditRole
+        usecase "Видалити роль" as UC_DeleteRole
+        usecase "Призначити роль користувачу" as UC_AssignRole
+        usecase "Переглянути матрицю доступу" as UC_ViewAccessMatrix
+        usecase "Налаштувати права доступу для ролі" as UC_ConfigureRolePermissions
+        usecase "Визначити дозволи на модулі" as UC_DefineModulePermissions
+        usecase "Визначити дозволи на операції (CRUD)" as UC_DefineCRUDPermissions
+    
+        UC_ConfigureRolePermissions .> UC_DefineModulePermissions : <<include>>
+        UC_ConfigureRolePermissions .> UC_DefineCRUDPermissions : <<include>>
+        UC_CreateRole .> UC_ConfigureRolePermissions : <<include>>
+        UC_EditRole .> UC_ConfigureRolePermissions : <<include>>
+    }
+  
+    package "Доступ до системних налаштувань" #FFFF99 {
+        usecase "Налаштувати параметри безпеки" as UC_ConfigureSecurity
+        usecase "Налаштувати JVT та сесії" as UC_ConfigureJWT
+        usecase "Налаштувати CORS політики" as UC_ConfigureCORS
+        usecase "Налаштувати HTTPS сертифікати" as UC_ConfigureHTTPS
+        usecase "Налаштувати зберігання бекапів" as UC_ConfigureBackupStorage
+        usecase "Встановити розклад бекапів" as UC_SetBackupSchedule
+        usecase "Налаштувати резервне копіювання" as UC_ConfigureBackup
+        usecase "Налаштувати параметри інтеграцій" as UC_ConfigureIntegrations
+    
+        UC_ConfigureSecurity .> UC_ConfigureHTTPS : <<include>>
+        UC_ConfigureSecurity .> UC_ConfigureCORS : <<include>>
+        UC_ConfigureSecurity .> UC_ConfigureJWT : <<include>>
+        UC_ConfigureBackup .> UC_SetBackupSchedule : <<include>>
+        UC_ConfigureBackup .> UC_ConfigureBackupStorage : <<include>>
+    }
+
+    package "Керування довідниками системи" #E6E6FA {
+        usecase "Керувати фірмами-постачальниками" as UC_ManageCompanies
+        usecase "Переглянути всі фірми (включно деактивовані)" as UC_ViewAllCompanies
+        usecase "Активувати деактивовану фірму" as UC_ActivateCompany
+        usecase "Видалити фірму з системи" as UC_DeleteCompany
+  
+        UC_ViewAllCompanies ..> UC_ManageCompanies : <<extend>>
+        UC_ActivateCompany ..> UC_ManageCompanies : <<extend>>
+        UC_DeleteCompany ..> UC_ManageCompanies : <<extend>>
+    }
+
+    package "Керування студентськими знижками" #E6FFE6 {
+        usecase "Переглянути список студентів з активними знижками" as UC_ViewStudentsWithDiscounts
+        usecase "Схвалити студентську верифікацію вручну\n(якщо API недоступний)" as UC_ApproveStudentManually
+        usecase "Відхилити студентську верифікацію" as UC_RejectStudentVerification
+        usecase "Продовжити термін дії студентського статусу" as UC_ExtendStudentStatus
+        usecase "Переглянути історію верифікацій" as UC_ViewVerificationHistory
+        usecase "Переглянути queue невдалих верифікацій" as UC_ViewVerificationQueue
+        usecase "Повторити верифікацію вручну" as UC_RetryVerification
+    
+        UC_ApproveStudentManually ..> UC_ViewVerificationQueue : <<extend>>
+        UC_RejectStudentVerification ..> UC_ViewVerificationQueue : <<extend>>
+        UC_RetryVerification ..> UC_ViewVerificationQueue : <<extend>>
+        UC_ViewVerificationHistory ..> UC_ViewStudentsWithDiscounts : <<extend>>
+        UC_ExtendStudentStatus ..> UC_ViewStudentsWithDiscounts : <<extend>>
+    }
+  
+    package "Перегляд системних логів" #CCFFCC {
+        usecase "Переглянути логи діяльності користувачів" as UC_ViewUserActivityLogs
+        usecase "Переглянути логи системних подій" as UC_ViewSystemLogs
+        usecase "Переглянути логи помилок" as UC_ViewErrorLogs
+        usecase "Фільтрувати логи" as UC_FilterLogs
+        usecase "Експортувати логи" as UC_ExportLogs
+        usecase "Очистити старі логи" as UC_ClearOldLogs
+        usecase "Налаштувати рівень логування" as UC_ConfigureLogLevel
+    
+        UC_ExportLogs ..> UC_FilterLogs : <<extend>>
+        UC_ExportLogs ..> UC_ViewUserActivityLogs : <<extend>>
+        UC_FilterLogs ..> UC_ViewSystemLogs : <<extend>>
+        UC_FilterLogs ..> UC_ViewErrorLogs : <<extend>>
+        UC_FilterLogs ..> UC_ViewUserActivityLogs : <<extend>>
+        UC_ClearOldLogs ..> UC_ViewSystemLogs : <<extend>>
+        UC_ConfigureLogLevel ..> UC_ViewSystemLogs : <<extend>>
+    }
+  
+    package "Керування інтеграціями" #99CCFF {
+        usecase "Налаштувати інтеграцію Stripe" as UC_ConfigureStripe
+        usecase "Встановити API ключі Stripe" as UC_SetStripeKeys
+        usecase "Налаштувати webhook Stripe" as UC_ConfigureStripeWebhook
+        usecase "Тестувати платіжну інтеграцію" as UC_TestPaymentIntegration
+        usecase "Налаштувати інтеграцію Nova Poshta" as UC_ConfigureNovaPoshta
+        usecase "Встановити API ключ Nova Poshta" as UC_SetNovaPoshtaKey
+        usecase "Налаштувати параметри доставки" as UC_ConfigureDeliveryParams
+        usecase "Тестувати інтеграцію доставки" as UC_TestDeliveryIntegration
+        usecase "Налаштувати інтеграцію University API" as UC_ConfigureUniversity
+        usecase "Встановити API ключ University" as UC_SetUniversityKey
+        usecase "Налаштувати параметри верифікації студентів" as UC_ConfigureStudentVerification
+        usecase "Тестувати студентську верифікацію" as UC_TestStudentVerification
+        usecase "Переглянути статус інтеграцій" as UC_ViewIntegrationStatus
+
+        UC_ConfigureStripe .> UC_SetStripeKeys : <<include>>
+        UC_ConfigureStripe .> UC_ConfigureStripeWebhook : <<include>>
+        UC_TestPaymentIntegration ..> UC_ConfigureStripe : <<extend>>
+        UC_ConfigureNovaPoshta .> UC_SetNovaPoshtaKey : <<include>>
+        UC_ConfigureNovaPoshta .> UC_ConfigureDeliveryParams : <<include>>
+        UC_TestDeliveryIntegration ..> UC_ConfigureNovaPoshta : <<extend>>
+        UC_ConfigureUniversity .> UC_SetUniversityKey : <<include>>
+        UC_ConfigureUniversity .> UC_ConfigureStudentVerification : <<include>>
+        UC_TestStudentVerification ..> UC_ConfigureUniversity : <<extend>>
+    }
+  
+    package "Резервне копіювання та відновлення" #99DDFF {
+        usecase "Переглянути список бекапів" as UC_ViewBackupList
+        usecase "Ініціювати ручне резервне копіювання" as UC_InitiateManualBackup
+        usecase "Відновити систему з бекапу" as UC_RestoreFromBackup
+        usecase "Вибрати точку відновлення" as UC_SelectRestorePoint
+        usecase "Завантажити бекап локально" as UC_DownloadBackup
+        usecase "Видалити старий бекап" as UC_DeleteOldBackup
+        usecase "Перевірити цілісність бекапу" as UC_VerifyBackupIntegrity
+    
+        UC_RestoreFromBackup .> UC_SelectRestorePoint : <<include>>
+        UC_VerifyBackupIntegrity ..> UC_RestoreFromBackup : <<extend>>
+        UC_DeleteOldBackup ..> UC_ViewBackupList : <<extend>>
+        UC_DownloadBackup ..> UC_ViewBackupList : <<extend>>
+    }
+}
+
+SuperAdmin -- UC_CreateRole
+SuperAdmin -- UC_EditRole
+SuperAdmin -- UC_DeleteRole
+SuperAdmin -- UC_AssignRole
+SuperAdmin -- UC_ViewAccessMatrix
+SuperAdmin -- UC_ConfigureSecurity
+SuperAdmin -- UC_ConfigureBackup
+SuperAdmin -- UC_ConfigureIntegrations
+SuperAdmin -- UC_ViewSystemLogs
+SuperAdmin -- UC_ViewErrorLogs
+SuperAdmin -- UC_ConfigureStripe
+SuperAdmin -- UC_ConfigureNovaPoshta
+SuperAdmin -- UC_ConfigureUniversity
+SuperAdmin -- UC_ViewIntegrationStatus
+SuperAdmin -- UC_ViewStudentsWithDiscounts
+SuperAdmin -- UC_ApproveStudentManually
+SuperAdmin -- UC_ViewVerificationQueue
+SuperAdmin -- UC_ViewBackupList
+SuperAdmin -- UC_InitiateManualBackup
+SuperAdmin -- UC_RestoreFromBackup
+SuperAdmin -- UC_ManageCompanies
+
+UC_ConfigureSecurity -- EmailService
+UC_ViewSystemLogs -- Serilog
+UC_ViewUserActivityLogs -- Serilog
+UC_ViewErrorLogs -- Serilog
+UC_ConfigureStripe -- StripeAPI
+UC_ConfigureNovaPoshta -- NovaPoshtaAPI
+UC_RestoreFromBackup -- BackupSystem
+UC_InitiateManualBackup -- BackupSystem
+UC_ConfigureUniversity -- UniversityAPI
+
+note right of UC_DeleteCompany
+    Фізичне видалення можливе тільки
+    якщо фірма не використовується
+    в жодних накладних
+end note
+
+note right of UC_ApproveStudentManually
+    Якщо University API тимчасово недоступний
+    або студент не знайдений в системі університету,
+    СуперАдмін може верифікувати статус вручну
+    на основі документів (студентський квиток, заліковка)
+end note
+
+note right of UC_ViewVerificationQueue
+    Queue містить користувачів з університетськими
+    email, для яких автоматична верифікація не вдалася
+    через помилку API або відсутність в базі університету
+end note
+
+note top of "Керування ролями та дозволами" : FR-SA-01
+
+note top of "Доступ до системних налаштувань" : FR-SA-02
+
+note top of "Перегляд системних логів" : FR-SA-03
+
+note top of "Керування інтеграціями" : FR-SA-04
+
+note top of "Резервне копіювання та відновлення" : FR-SA-05
+
+@enduml

@@ -46,6 +46,9 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+// Кеш пам'яті для швидких GET-запитів каталогу
+builder.Services.AddMemoryCache();
+
 // Додавання контролерів з обробкою циклічних посилань
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

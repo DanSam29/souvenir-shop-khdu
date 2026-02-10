@@ -1,0 +1,338 @@
+@startuml
+title Sequence Diagram: Перегляд аналітики
+
+actor "Менеджер/Адміністратор" as User
+participant "Admin Panel" as AdminPanel
+participant "AnalyticsController" as AnalyticsCtrl
+participant "AnalyticsService" as AnalyticsSvc
+participant "OrderRepository" as OrderRepo
+participant "ProductRepository" as ProductRepo
+participant "PromotionRepository" as PromoRepo
+participant "IncomingRepository" as IncomingRepo
+participant "CacheService" as Cache
+participant "Serilog" as Logger
+database "Database" as DB
+
+== Вхід в систему ==
+User -> AdminPanel: Входить в адмін-панель
+AdminPanel -> AdminPanel: Перевіряє JWT токен
+note right: Role: MANAGER або ADMIN
+
+== Перехід до аналітики ==
+User -> AdminPanel: Переходить до розділу\n"Аналітика"
+AdminPanel --> User: Відображає меню аналітики:
+note right
+    - Аналітика продажів
+    - Популярність товарів
+    - Аналітика категорій
+    - Ефективність акцій
+end note
+
+User -> AdminPanel: Натискає "Аналітика продажів"
+
+== Завантаження форми фільтрів ==
+AdminPanel -> AnalyticsCtrl: GET /api/analytics/sales/filters
+AnalyticsCtrl --> AdminPanel: Default filter options
+note right
+    {
+        defaultPeriod: "last_30_days",
+        periodPresets: ["today", "week", "month", "quarter", "year"],
+        groupByOptions: ["day", "week", "month"],
+        paymentMethods: ["CARD_ONLINE", "CASH_ON_DELIVERY"],
+        orderStatuses: ["PENDING_PAYMENT", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"]
+    }
+end note
+
+AdminPanel --> User: Відображає форму з фільтрами
+note right
+    За замовчуванням:
+    - Період: останні 30 днів
+    - Групування: по днях
+    - Без додаткових фільтрів
+end note
+
+== Вибір параметрів звіту ==
+User -> AdminPanel: Вибирає період (наприклад, "last_month")
+User -> AdminPanel: Обирає групування "week"
+User -> AdminPanel: (Опціонально) застосовує фільтри:\n- Категорія: "Футболки"\n- Спосіб оплати: всі
+
+User -> AdminPanel: Натискає "Показати звіт"
+
+== Відправка запиту ==
+AdminPanel -> AdminPanel: Валідує параметри на frontend
+note right
+    Перевірка:
+    - startDate <= endDate
+    - Період не більше 2 років
+    - Валідність фільтрів
+end note
+
+alt Валідація не пройдена
+    AdminPanel --> User: Показує помилку валідації
+    note right: "Дата початку має бути меншою за дату кінця"
+else Валідація пройдена
+    AdminPanel --> User: Показує індикатор завантаження
+    
+    AdminPanel -> AnalyticsCtrl: GET /api/analytics/sales
+    note right
+        Query params:
+        {
+            startDate: "2025-01-01",
+            endDate: "2025-01-31",
+            groupBy: "week",
+            categoryId: 3,
+            paymentMethod: null,
+            orderStatus: null
+        }
+    end note
+end
+
+== Обробка запиту на Backend ==
+AnalyticsCtrl -> AnalyticsCtrl: Перевіряє роль користувача
+note right: MANAGER або ADMIN
+
+alt Недостатньо прав
+    AnalyticsCtrl --> AdminPanel: 403 Forbidden
+    AdminPanel --> User: "Недостатньо прав для перегляду аналітики"
+else Права достатні
+    AnalyticsCtrl -> AnalyticsCtrl: Валідує параметри запиту
+    
+    alt Параметри невалідні
+        AnalyticsCtrl --> AdminPanel: 400 Bad Request
+        note right
+            {
+                error: "Invalid date range",
+                message: "Період не може бути більше 2 років"
+            }
+        end note
+        AdminPanel --> User: Показує повідомлення про помилку
+    else Параметри валідні
+        AnalyticsCtrl -> AnalyticsSvc: getSalesAnalytics(startDate, endDate, filters)
+        activate AnalyticsSvc
+        
+        == Перевірка кешу ==
+        AnalyticsSvc -> AnalyticsSvc: Формує ключ кешу
+        note right
+            cacheKey = "sales_analytics:2025-01-01:2025-01-31:week:cat3"
+        end note
+        
+        AnalyticsSvc -> Cache: get(cacheKey)
+        Cache --> AnalyticsSvc: cached data (or null)
+        
+        alt Дані в кеші і актуальні
+            AnalyticsSvc -> Logger: LogInformation("Analytics served from cache")
+            note right
+                {
+                    action: "analytics_cache_hit",
+                    cacheKey: "sales_analytics:...",
+                    userId: managerId
+                }
+            end note
+            
+            AnalyticsSvc --> AnalyticsCtrl: Return cached SalesAnalyticsDTO
+            
+        else Кеш порожній або застарілий
+            == Збір даних з бази ==
+            AnalyticsSvc -> OrderRepo: getOrdersByPeriod(startDate, endDate, filters)
+            activate OrderRepo
+            OrderRepo -> DB: SELECT * FROM Orders\nWHERE createdAt BETWEEN ? AND ?\nAND (categoryId = ? OR ? IS NULL)
+            DB --> OrderRepo: Orders list
+            OrderRepo --> AnalyticsSvc: List<Order>
+            deactivate OrderRepo
+            
+            AnalyticsSvc -> OrderRepo: getOrderItemsByPeriod(startDate, endDate, filters)
+            activate OrderRepo
+            OrderRepo -> DB: SELECT oi.*, p.categoryId\nFROM OrderItems oi\nJOIN Orders o ON oi.orderId = o.id\nJOIN Products p ON oi.productId = p.id\nWHERE o.createdAt BETWEEN ? AND ?
+            DB --> OrderRepo: OrderItems with category info
+            OrderRepo --> AnalyticsSvc: List<OrderItem>
+            deactivate OrderRepo
+            
+            == Розрахунок метрик ==
+            AnalyticsSvc -> AnalyticsSvc: Розраховує метрики
+            note right
+                Паралельні розрахунки:
+                1. totalOrders = Count(Orders)
+                2. totalRevenue = Sum(Order.totalAmount + shippingCost)
+                3. averageOrderValue = totalRevenue / totalOrders
+                4. salesByDay/Week/Month = GroupBy(groupBy) + Sum(revenue)
+                5. salesByPaymentMethod = GroupBy(paymentMethod) + Sum(revenue)
+                6. salesByStatus = GroupBy(status) + Count
+                7. topProducts = OrderBy(revenue).Take(10)
+            end note
+            
+            AnalyticsSvc -> AnalyticsSvc: Обчислює зміни відносно попереднього періоду
+            note right
+                Для кожної метрики:
+                - Отримати значення за попередній період
+                - Розрахувати % зміни
+                - Додати до результату
+            end note
+            
+            AnalyticsSvc -> AnalyticsSvc: Формує об'єкт SalesAnalyticsDTO
+            note right
+                {
+                    period: { startDate, endDate },
+                    totalOrders: 245,
+                    totalRevenue: 123500.00,
+                    averageOrderValue: 504.08,
+                    changeVsPrevious: {
+                        ordersChange: +12.5%,
+                        revenueChange: +8.3%,
+                        avgOrderChange: -3.7%
+                    },
+                    salesByDay: [...],
+                    salesByPaymentMethod: {
+                        CARD_ONLINE: 98400.00,
+                        CASH_ON_DELIVERY: 25100.00
+                    },
+                    salesByStatus: {...},
+                    topProducts: [
+                        {
+                            productId: 5,
+                            productName: "Футболка ХДУ білa",
+                            quantity: 145,
+                            revenue: 34800.00,
+                            shareOfTotal: 28.2%
+                        },
+                        ...
+                    ]
+                }
+            end note
+            
+            == Кешування результату ==
+            AnalyticsSvc -> Cache: set(cacheKey, data, TTL=15min)
+            Cache --> AnalyticsSvc: OK
+            
+            AnalyticsSvc -> Logger: LogInformation("Analytics calculated and cached")
+            note right
+                {
+                    action: "analytics_calculated",
+                    period: "2025-01-01 to 2025-01-31",
+                    totalOrders: 245,
+                    totalRevenue: 123500.00,
+                    calculationTime: "1.2s",
+                    userId: managerId
+                }
+            end note
+            
+            AnalyticsSvc --> AnalyticsCtrl: SalesAnalyticsDTO
+            deactivate AnalyticsSvc
+        end
+        
+        AnalyticsCtrl --> AdminPanel: 200 OK
+        note right
+            HTTP Response:
+            {
+                success: true,
+                data: SalesAnalyticsDTO,
+                metadata: {
+                    generatedAt: "2025-02-02T10:30:00Z",
+                    cached: false,
+                    calculationTime: 1.2
+                }
+            }
+        end note
+    end
+end
+
+== Візуалізація даних ==
+AdminPanel --> User: Приховує індикатор завантаження
+AdminPanel -> AdminPanel: Будує візуалізації
+
+note over AdminPanel
+    Візуалізація включає:
+    
+    1. KPI картки (загальна інформація):
+       - Загальна кількість замовлень: 245 (↑12.5%)
+       - Загальний дохід: 123,500 грн (↑8.3%)
+       - Середній чек: 504 грн (↓3.7%)
+    
+    2. Line Chart - Динаміка продажів:
+       - Вісь X: тижні січня
+       - Вісь Y: дохід у грн
+       - Інтерактивний з tooltip
+    
+    3. Pie Chart - Розподіл за способами оплати:
+       - Card Online: 79.7%
+       - Cash on Delivery: 20.3%
+    
+    4. Bar Chart - Розподіл за статусами:
+       - Delivered: 180
+       - Processing: 40
+       - Shipped: 20
+       - Cancelled: 5
+    
+    5. Таблиця топ-10 товарів:
+       - Назва, Кількість, Дохід, Частка %
+end note
+
+AdminPanel --> User: Відображає звіт з графіками
+
+== Взаємодія зі звітом ==
+User -> AdminPanel: Переглядає звіт
+
+alt Користувач змінює параметри
+    User -> AdminPanel: Змінює період на "quarter"
+    User -> AdminPanel: Натискає "Оновити звіт"
+    note right: Повторюється процес запиту з новими параметрами
+    
+else Користувач експортує звіт
+    User -> AdminPanel: Натискає "Експортувати"
+    AdminPanel --> User: Показує діалог вибору формату
+    User -> AdminPanel: Обирає формат "PDF"
+    
+    AdminPanel -> AnalyticsCtrl: POST /api/analytics/export
+    note right
+        {
+            reportType: "sales",
+            format: "PDF",
+            period: { startDate, endDate },
+            filters: {...}
+        }
+    end note
+    
+    AnalyticsCtrl -> AnalyticsSvc: exportReport(dto)
+    activate AnalyticsSvc
+    
+    AnalyticsSvc -> AnalyticsSvc: Отримує дані аналітики\n(з кешу або розраховує)
+    AnalyticsSvc -> AnalyticsSvc: Генерує PDF з графіками
+    note right
+        PDF включає:
+        - Титульна сторінка з параметрами звіту
+        - KPI метрики
+        - Графіки (експортовані як зображення)
+        - Таблиці з детальними даними
+        - Футер з датою генерації
+    end note
+    
+    AnalyticsSvc -> Logger: LogInformation("Report exported")
+    note right
+        {
+            action: "analytics_exported",
+            format: "PDF",
+            userId: managerId,
+            reportType: "sales"
+        }
+    end note
+    
+    AnalyticsSvc --> AnalyticsCtrl: PDF file stream
+    deactivate AnalyticsSvc
+    
+    AnalyticsCtrl --> AdminPanel: File download response
+    note right
+        Content-Type: application/pdf
+        Content-Disposition: attachment;
+        filename="sales_analytics_2025-01-01_2025-01-31.pdf"
+    end note
+    
+    AdminPanel --> User: Завантажує PDF файл
+    User -> User: Зберігає файл на пристрій
+    
+else Користувач переходить до іншого типу аналітики
+    User -> AdminPanel: Натискає "Популярність товарів"
+    note right: Переходить до іншої діаграми аналітики
+end
+
+User -> AdminPanel: Завершує роботу зі звітом
+
+@enduml

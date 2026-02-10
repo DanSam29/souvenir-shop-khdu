@@ -273,10 +273,13 @@
 }
 
 .checkout-btn {
+  display: block;
   width: 100%;
   padding: 1.2rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  text-decoration: none;
+  text-align: center;
   border: none;
   border-radius: 8px;
   font-size: 1.2rem;

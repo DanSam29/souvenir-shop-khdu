@@ -1,0 +1,76 @@
+@startuml "State Machine Diagram - Payment (Платіж)"
+
+[*] --> Pending : Створення запису Payment при оформленні замовлення
+
+state Pending {
+    state "Очікує оплати" as Pend
+    [*] --> Pend
+    Pend : entry / Зберегти метод оплати
+    Pend : do / [Якщо Card] Очікувати Stripe webhook
+    Pend : do / [Якщо CashOnDelivery] Очікувати доставку
+}
+
+Pending --> Paid : [Card] Stripe webhook: checkout.session.completed
+Pending --> Paid : [CashOnDelivery] Адміністратор підтверджує оплату при доставці
+Pending --> Failed : [Card] Stripe webhook: payment_intent.payment_failed
+Pending --> Failed : Користувач закриває сторінку Stripe без оплати
+
+state Paid {
+    state "Оплачено" as P
+    [*] --> P
+    P : entry / Оновити Order.status = "PROCESSING"
+    P : entry / Додати запис в OrderHistory
+    P : entry / Надіслати Email-підтвердження
+    P : entry / [Card] Зберегти stripePaymentIntentId
+}
+
+state Failed {
+    state "Помилка оплати" as Fail
+    [*] --> Fail
+    Fail : entry / Оновити Order.status = "CANCELLED"
+    Fail : entry / Видалити OutgoingDocuments
+    Fail : entry / Повернути Stock
+    Fail : entry / Логувати помилку в Serilog
+    Fail : entry / Надіслати Email про невдалу оплату
+}
+
+Paid --> Refunded : Адміністратор скасовує замовлення після оплати
+
+state Refunded {
+    state "Повернено кошти" as Ref
+    [*] --> Ref
+    Ref : entry / Ініціювати refund через Stripe API
+    Ref : entry / Оновити Order.status = "CANCELLED"
+    Ref : entry / Додати запис в OrderHistory
+    Ref : entry / Надіслати Email про повернення коштів
+}
+
+Paid --> [*] : [CashOnDelivery] Замовлення доставлено
+Refunded --> [*]
+Failed --> [*]
+
+note right of Pending
+    Початковий стан після створення замовлення.
+    Для Card - очікує Stripe webhook.
+    Для CashOnDelivery - очікує підтвердження доставки.
+end note
+
+note right of Paid
+    Успішна оплата.
+    Для Card - гроші списано з картки.
+    Для CashOnDelivery - гроші отримано при доставці.
+end note
+
+note right of Failed
+    Платіж відхилено або скасовано.
+    Замовлення автоматично скасовується.
+    Товари повертаються на склад.
+end note
+
+note right of Refunded
+    Гроші повернуто на картку користувача.
+    Можливо тільки для Card.
+    Для CashOnDelivery refund не потрібен.
+end note
+
+@enduml

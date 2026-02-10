@@ -20,6 +20,7 @@ namespace KhduSouvenirShop.API.Data
         public DbSet<OrderItem> OrderItems { get; set; } = null!;
         public DbSet<Payment> Payments { get; set; } = null!;
         public DbSet<Shipping> Shippings { get; set; } = null!;
+        public DbSet<Promotion> Promotions { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -36,6 +37,10 @@ namespace KhduSouvenirShop.API.Data
 
             modelBuilder.Entity<Order>()
                 .HasIndex(o => o.OrderNumber)
+                .IsUnique();
+
+            modelBuilder.Entity<Promotion>()
+                .HasIndex(p => p.Code)
                 .IsUnique();
 
             // Налаштування каскадного видалення

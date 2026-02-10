@@ -2,21 +2,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace KhduSouvenirShop.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ProductsController : ControllerBase
+    public class ProductsController(AppDbContext context, ILogger<ProductsController> logger, IMemoryCache cache) : ControllerBase
     {
-        private readonly AppDbContext _context;
-        private readonly ILogger<ProductsController> _logger;
-
-        public ProductsController(AppDbContext context, ILogger<ProductsController> logger)
-        {
-            _context = context;
-            _logger = logger;
-        }
+        private readonly AppDbContext _context = context;
+        private readonly ILogger<ProductsController> _logger = logger;
+        private readonly IMemoryCache _cache = cache;
 
         // GET: api/Products
         [HttpGet]
@@ -24,12 +20,22 @@ namespace KhduSouvenirShop.API.Controllers
         {
             _logger.LogInformation("Запит на отримання всіх товарів");
             
-            var products = await _context.Products
-                .Include(p => p.Category)
-                .Include(p => p.Images)
-                .ToListAsync();
+            var cacheKey = "products:all";
+            var products = _cache.Get<List<Product>>(cacheKey);
+            if (products is null)
+            {
+                products = await _context.Products
+                    .Include(p => p.Category)
+                    .Include(p => p.Images)
+                    .ToListAsync();
 
-            return Ok(products);
+                _cache.Set(cacheKey, products, new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+                });
+            }
+
+            return Ok(products ?? new List<Product>());
         }
 
         // GET: api/Products/5
@@ -38,10 +44,23 @@ namespace KhduSouvenirShop.API.Controllers
         {
             _logger.LogInformation("Запит на отримання товару з ID: {ProductId}", id);
 
-            var product = await _context.Products
-                .Include(p => p.Category)
-                .Include(p => p.Images)
-                .FirstOrDefaultAsync(p => p.ProductId == id);
+            var cacheKey = $"product:{id}";
+            var product = _cache.Get<Product>(cacheKey);
+            if (product is null)
+            {
+                product = await _context.Products
+                    .Include(p => p.Category)
+                    .Include(p => p.Images)
+                    .FirstOrDefaultAsync(p => p.ProductId == id);
+
+                if (product != null)
+                {
+                    _cache.Set(cacheKey, product, new MemoryCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+                    });
+                }
+            }
 
             if (product == null)
             {
@@ -63,13 +82,24 @@ namespace KhduSouvenirShop.API.Controllers
                 return BadRequest(new { error = "Пошуковий запит не може бути порожнім" });
             }
 
-            var products = await _context.Products
-                .Include(p => p.Category)
-                .Include(p => p.Images)
-                .Where(p => p.Name.Contains(query) || p.Description.Contains(query))
-                .ToListAsync();
+            var norm = query.Trim().ToLowerInvariant();
+            var cacheKey = $"products:search:{norm}";
+            var products = _cache.Get<List<Product>>(cacheKey);
+            if (products is null)
+            {
+                products = await _context.Products
+                    .Include(p => p.Category)
+                    .Include(p => p.Images)
+                    .Where(p => p.Name.Contains(query) || p.Description.Contains(query))
+                    .ToListAsync();
 
-            return Ok(products);
+                _cache.Set(cacheKey, products, new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2)
+                });
+            }
+
+            return Ok(products ?? new List<Product>());
         }
 
         // GET: api/Products/category/1
@@ -78,13 +108,23 @@ namespace KhduSouvenirShop.API.Controllers
         {
             _logger.LogInformation("Запит на товари категорії {CategoryId}", categoryId);
 
-            var products = await _context.Products
-                .Include(p => p.Category)
-                .Include(p => p.Images)
-                .Where(p => p.CategoryId == categoryId)
-                .ToListAsync();
+            var cacheKey = $"products:category:{categoryId}";
+            var products = _cache.Get<List<Product>>(cacheKey);
+            if (products is null)
+            {
+                products = await _context.Products
+                    .Include(p => p.Category)
+                    .Include(p => p.Images)
+                    .Where(p => p.CategoryId == categoryId)
+                    .ToListAsync();
 
-            return Ok(products);
+                _cache.Set(cacheKey, products, new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+                });
+            }
+
+            return Ok(products ?? new List<Product>());
         }
     }
 }

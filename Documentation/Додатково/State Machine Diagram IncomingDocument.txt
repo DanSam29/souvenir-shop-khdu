@@ -1,0 +1,154 @@
+@startuml "State Machine Diagram - IncomingDocument (Прибуткова накладна)"
+
+[*] --> Draft : Менеджер відкриває форму прибуткової накладної
+
+state Draft {
+    state "Чернетка" as Dr
+    [*] --> Dr
+    Dr : entry / Відобразити форму з полями
+    Dr : do / Менеджер заповнює поля:
+    Dr : do / - Товар
+    Dr : do / - Кількість
+    Dr : do / - Закупівельна ціна
+    Dr : do / - Фірма-постачальник (випадаючий список)
+    Dr : do / - Дата надходження
+    Dr : do / - Примітки
+    Dr : do / Можливість додати нову фірму безпосередньо з форми
+}
+
+Draft --> Validating : Менеджер натискає "Зберегти накладну"
+
+state Validating {
+    state "Валідація" as Val
+    state ValidationFailed <<choice>>
+  
+    [*] --> Val
+    Val : do / Перевірити обов'язкові поля
+    Val : do / Перевірити quantity > 0
+    Val : do / Перевірити purchasePrice > 0
+    Val : do / Перевірити companyId не NULL
+    Val : do / Перевірити існування товару
+    Val : do / Перевірити існування фірми та isActive = true
+  
+    Val --> ValidationFailed
+  
+    ValidationFailed --> [*] : [Помилка валідації] Показати помилки
+}
+
+Validating --> [*] : [Валідація не пройдена] Повернутись до Draft
+Validating --> Confirming : [Валідація успішна] Показати попередній перегляд
+
+state Confirming {
+    state "Підтвердження" as Conf
+    [*] --> Conf
+    Conf : entry / Відобразити попередній перегляд:
+    Conf : entry / - Товар
+    Conf : entry / - Кількість
+    Conf : entry / - Загальна сума (quantity × price)
+    Conf : entry / - Постачальник
+    Conf : do / Очікувати підтвердження менеджера
+}
+
+Confirming --> Draft : Менеджер натискає "Скасувати"
+Confirming --> Processing : Менеджер натискає "Підтвердити"
+
+state Processing {
+    state "Обробка" as Proc
+    state TransactionStarted <<choice>>
+  
+    [*] --> Proc
+    Proc : entry / BEGIN TRANSACTION
+    Proc : do / INSERT INTO IncomingDocuments
+    Proc : do / UPDATE Products SET Stock = Stock + quantity
+    Proc : do / INSERT INTO AuditLog
+  
+    Proc --> TransactionStarted
+  
+    TransactionStarted --> [*] : [Транзакція не вдалася] ROLLBACK
+}
+
+Processing --> [*] : [Помилка БД] Показати повідомлення про помилку
+Processing --> Created : [Транзакція успішна] COMMIT
+
+state Created {
+    state "Створено" as Cr
+    [*] --> Cr
+    Cr : entry / Згенерувати documentId
+    Cr : entry / Логувати успіх в Serilog
+    Cr : entry / Показати повідомлення "Накладна створена"
+    Cr : entry / Відобразити:
+    Cr : entry / - Номер накладної
+    Cr : entry / - Попередній залишок
+    Cr : entry / - Надійшло (+quantity)
+    Cr : entry / - Новий залишок
+}
+
+Created --> Active : Автоматично після створення
+
+state Active {
+    state "Активна" as Act
+    [*] --> Act
+    Act : do / Stock товару збільшено
+    Act : do / Документ зберігається в БД
+    Act : do / Доступний для перегляду в історії
+    Act : do / Використовується для розрахунку Stock
+}
+
+Active --> Archived : [Опціонально] Адміністратор архівує старі документи
+
+state Archived {
+    state "Архівовано" as Arch
+    [*] --> Arch
+    Arch : entry / Позначити isArchived = true
+    Arch : do / Не відображається в активній історії
+    Arch : do / Доступний через архів
+    Arch : do / Продовжує враховуватись в розрахунку Stock
+}
+
+Active --> [*] : Залишається в системі для аудиту
+Archived --> [*] : Залишається в системі для аудиту
+
+note right of Draft
+  Початковий стан - менеджер заповнює форму.
+  Обирає фірму-постачальника зі списку або додає нову.
+  Накладна ще не створена в БД.
+end note
+
+note right of Validating
+    Перевірка коректності введених даних:
+    - Товар та фірма існують в БД
+    - Фірма активна (isActive = true)
+    - Кількість та ціна > 0
+    - При помилці - повернення до Draft.
+end note
+
+note right of Confirming
+    Менеджер переглядає попередній перегляд
+    та підтверджує або скасовує операцію.
+end note
+
+note right of Processing
+    Критична фаза - транзакція БД.
+    При помилці - ROLLBACK,
+    все залишається як було.
+end note
+
+note right of Created
+    Накладна успішно створена.
+    Stock товару оновлено.
+    Операція залогована.
+end note
+
+note right of Active
+    Фінальний робочий стан.
+    Документ використовується для розрахунку Stock.
+    Зберігається для аудиту та звітності.
+end note
+
+note right of Archived
+    Опціональний стан для старих документів.
+    Продовжує враховуватись в Stock,
+    але не захаращує активну історію.
+end note
+
+@enduml

@@ -113,6 +113,7 @@ function RegisterForm() {
             value={formData.email}
             onChange={handleChange}
             required
+            placeholder="example@ksu.edu.ua"
           />
         </div>
 

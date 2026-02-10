@@ -1,0 +1,1440 @@
+@startuml "Class Diagram - Інтернет-магазин сувенірної продукції ХДУ"
+
+!define ENTITY_COLOR #FFE6E6
+!define SERVICE_COLOR #E6F3FF
+!define CONTROLLER_COLOR #FFF4E6
+!define REPOSITORY_COLOR #F0E6FF
+!define INTEGRATION_COLOR #E6FFE6
+
+' ==================== ENTITIES (Domain Models) ====================
+
+package "Domain Models" <<Rectangle>> 
+{
+  
+    class User <<entity>> ENTITY_COLOR 
+    {
+        + id: int
+        - firstName: string
+        - lastName: string
+        - email: string
+        - passwordHash: string
+        - phone: string
+        - role: Role
+        - status: UserStatus
+        + studentStatus: StudentStatus
+        + gpa: decimal
+        + studentVerifiedAt: DateTime
+        + studentExpiresAt: DateTime
+        + createdAt: DateTime
+        + updatedAt: DateTime
+        --
+        + register(): void
+        + login(): string
+        + updateProfile(): void
+        + changePassword(): void
+        + block(): void
+        + unblock(): void
+        + verifyStudent(): void
+        + isStudentStatusActive(): bool
+    }
+  
+    enum Role 
+    {
+        GUEST
+        CUSTOMER
+        MANAGER
+        ADMIN
+        SUPERADMIN
+    }
+  
+    enum UserStatus 
+    {
+        ACTIVE
+        BLOCKED
+        DELETED
+    }
+
+    enum StudentStatus 
+    {
+        NONE
+        REGULAR
+        SCHOLARSHIP
+        HIGH_ACHIEVER
+    }
+  
+   class Product <<entity>> ENTITY_COLOR 
+    {
+        + id: int
+        + name: string
+        + description: string
+        + price: decimal
+        + weight: decimal
+        + categoryId: int
+        + createdAt: DateTime
+        + updatedAt: DateTime
+        --
+        + create(): void
+        + update(): void
+        + delete(): void
+        + getStock(): int
+        + checkAvailability(quantity: int): bool
+    }
+  
+    class Category <<entity>> ENTITY_COLOR 
+    {
+        + id: int
+        + name: string
+        + parentId: int
+        + order: int
+        + createdAt: DateTime
+        --
+        + create(): void
+        + update(): void
+        + delete(): void
+        + getChildren(): List<Category>
+        + getProducts(): List<Product>
+    }
+  
+    class ProductImage <<entity>> ENTITY_COLOR 
+    {
+        + id: int
+        + productId: int
+        + imageUrl: string
+        + isPrimary: bool
+        + order: int
+        --
+        + upload(): void
+        + delete(): void
+        + setPrimary(): void
+    }
+  
+    class Cart <<entity>> ENTITY_COLOR 
+    {
+        + id: int
+        + userId: int
+        + createdAt: DateTime
+        + updatedAt: DateTime
+        --
+        + addItem(productId: int, quantity: int): void
+        + removeItem(productId: int): void
+        + updateQuantity(productId: int, quantity: int): void
+        + clear(): void
+        + getTotal(): decimal
+    }
+  
+    class CartItem <<entity>> ENTITY_COLOR 
+    {
+        + id: int
+        + cartId: int
+        + productId: int
+        + quantity: int
+        + price: decimal
+        --
+        + getSubtotal(): decimal
+    }
+  
+    class Order <<entity>> ENTITY_COLOR 
+    {
+        + id: int
+        + orderNumber: string
+        + userId: int
+        + status: OrderStatus
+        + totalAmount: decimal
+        + shippingCost: decimal
+        + paymentMethod: PaymentMethod
+        + createdAt: DateTime
+        + updatedAt: DateTime
+        --
+        + create(): void
+        + updateStatus(newStatus: OrderStatus): void
+        + cancel(reason: string): void
+        + getTotal(): decimal
+    }
+  
+    enum OrderStatus 
+    {
+        PENDING_PAYMENT
+        PROCESSING
+        SHIPPED
+        DELIVERED
+        CANCELLED
+    }
+  
+    class OrderItem <<entity>> ENTITY_COLOR 
+    {
+        + id: int
+        + orderId: int
+        + productId: int
+        + quantity: int
+        + originalPrice: decimal
+        + appliedPromotionId: int
+        + discountAmount: decimal
+        + finalPrice: decimal
+        --
+        + getSubtotal(): decimal
+        + getDiscountTotal(): decimal
+        + getOriginalTotal(): decimal
+    }
+  
+    class OrderHistory <<entity>> ENTITY_COLOR 
+    {
+        + id: int
+        + orderId: int
+        + oldStatus: OrderStatus
+        + newStatus: OrderStatus
+        + changedBy: int
+        + comment: string
+        + timestamp: DateTime
+        --
+        + log(): void
+    }
+  
+    class Payment <<entity>> ENTITY_COLOR 
+    {
+        + id: int
+        + orderId: int
+        + amount: decimal
+        + currency: string
+        + method: PaymentMethod
+        + status: PaymentStatus
+        - stripeSessionId: string
+        - stripePaymentIntentId: string
+        + createdAt: DateTime
+        + updatedAt: DateTime
+        --
+        + createSession(): string
+        + updateStatus(status: PaymentStatus): void
+        + refund(): void
+    }
+  
+    enum PaymentMethod 
+    {
+        CARD_ONLINE
+        CASH_ON_DELIVERY
+    }
+  
+    enum PaymentStatus 
+    {
+        PENDING
+        PAID
+        FAILED
+        REFUNDED
+    }
+  
+    class Shipping <<entity>> ENTITY_COLOR 
+    {
+        + id: int
+        + orderId: int
+        + userId: int
+        + city: string
+        + cityRef: string
+        + warehouse: string
+        + warehouseRef: string
+        + phone: string
+        + trackingNumber: string
+        + isDefault: bool
+        --
+        + save(): void
+        + calculateCost(): decimal
+    }
+  
+    class IncomingDocument <<entity>> ENTITY_COLOR 
+    {
+        + id: int
+        + productId: int
+        + quantity: int
+        + purchasePrice: decimal
+        + companyId: int
+        + documentDate: Date
+        + notes: string
+        + createdAt: DateTime
+        + createdBy: int
+        --
+        + create(): void
+        + updateStock(): void
+    }
+  
+    class OutgoingDocument <<entity>> ENTITY_COLOR 
+    {
+        + id: int
+        + productId: int
+        + quantity: int
+        + orderId: int
+        + companyId: int
+        + reason: OutgoingReason
+        + originalPrice: decimal
+        + appliedPromotionId: int
+        + discountAmount: decimal
+        + finalPrice: decimal
+        + notes: string
+        + documentDate: Date
+        + createdAt: DateTime
+        + createdBy: int
+        --
+        + create(): void
+        + updateStock(): void
+    }
+  
+    enum OutgoingReason 
+    {
+        ORDER
+        DAMAGED
+        LOST
+        RETURN
+        INVENTORY
+    }
+
+   enum PromotionType 
+    {
+        PERCENTAGE
+        FIXED_AMOUNT
+        SPECIAL_PRICE
+    }
+
+    enum PromotionTarget 
+    {
+        PRODUCT
+        CATEGORY
+        CART
+        SHIPPING
+    }
+
+    enum PromotionAudience 
+    {
+        ALL
+        STUDENTS
+        STAFF
+        ALUMNI
+        CUSTOM
+    }
+
+    class Company <<entity>> ENTITY_COLOR 
+    {
+        + id: int
+        + name: string
+        + contactPerson: string
+        + phone: string
+        + email: string
+        + address: string
+        + notes: string
+        + isActive: bool
+        + createdAt: DateTime
+        + updatedAt: DateTime
+        --
+        + create(): void
+        + update(): void
+        + deactivate(): void
+        + getIncomingDocuments(): List<IncomingDocument>
+    }
+
+    class Promotion <<entity>> ENTITY_COLOR 
+    {
+        + id: int
+        + name: string
+        + description: string
+        + type: PromotionType
+        + value: decimal
+        + targetType: PromotionTarget
+        + targetId: int
+        + audienceType: PromotionAudience
+        + startDate: DateTime
+        + endDate: DateTime
+        + promoCode: string
+        + minOrderAmount: decimal
+        + minQuantity: int
+        + priority: int
+        + usageLimit: int
+        + currentUsage: int
+        + isActive: bool
+        + createdBy: int
+        + createdAt: DateTime
+        + updatedAt: DateTime
+        --
+        + create(): void
+        + update(): void
+        + activate(): void
+        + deactivate(): void
+        + delete(): void
+        + validatePromoCode(code: string): bool
+        + checkConditions(orderAmount: decimal, quantity: int): bool
+        + incrementUsage(): void
+        + isValid(): bool
+        + calculateDiscount(originalPrice: decimal): decimal
+    }
+
+    class UserPromotion <<entity>> ENTITY_COLOR 
+    {
+        + id: int
+        + userId: int
+        + promotionId: int
+        + assignedAt: DateTime
+        + usedCount: int
+        --
+        + assign(userId: int, promotionId: int): void
+        + incrementUsedCount(): void
+        + getHistory(userId: int): List<UserPromotion>
+    }
+}
+
+' ==================== RELATIONSHIPS BETWEEN ENTITIES ====================
+
+User "1" -- "0..*" Order : оформляє >
+User "1" -- "0..1" Cart : має >
+User "1" -- "0..*" Shipping : зберігає >
+User "1" -- "0..*" UserPromotion : має персональні знижки >
+User "1" -- "0..*" Promotion : створює >
+
+Product "1" -- "0..*" ProductImage : має >
+Product "*" -- "1" Category : належить до >
+Product "1" -- "0..*" CartItem : у >
+Product "1" -- "0..*" OrderItem : у >
+Product "1" -- "0..*" IncomingDocument : надходить у >
+Product "1" -- "0..*" OutgoingDocument : списується у >
+
+Category "0..1" -- "0..*" Category : батьківська/дочірня
+Category "1" -- "0..*" Promotion : має знижки >
+
+Cart "1" -- "0..*" CartItem : містить >
+
+Order "1" -- "1..*" OrderItem : містить >
+Order "1" -- "0..*" OrderHistory : відстежується в >
+Order "1" -- "1" Payment : оплачується через >
+Order "1" -- "1" Shipping : доставляється за >
+Order "1" -- "0..*" OutgoingDocument : генерує >
+
+Promotion "0..*" -- "0..*" Product : відноситься до >
+Promotion "0..*" -- "0..*" Category : відноситься до >
+Promotion "1" -- "0..*" UserPromotion : призначено користувачам >
+Promotion "1" -- "0..*" OrderItem : застосовано в замовленнях >
+Promotion "1" -- "0..*" OutgoingDocument : застосовано при списанні >
+
+Company "1" -- "0..*" IncomingDocument : постачальник для >
+Company "1" -- "0..*" OutgoingDocument : отримувач для >
+
+User -- Role
+User -- UserStatus
+User -- StudentStatus
+Order -- OrderStatus
+Order -- PaymentMethod
+Payment -- PaymentMethod
+Payment -- PaymentStatus
+OutgoingDocument -- OutgoingReason
+Promotion -- PromotionType
+Promotion -- PromotionTarget
+Promotion -- PromotionAudience
+
+' ==================== CONTROLLERS ====================
+
+package "Controllers Layer" <<Rectangle>> 
+{
+  
+    class AuthController <<controller>> CONTROLLER_COLOR 
+    {
+        - authService: AuthService
+        --
+        + register(dto: RegisterDTO): Response
+        + login(dto: LoginDTO): Response
+        + logout(token: string): Response
+        + refreshToken(token: string): Response
+    }
+  
+    class ProductController <<controller>> CONTROLLER_COLOR 
+    {
+        - productService: ProductService
+        --
+        + getAll(filters: ProductFilters): Response
+        + getById(id: int): Response
+        + search(query: string): Response
+    }
+  
+    class CategoryController <<controller>> CONTROLLER_COLOR 
+    {
+        - categoryService: CategoryService
+        --
+        + getAll(): Response
+        + getById(id: int): Response
+        + getProducts(id: int): Response
+    }
+  
+    class CartController <<controller>> CONTROLLER_COLOR 
+    {
+        - cartService: CartService
+        --
+        + getCart(): Response
+        + addItem(dto: AddToCartDTO): Response
+        + updateItem(dto: UpdateCartDTO): Response
+        + removeItem(productId: int): Response
+        + clearCart(): Response
+    }
+  
+    class OrderController <<controller>> CONTROLLER_COLOR 
+    {
+        - orderService: OrderService
+        --
+        + createOrder(dto: CreateOrderDTO): Response
+        + getHistory(filters: OrderFilters): Response
+        + getById(id: int): Response
+        + trackOrder(id: int): Response
+    }
+  
+    class PaymentController <<controller>> CONTROLLER_COLOR 
+    {
+        - paymentService: PaymentService
+        --
+        + createSession(dto: CreateSessionDTO): Response
+        + getStatus(id: int): Response
+        + handleWebhook(payload: string): Response
+    }
+  
+    class ShippingController <<controller>> CONTROLLER_COLOR 
+    {
+        - shippingService: ShippingService
+        --
+        + getCities(search: string): Response
+        + getWarehouses(cityRef: string): Response
+        + calculateCost(dto: CalculateCostDTO): Response
+    }
+  
+    class UserController <<controller>> CONTROLLER_COLOR 
+    {
+        - userService: UserService
+        --
+        + getProfile(): Response
+        + updateProfile(dto: UpdateProfileDTO): Response
+        + changePassword(dto: ChangePasswordDTO): Response
+        + getAddresses(): Response
+        + addAddress(dto: AddressDTO): Response
+        + deleteAddress(id: int): Response
+    }
+  
+    class AdminController <<controller>> CONTROLLER_COLOR 
+    {
+        - orderService: OrderService
+        - userService: UserService
+        - reportService: ReportService
+        --
+        + getAllOrders(filters: AdminOrderFilters): Response
+        + updateOrderStatus(id: int, dto: UpdateStatusDTO): Response
+        + getAllUsers(filters: UserFilters): Response
+        + blockUser(id: int): Response
+        + unblockUser(id: int): Response
+        + resetPassword(id: int): Response
+        + getSalesReport(period: Period): Response
+        + getRevenueReport(period: Period): Response
+    }
+  
+    class WarehouseController <<controller>> CONTROLLER_COLOR 
+    {
+        - warehouseService: WarehouseService
+        --
+        + createIncoming(dto: IncomingDTO): Response
+        + createOutgoing(dto: OutgoingDTO): Response
+        + getIncomingHistory(filters: DocFilters): Response
+        + getOutgoingHistory(filters: DocFilters): Response
+        + getCurrentStock(filters: StockFilters): Response
+        + exportStock(): Response
+    }
+
+    class PromotionController <<controller>> CONTROLLER_COLOR 
+    {
+        - promotionService: PromotionService
+        --
+        + getAll(filters: PromotionFilters): Response
+        + getById(id: int): Response
+        + getApplicable(userId: int, cartItems: List): Response
+        + validatePromoCode(dto: ApplyPromoCodeDTO): Response
+        + create(dto: CreatePromotionDTO): Response
+        + update(id: int, dto: UpdatePromotionDTO): Response
+        + delete(id: int): Response
+        + deactivate(id: int): Response
+        + assignToUser(dto: AssignPromotionDTO): Response
+        + getStats(filters: PromotionFilters): Response
+        + exportReport(format: string): Response
+    }
+
+    class AnalyticsController <<controller>> CONTROLLER_COLOR 
+    {
+        - analyticsService: AnalyticsService
+        --
+        + getSalesAnalytics(filters: AnalyticsFilters): Response
+        + getProductPopularity(filters: PopularityFilters): Response
+        + getCategoryAnalytics(filters: AnalyticsFilters): Response
+        + getPromotionEffectiveness(promotionId: int, period: DateRange): Response
+        + getConversionMetrics(period: DateRange): Response
+        + getFinancialReport(period: DateRange): Response
+        + getUserBehaviorAnalytics(period: DateRange): Response
+        + exportReport(dto: ExportReportDTO): Response
+    }
+}
+
+' ==================== SERVICES ====================
+
+package "Services Layer" <<Rectangle>> 
+{
+  
+    class AuthService <<service>> SERVICE_COLOR 
+    {
+        - userRepository: UserRepository
+        - jwtService: JWTService
+        --
+        + register(dto: RegisterDTO): User
+        + login(email: string, password: string): string
+        + logout(token: string): void
+        + refreshToken(token: string): string
+        + validateToken(token: string): bool
+    }
+  
+    class ProductService <<service>> SERVICE_COLOR 
+    {
+        - productRepository: ProductRepository
+        - cacheService: CacheService
+        - minioIntegration: MinIOIntegration
+        --
+        + getAll(filters: ProductFilters): List<Product>
+        + getById(id: int): Product
+        + search(query: string): List<Product>
+        + create(dto: ProductDTO): Product
+        + update(id: int, dto: ProductDTO): Product
+        + delete(id: int): void
+        + getStock(id: int): int
+        + updateStock(id: int, newStock: int): void
+    }
+  
+    class CategoryService <<service>> SERVICE_COLOR 
+    {
+        - categoryRepository: CategoryRepository
+        - cacheService: CacheService
+        --
+        + getAll(): List<Category>
+        + getById(id: int): Category
+        + create(dto: CategoryDTO): Category
+        + update(id: int, dto: CategoryDTO): Category
+        + delete(id: int): void
+        + getHierarchy(): List<Category>
+    }
+  
+    class CartService <<service>> SERVICE_COLOR 
+    {
+        - cartRepository: CartRepository
+        - productService: ProductService
+        --
+        + getCart(userId: int): Cart
+        + addItem(userId: int, productId: int, quantity: int): void
+        + updateQuantity(userId: int, productId: int, quantity: int): void
+        + removeItem(userId: int, productId: int): void
+        + clear(userId: int): void
+        + getTotal(userId: int): decimal
+    }
+  
+    class OrderService <<service>> SERVICE_COLOR 
+    {
+        - orderRepository: OrderRepository
+        - cartService: CartService
+        - paymentService: PaymentService
+        - shippingService: ShippingService
+        - warehouseService: WarehouseService
+        - notificationService: NotificationService
+        --
+        + create(userId: int, dto: CreateOrderDTO): Order
+        + getById(id: int): Order
+        + getHistory(userId: int): List<Order>
+        + updateStatus(id: int, newStatus: OrderStatus, comment: string): void
+        + cancel(id: int, reason: string): void
+        + trackOrder(id: int): OrderTracking
+    }
+  
+    class PaymentService <<service>> SERVICE_COLOR 
+    {
+        - paymentRepository: PaymentRepository
+        - stripeIntegration: StripeIntegration
+        - notificationService: NotificationService
+        --
+        + createSession(orderId: int, amount: decimal): PaymentSession
+        + getStatus(id: int): PaymentStatus
+        + handleWebhook(payload: string): void
+        + updateStatus(orderId: int, status: PaymentStatus): void
+    }
+  
+    class ShippingService <<service>> SERVICE_COLOR 
+    {
+        - shippingRepository: ShippingRepository
+        - novaPoshtaIntegration: NovaPoshtaIntegration
+        --
+        + getCities(search: string): List<City>
+        + getWarehouses(cityRef: string): List<Warehouse>
+        + calculateCost(cityRef: string, weight: decimal): decimal
+        + saveAddress(userId: int, dto: AddressDTO): Shipping
+        + getAddresses(userId: int): List<Shipping>
+    }
+  
+    class UserService <<service>> SERVICE_COLOR 
+    {
+        - userRepository: UserRepository
+        --
+        + getById(id: int): User
+        + getAll(filters: UserFilters): List<User>
+        + updateProfile(id: int, dto: UpdateProfileDTO): User
+        + changePassword(id: int, oldPassword: string, newPassword: string): void
+        + block(id: int, reason: string): void
+        + unblock(id: int): void
+        + resetPassword(id: int): string
+    }
+  
+    class WarehouseService <<service>> SERVICE_COLOR 
+    {
+        - incomingRepository: IncomingRepository
+        - outgoingRepository: OutgoingRepository
+        - companyRepository: CompanyRepository
+        - productService: ProductService
+        --
+        + createIncoming(dto: IncomingDTO): IncomingDocument
+        + createOutgoing(dto: OutgoingDTO): OutgoingDocument
+        + getIncomingHistory(filters: DocFilters): List<IncomingDocument>
+        + getOutgoingHistory(filters: DocFilters): List<OutgoingDocument>
+        + calculateStock(productId: int): int
+        + getCurrentStock(): List<StockInfo>
+        + reserveItems(orderId: int, items: List<OrderItem>): void
+        + getCompanies(): List<Company>
+        + getCompanyById(id: int): Company
+        + createCompany(dto: CompanyDTO): Company
+        + updateCompany(id: int, dto: CompanyDTO): Company
+        + deactivateCompany(id: int): void
+    }
+
+    class PromotionService <<service>> SERVICE_COLOR 
+    {
+        - promotionRepository: PromotionRepository
+        - userPromotionRepository: UserPromotionRepository
+        - userRepository: UserRepository
+        - cacheService: CacheService
+        --
+        + getAll(filters: PromotionFilters): List<Promotion>
+        + getById(id: int): Promotion
+        + getApplicablePromotions(userId: int, cartItems: List): List<Promotion>
+        + validatePromoCode(code: string, userId: int, cartItems: List): PromoCodeValidation
+        + calculateFinalPrices(items: List, promotions: List, promoCode: string): List<ItemWithPrices>
+        + create(dto: CreatePromotionDTO): Promotion
+        + update(id: int, dto: UpdatePromotionDTO): Promotion
+        + delete(id: int): void
+        + deactivate(id: int): void
+        + assignToUser(userId: int, promotionId: int): void
+        + assignStudentPromotions(userId: int, studentStatus: StudentStatus): void
+        + incrementUsage(promotionId: int): void
+        + getStats(filters: PromotionFilters): PromotionStats
+        + exportReport(format: string): File
+    }
+
+    class AnalyticsService <<service>> SERVICE_COLOR 
+    {
+        - orderRepository: OrderRepository
+        - productRepository: ProductRepository
+        - promotionRepository: PromotionRepository
+        - userRepository: UserRepository
+        - incomingRepository: IncomingRepository
+        - cacheService: CacheService
+        --
+        + getSalesAnalytics(startDate: DateTime, endDate: DateTime, filters: AnalyticsFilters): SalesAnalyticsDTO
+        + getProductPopularity(period: DateRange, metric: PopularityMetric, limit: int): ProductAnalyticsDTO
+        + getCategoryAnalytics(period: DateRange): CategoryAnalyticsDTO
+        + getPromotionEffectiveness(promotionId: int, period: DateRange): PromotionEffectivenessDTO
+        + getConversionMetrics(period: DateRange): ConversionMetricsDTO
+        + getFinancialReport(startDate: DateTime, endDate: DateTime): FinancialReportDTO
+        + getUserBehaviorAnalytics(period: DateRange): UserBehaviorDTO
+        + calculateROI(productId: int, period: DateRange): decimal
+        + getTopCustomers(limit: int, period: DateRange): List<CustomerMetric>
+        + exportReport(reportType: ReportType, format: ExportFormat, data: object): File
+    }
+  
+    class ReportService <<service>> SERVICE_COLOR 
+    {
+        - orderRepository: OrderRepository
+        --
+        + getSalesReport(period: Period): SalesReport
+        + getRevenueReport(period: Period): RevenueReport
+        + getProductPopularity(period: Period): List<ProductStats>
+        + exportReport(reportType: ReportType, format: string): File
+    }
+  
+    class NotificationService <<service>> SERVICE_COLOR 
+    {
+        - emailIntegration: EmailIntegration
+        --
+        + sendOrderConfirmation(orderId: int): void
+        + sendStatusUpdate(orderId: int, newStatus: OrderStatus): void
+        + sendPaymentConfirmation(orderId: int): void
+        + sendLowStockAlert(productId: int, stock: int): void
+        + sendPasswordReset(userId: int, tempPassword: string): void
+    }
+  
+    class JWTService <<service>> SERVICE_COLOR 
+    {
+        - secretKey: string
+        - expirationTime: int
+        --
+         + generateToken(userId: int, role: Role): string
+        + validateToken(token: string): bool
+        + extractUserId(token: string): int
+        + extractRole(token: string): Role
+        + refreshToken(oldToken: string): string
+    }
+  
+    class CacheService <<service>> SERVICE_COLOR 
+    {
+        - cache: InMemoryCache
+        --
+        + get(key: string): object
+        + set(key: string, value: object, ttl: int): void
+        + delete(key: string): void
+        + clear(): void
+    }
+}
+
+' ==================== REPOSITORIES ====================
+
+package "Repositories Layer" <<Rectangle>> 
+{
+  
+    interface IRepository<T> <<interface>> REPOSITORY_COLOR 
+    {
+        + getById(id: int): T
+        + getAll(): List<T>
+        + create(entity: T): T
+        + update(entity: T): T
+        + delete(id: int): void
+    }
+  
+    class UserRepository <<repository>> REPOSITORY_COLOR 
+    {
+        - dbContext: DbContext
+        --
+        + findByEmail(email: string): User
+        + findByRole(role: Role): List<User>
+    }
+  
+    class ProductRepository <<repository>> REPOSITORY_COLOR 
+    {
+        - dbContext: DbContext
+        --
+        + search(query: string): List<Product>
+        + findByCategory(categoryId: int): List<Product>
+        + filterByPrice(min: decimal, max: decimal): List<Product>
+    }
+  
+    class CategoryRepository <<repository>> REPOSITORY_COLOR 
+    {
+        - dbContext: DbContext
+        --
+        + getHierarchy(): List<Category>
+        + getChildren(parentId: int): List<Category>
+    }
+  
+    class CartRepository <<repository>> REPOSITORY_COLOR 
+    {
+        - dbContext: DbContext
+        --
+        + findByUserId(userId: int): Cart
+        + getItems(cartId: int): List<CartItem>
+    }
+  
+    class OrderRepository <<repository>> REPOSITORY_COLOR 
+    {
+        - dbContext: DbContext
+        --
+        + findByUserId(userId: int): List<Order>
+        + findByStatus(status: OrderStatus): List<Order>
+        + getWithItems(id: int): Order
+    }
+  
+    class PaymentRepository <<repository>> REPOSITORY_COLOR 
+    {
+        - dbContext: DbContext
+        --
+        + findByOrderId(orderId: int): Payment
+        + findByStripeSessionId(sessionId: string): Payment
+    }
+  
+    class ShippingRepository <<repository>> REPOSITORY_COLOR 
+    {
+        - dbContext: DbContext
+        --
+        + findByUserId(userId: int): List<Shipping>
+        + findByOrderId(orderId: int): Shipping
+    }
+  
+    class IncomingRepository <<repository>> REPOSITORY_COLOR 
+    {
+        - dbContext: DbContext
+        --
+        + findByProductId(productId: int): List<IncomingDocument>
+        + findByDateRange(start: Date, end: Date): List<IncomingDocument>
+    }
+  
+    class OutgoingRepository <<repository>> REPOSITORY_COLOR 
+    {
+        - dbContext: DbContext
+        --
+        + findByProductId(productId: int): List<OutgoingDocument>
+        + findByOrderId(orderId: int): List<OutgoingDocument>
+        + findByReason(reason: OutgoingReason): List<OutgoingDocument>
+    }
+
+    class CompanyRepository <<repository>> REPOSITORY_COLOR 
+    {
+        - dbContext: DbContext
+        --
+        + findByName(name: string): Company
+        + findActive(): List<Company>
+    }
+
+    class PromotionRepository <<repository>> REPOSITORY_COLOR 
+    {
+        - dbContext: DbContext
+        --
+        + findByPromoCode(code: string): Promotion
+        + findActive(): List<Promotion>
+        + findByAudienceType(audienceType: PromotionAudience): List<Promotion>
+        + findByTargetType(targetType: PromotionTarget, targetId: int): List<Promotion>
+    }
+
+    class UserPromotionRepository <<repository>> REPOSITORY_COLOR 
+    {
+        - dbContext: DbContext
+        --
+        + findByUserId(userId: int): List<UserPromotion>
+        + findByPromotionId(promotionId: int): List<UserPromotion>
+        + exists(userId: int, promotionId: int): bool
+    }
+  
+    class DbContext <<    >> REPOSITORY_COLOR 
+    {
+        - connectionString: string
+        --
+        + saveChanges(): void
+        + beginTransaction(): Transaction
+        + rollback(): void
+    }
+}
+
+' ==================== INTEGRATIONS ====================
+
+package "Integrations Layer" <<Rectangle>> 
+{
+  
+    class StripeIntegration <<integration>> INTEGRATION_COLOR 
+    {
+        - apiKey: string
+        - webhookSecret: string
+        - stripeClient: StripeClient
+        --
+        + createCheckoutSession(amount: decimal, orderId: int): SessionResponse
+        + verifyWebhookSignature(payload: string, signature: string): bool
+        + handlePaymentSuccess(sessionId: string): void
+        + handlePaymentFailed(sessionId: string): void
+        + refundPayment(paymentIntentId: string): void
+    }
+  
+    class NovaPoshtaIntegration <<integration>> INTEGRATION_COLOR 
+    {
+        - apiKey: string
+        - novaPoshtaClient: NovaPoshtaClient
+        --
+        + getCities(search: string): List<CityDTO>
+        + getWarehouses(cityRef: string): List<WarehouseDTO>
+        + calculateDeliveryCost(cityRef: string, weight: decimal): decimal
+        + createDocument(orderId: int): string
+    }
+  
+    class EmailIntegration <<integration>> INTEGRATION_COLOR 
+    {
+        - smtpHost: string
+        - smtpPort: int
+        - smtpUsername: string
+        - smtpPassword: string
+        - smtpClient: SmtpClient
+        --
+        + sendEmail(to: string, subject: string, body: string): void
+        + sendTemplateEmail(to: string, template: string, data: object): void
+    }
+  
+    class MinIOIntegration <<integration>> INTEGRATION_COLOR 
+    {
+        - endpoint: string
+        - accessKey: string
+        - secretKey: string
+        - minioClient: MinioClient
+        --
+        + uploadFile(bucketName: string, fileName: string, stream: Stream): string
+        + downloadFile(bucketName: string, fileName: string): Stream
+        + deleteFile(bucketName: string, fileName: string): void
+        + getFileUrl(bucketName: string, fileName: string): string
+    }
+
+    class UniversityIntegration <<integration>> INTEGRATION_COLOR 
+    {
+        - apiKey: string
+        - baseUrl: string
+        - timeout: int
+        - universityClient: HttpClient
+        --
+        + verifyStudent(email: string): StudentVerificationDTO
+        + retryVerification(userId: int): StudentVerificationDTO
+        + testConnection(): bool
+    }
+}
+
+' ==================== RELATIONSHIPS: Controllers -> Services ====================
+
+AuthController "1" --> "1" AuthService : використовує >
+ProductController "1" --> "1" ProductService : використовує >
+CategoryController "1" --> "1" CategoryService : використовує >
+CartController "1" --> "1" CartService : використовує >
+OrderController "1" --> "1" OrderService : використовує >
+PaymentController "1" --> "1" PaymentService : використовує >
+ShippingController "1" --> "1" ShippingService : використовує >
+UserController "1" --> "1" UserService : використовує >
+AdminController "1" --> "1" OrderService : використовує >
+AdminController "1" --> "1" UserService : використовує >
+AdminController "1" --> "1" ReportService : використовує >
+WarehouseController "1" --> "1" WarehouseService : використовує >
+PromotionController "1" --> "1" PromotionService : використовує >
+AnalyticsController "1" --> "1" AnalyticsService : використовує >
+
+' ==================== RELATIONSHIPS: Services -> Repositories ====================
+
+AuthService "1" --> "1" UserRepository : використовує >
+AuthService "1" --> "1" JWTService : використовує >
+AuthService "1" --> "1" UniversityIntegration : викликає >
+
+ProductService "1" --> "1" ProductRepository : використовує >
+ProductService "1" --> "1" CacheService : використовує >
+ProductService "1" --> "1" MinIOIntegration : використовує >
+
+CategoryService "1" --> "1" CategoryRepository : використовує >
+CategoryService "1" --> "1" CacheService : використовує >
+
+CartService "1" --> "1" CartRepository : використовує >
+CartService "1" --> "1" ProductService : використовує >
+
+OrderService "1" --> "1" OrderRepository : використовує >
+OrderService "1" --> "1" CartService : викликає >
+OrderService "1" --> "1" PaymentService : викликає >
+OrderService "1" --> "1" ShippingService : викликає >
+OrderService "1" --> "1" WarehouseService : викликає >
+OrderService "1" --> "1" NotificationService : викликає >
+OrderService "1" --> "1" PromotionService : викликає >
+
+PaymentService "1" --> "1" PaymentRepository : використовує >
+PaymentService "1" --> "1" StripeIntegration : викликає >
+PaymentService "1" --> "1" NotificationService : викликає >
+
+ShippingService "1" --> "1" ShippingRepository : використовує >
+ShippingService "1" --> "1" NovaPoshtaIntegration : викликає >
+
+UserService "1" --> "1" UserRepository : використовує >
+
+WarehouseService "1" --> "1" IncomingRepository : використовує >
+WarehouseService "1" --> "1" OutgoingRepository : використовує >
+WarehouseService "1" --> "1" ProductService : використовує >
+WarehouseService "1" --> "1" CompanyRepository : використовує >
+
+PromotionService "1" --> "1" PromotionRepository : використовує >
+PromotionService "1" --> "1" UserPromotionRepository : використовує >
+PromotionService "1" --> "1" UserRepository : використовує >
+PromotionService "1" --> "1" CacheService : використовує >
+
+AnalyticsService "1" --> "1" OrderRepository : використовує >
+AnalyticsService "1" --> "1" ProductRepository : використовує >
+AnalyticsService "1" --> "1" PromotionRepository : використовує >
+AnalyticsService "1" --> "1" UserRepository : використовує >
+AnalyticsService "1" --> "1" IncomingRepository : використовує >
+AnalyticsService "1" --> "1" CacheService : використовує >
+
+ReportService "1" --> "1" OrderRepository : використовує >
+
+NotificationService "1" --> "1" EmailIntegration : викликає >
+
+' ==================== RELATIONSHIPS: Repositories -> DbContext ====================
+
+UserRepository ..|> IRepository
+ProductRepository ..|> IRepository
+CategoryRepository ..|> IRepository
+CartRepository ..|> IRepository
+OrderRepository ..|> IRepository
+PaymentRepository ..|> IRepository
+ShippingRepository ..|> IRepository
+IncomingRepository ..|> IRepository
+OutgoingRepository ..|> IRepository
+CompanyRepository ..|> IRepository
+PromotionRepository ..|> IRepository
+UserPromotionRepository ..|> IRepository
+
+UserRepository "1" --> "1" DbContext : використовує >
+ProductRepository "1" --> "1" DbContext : використовує >
+CategoryRepository "1" --> "1" DbContext : використовує >
+CartRepository "1" --> "1" DbContext : використовує >
+OrderRepository "1" --> "1" DbContext : використовує >
+PaymentRepository "1" --> "1" DbContext : використовує >
+ShippingRepository "1" --> "1" DbContext : використовує >
+IncomingRepository "1" --> "1" DbContext : використовує >
+OutgoingRepository "1" --> "1" DbContext : використовує >
+CompanyRepository "1" --> "1" DbContext : використовує >
+PromotionRepository "1" --> "1" DbContext : використовує >
+UserPromotionRepository "1" --> "1" DbContext : використовує >
+
+' ==================== DTO CLASSES ====================
+
+package "Data Transfer Objects" <<Rectangle>> 
+{
+  
+    class RegisterDTO <<dto>> 
+    {
+        + firstName: string
+        + lastName: string
+        + email: string
+        + password: string
+        + phone: string
+    }
+  
+    class LoginDTO <<dto>> 
+    {
+        + email: string
+        + password: string
+    }
+  
+    class ProductDTO <<dto>> 
+    {
+        + name: string
+        + description: string
+        + price: decimal
+        + weight: decimal
+        + categoryId: int
+        + images: List<File>
+    }
+  
+    class CreateOrderDTO <<dto>> 
+    {
+        + items: List<OrderItemDTO>
+        + shippingAddress: AddressDTO
+        + paymentMethod: PaymentMethod
+    }
+  
+    class AddressDTO <<dto>> 
+    {
+        + city: string
+        + cityRef: string
+        + warehouse: string
+        + warehouseRef: string
+        + phone: string
+        + isDefault: bool
+    }
+  
+    class IncomingDTO <<dto>> 
+    {
+        + productId: int
+        + quantity: int
+        + purchasePrice: decimal
+        + companyId: int
+        + documentDate: Date
+        + notes: string
+    }
+  
+    class OutgoingDTO <<dto>> 
+    {
+        + productId: int
+        + quantity: int
+        + companyId: int
+        + reason: OutgoingReason
+        + notes: string
+    }
+
+    class CompanyDTO <<dto>> 
+    {
+        + id: int
+        + name: string
+        + contactPerson: string
+        + phone: string
+        + email: string
+        + address: string
+        + notes: string
+        + isActive: bool
+        + createdAt: DateTime
+        + updatedAt: DateTime
+    }
+
+    class CreateCompanyDTO <<dto>> 
+    {
+        + name: string
+        + contactPerson: string
+        + phone: string
+        + email: string
+        + address: string
+        + notes: string
+    }
+
+    class UpdateCompanyDTO <<dto>> 
+    {
+        + name: string
+        + contactPerson: string
+        + phone: string
+        + email: string
+        + address: string
+        + notes: string
+    }
+
+    class PromotionDTO <<dto>> 
+    {
+        + id: int
+        + name: string
+        + description: string
+        + type: string
+        + value: decimal
+        + targetType: string
+        + targetId: int
+        + audienceType: string
+        + startDate: Date
+        + endDate: Date
+        + promoCode: string
+        + minOrderAmount: decimal
+        + minQuantity: int
+        + priority: int
+        + usageLimit: int
+        + currentUsage: int
+        + isActive: bool
+        + createdAt: DateTime
+    }
+
+    class CreatePromotionDTO <<dto>> 
+    {
+        + name: string
+        + description: string
+        + type: string
+        + value: decimal
+        + targetType: string
+        + targetId: int
+        + audienceType: string
+        + startDate: Date
+        + endDate: Date
+        + promoCode: string
+        + minOrderAmount: decimal
+        + minQuantity: int
+        + priority: int
+        + usageLimit: int
+    }
+
+    class UpdatePromotionDTO <<dto>> 
+    {
+        + name: string
+        + description: string
+        + type: string
+        + value: decimal
+        + targetType: string
+        + targetId: int
+        + audienceType: string
+        + startDate: Date
+        + endDate: Date
+        + promoCode: string
+        + minOrderAmount: decimal
+        + minQuantity: int
+        + priority: int
+        + usageLimit: int
+        + isActive: bool
+    }
+
+    class ApplyPromoCodeDTO <<dto>> 
+    {
+        + promoCode: string
+        + userId: int
+        + cartItems: List<CartItemDTO>
+    }
+
+    class AssignPromotionDTO <<dto>> 
+    {
+        + userId: int
+        + promotionId: int
+    }
+
+    class StudentVerificationDTO <<dto>> 
+    {
+        + found: bool
+        + studentId: string
+        + email: string
+        + gpa: decimal
+        + scholarshipStatus: string
+        + studentStatus: string
+        + enrollmentYear: int
+        + faculty: string
+        + specialty: string
+    }
+
+    class PromotionFilters <<dto>> 
+    {
+        + page: int
+        + limit: int
+        + isActive: bool
+        + type: PromotionType
+        + targetType: PromotionTarget
+        + audienceType: PromotionAudience
+        + startDate: Date
+        + endDate: Date
+        + search: string
+        + sort: string
+        + order: string
+    }
+
+    class AnalyticsFilters <<dto>> 
+    {
+        + startDate: DateTime
+        + endDate: DateTime
+        + productId: int
+        + categoryId: int
+        + groupBy: string
+    }
+
+    class DateRange <<dto>> 
+    {
+        + startDate: DateTime
+        + endDate: DateTime
+    }
+
+    class SalesAnalyticsDTO <<dto>> 
+    {
+        + period: DateRange
+        + totalOrders: int
+        + totalRevenue: decimal
+        + averageOrderValue: decimal
+        + salesByDay: List<DailyMetric>
+        + salesByPaymentMethod: Dictionary<PaymentMethod, decimal>
+        + salesByStatus: Dictionary<OrderStatus, int>
+        + topProducts: List<ProductMetric>
+    }
+
+    class ProductAnalyticsDTO <<dto>> 
+    {
+        + period: DateRange
+        + topByQuantity: List<ProductMetric>
+        + topByRevenue: List<ProductMetric>
+        + topByProfit: List<ProductMetric>
+        + lowStock: List<ProductStock>
+    }
+
+    class CategoryAnalyticsDTO <<dto>> 
+    {
+        + period: DateRange
+        + revenueByCategory: List<CategoryMetric>
+        + quantityByCategory: List<CategoryMetric>
+        + categoryShare: List<CategoryShare>
+    }
+
+    class ConversionMetricsDTO <<dto>> 
+    {
+        + period: DateRange
+        + visitorToUserRate: decimal
+        + userToBuyerRate: decimal
+        + cancelledOrdersRate: decimal
+        + averageOrderValue: decimal
+        + repeatPurchaseRate: decimal
+        + averageOrderItems: decimal
+        + cartAbandonmentRate: decimal
+    }
+
+    class FinancialReportDTO <<dto>> 
+    {
+        + period: DateRange
+        + totalRevenue: decimal
+        + shippingRevenue: decimal
+        + purchaseCosts: decimal
+        + discountAmount: decimal
+        + netProfit: decimal
+        + roiByProduct: List<ProductROI>
+        + roiByCategory: List<CategoryROI>
+        + profitMargin: decimal
+    }
+
+    class PromotionEffectivenessDTO <<dto>> 
+    {
+        + promotionId: int
+        + promotionName: string
+        + period: DateRange
+        + totalUsages: int
+        + totalDiscount: decimal
+        + averageOrderValueWithPromo: decimal
+        + averageOrderValueWithoutPromo: decimal
+        + conversionRateWithPromo: decimal
+        + conversionRateWithoutPromo: decimal
+        + roi: decimal
+    }
+
+    class UserBehaviorDTO <<dto>> 
+    {
+        + period: DateRange
+        + topCustomers: List<CustomerMetric>
+        + averageTimeToFirstPurchase: decimal
+        + cohortAnalysis: List<CohortData>
+        + categoryHeatmap: Dictionary<string, Dictionary<int, int>>
+    }
+
+    class ProductMetric <<dto>> 
+    {
+        + productId: int
+        + productName: string
+        + quantity: int
+        + revenue: decimal
+        + profit: decimal
+    }
+
+    class CategoryMetric <<dto>> 
+    {
+        + categoryId: int
+        + categoryName: string
+        + quantity: int
+        + revenue: decimal
+        + averageOrderValue: decimal
+    }
+
+    class ExportReportDTO <<dto>> 
+    {
+        + format: string
+        + reportType: string
+        + period: DateRange
+        + filters: Dictionary<string, object>
+    }
+
+    class PopularityFilters <<dto>> 
+    {
+        + period: DateRange
+        + metric: string
+        + categoryId: int
+        + limit: int
+    }
+}
+
+OrderController ..> CreateOrderDTO : використовує
+WarehouseController ..> IncomingDTO : використовує
+WarehouseController ..> OutgoingDTO : використовує
+WarehouseController ..> CompanyDTO : використовує
+WarehouseController ..> CreateCompanyDTO : використовує
+WarehouseController ..> UpdateCompanyDTO : використовує
+ShippingController ..> AddressDTO : використовує
+ProductController ..> ProductDTO : використовує
+AuthController ..> RegisterDTO : використовує
+AuthController ..> LoginDTO : використовує
+AuthController ..> StudentVerificationDTO : використовує
+PromotionController ..> PromotionDTO : використовує
+PromotionController ..> CreatePromotionDTO : використовує
+PromotionController ..> UpdatePromotionDTO : використовує
+PromotionController ..> ApplyPromoCodeDTO : використовує
+PromotionController ..> AssignPromotionDTO : використовує
+PromotionController ..> PromotionFilters : використовує
+AnalyticsController ..> AnalyticsFilters : використовує
+AnalyticsController ..> SalesAnalyticsDTO : використовує
+AnalyticsController ..> ProductAnalyticsDTO : використовує
+AnalyticsController ..> CategoryAnalyticsDTO : використовує
+AnalyticsController ..> ConversionMetricsDTO : використовує
+AnalyticsController ..> FinancialReportDTO : використовує
+AnalyticsController ..> PromotionEffectivenessDTO : використовує
+AnalyticsController ..> UserBehaviorDTO : використовує
+AnalyticsController ..> ExportReportDTO : використовує
+AnalyticsController ..> PopularityFilters : використовує
+AnalyticsController ..> DateRange : використовує
+
+@enduml

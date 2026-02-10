@@ -77,6 +77,11 @@ namespace KhduSouvenirShop.API.Controllers
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
+            if (dto.Quantity <= 0)
+            {
+                return BadRequest(new { error = "Кількість має бути більше 0" });
+            }
+
             // Перевірка існування товару
             var product = await _context.Products.FindAsync(dto.ProductId);
             if (product == null)
@@ -105,12 +110,15 @@ namespace KhduSouvenirShop.API.Controllers
 
             if (existingItem != null)
             {
-                // Оновлюємо кількість
+                var newQuantity = existingItem.Quantity + dto.Quantity;
+                if (newQuantity > product.Stock)
+                {
+                    return BadRequest(new { error = $"Недостатньо товару на складі. Доступно: {product.Stock}" });
+                }
                 existingItem.Quantity += dto.Quantity;
             }
             else
             {
-                // Додаємо новий товар
                 var cartItem = new CartItem
                 {
                     CartId = cart.CartId,

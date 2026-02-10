@@ -62,6 +62,13 @@ export const categoriesAPI = {
   getById: (id) => api.get(`/Categories/${id}`),
 };
 
+// Адмін API для Categories
+export const adminCategoriesAPI = {
+  create: (data) => api.post('/admin/categories', data),
+  update: (id, data) => api.put(`/admin/categories/${id}`, data),
+  delete: (id) => api.delete(`/admin/categories/${id}`),
+};
+
 // API функції для Users
 export const usersAPI = {
   // POST реєстрація
@@ -93,6 +100,20 @@ export const cartAPI = {
   
   // DELETE очистити кошик
   clearCart: () => api.delete('/Cart/clear'),
+};
+
+// API функції для Orders (потребують авторизації)
+export const ordersAPI = {
+  checkout: (payload) => api.post('/Orders/checkout', payload),
+  getMy: () => api.get('/Orders/my'),
+  getById: (id) => api.get(`/Orders/${id}`),
+};
+
+// Адмін API для Products
+export const adminProductsAPI = {
+  create: (data) => api.post('/admin/products', data),
+  update: (id, data) => api.put(`/admin/products/${id}`, data),
+  delete: (id) => api.delete(`/admin/products/${id}`),
 };
 
 export default api;

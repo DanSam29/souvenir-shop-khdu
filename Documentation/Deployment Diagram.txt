@@ -1,0 +1,183 @@
+workspace "Інтернет-магазин сувенірної продукції ХДУ" "Deployment Diagram - Розгортання на Render.com" {
+    !identifiers hierarchical
+    
+    model {
+        # Користувачі
+        user = person "Користувач" "Клієнт магазину"
+        admin = person "Адміністратор" "Адміністратор системи"
+        
+        # Software Systems and Containers
+        eshop = softwareSystem "Інтернет-магазин ХДУ" {
+            webapp = container "Web Application" "Клієнтський SPA додаток" "React 18, Vite" {
+                tags "Frontend"
+            }
+            adminpanel = container "Admin Panel" "Адміністративна панель" "React Admin 4" {
+                tags "Frontend"
+            }
+            api = container "API Gateway" "REST API бекенд" ".NET Core 8.0" {
+                tags "Backend"
+            }
+            database = container "Database" "Реляційна БД" "MySQL 8.0" {
+                tags "Database"
+            }
+            cache = container "Cache" "Кеш товарів та категорій" "In-Memory Cache" {
+                tags "Cache"
+            }
+            logger = container "Logger" "Логування подій" "Serilog" {
+                tags "Infrastructure"
+            }
+        }
+        
+        stripe = softwareSystem "Stripe API" "Платіжний шлюз" {
+            tags "External"
+        }
+        novaposhta = softwareSystem "Nova Poshta API" "Служба доставки" {
+            tags "External"
+        }
+        email = softwareSystem "Email Service" "SMTP сервіс" {
+            tags "External"
+        }
+        minio = softwareSystem "MinIO Storage" "Об'єктне сховище" {
+            tags "External"
+        }
+	university = softwareSystem "University API" "API університету" {
+            tags "External"
+	}
+        
+        # Relationships
+        user -> eshop.webapp "Переглядає каталог, оформлює замовлення" "HTTPS"
+        admin -> eshop.adminpanel "Керує товарами, замовленнями" "HTTPS"
+        
+        eshop.webapp -> eshop.api "API запити" "REST/HTTPS"
+        eshop.adminpanel -> eshop.api "API запити" "REST/HTTPS"
+        
+        eshop.api -> eshop.database "SQL запити" "EF Core/TCP"
+        eshop.api -> eshop.cache "Операції кешування" "In-Memory"
+        eshop.api -> eshop.logger "Логування" "Serilog"
+        eshop.api -> stripe "Обробка платежів" "HTTPS/REST"
+        eshop.api -> novaposhta "Розрахунок доставки" "HTTPS/REST"
+        eshop.api -> email "Email сповіщення" "SMTP/TLS"
+        eshop.api -> minio "Зберігання зображень" "S3 API/HTTPS"
+	eshop.api -> university "Верифікація студентів" "HTTPS/REST"
+        
+        # Production Environment
+        production = deploymentEnvironment "Production" {
+            
+            deploymentNode "Client Devices" "Пристрої користувачів" "Desktop/Mobile" {
+                deploymentNode "Web Browser" "Браузер користувача" "Chrome/Firefox/Safari/Edge" {
+                    webAppLive = containerInstance eshop.webapp
+                    adminPanelLive = containerInstance eshop.adminpanel
+                }
+            }
+            
+            deploymentNode "Render.com Cloud" "Хмарна платформа" "PaaS" {
+                
+                deploymentNode "Frontend Service" "Static Site хостинг" "Render Web Service" {
+                    deploymentNode "Nginx" "Веб-сервер" "1.25" {
+                        webAppDeployed = containerInstance eshop.webapp
+                    }
+                }
+                
+                deploymentNode "Admin Service" "Static Site хостинг" "Render Web Service" {
+                    deploymentNode "Nginx" "Веб-сервер" "1.25" {
+                        adminPanelDeployed = containerInstance eshop.adminpanel
+                    }
+                }
+                
+                deploymentNode "Backend Service" "Docker контейнер" "Render Web Service" {
+                    deploymentNode "Docker" "Платформа контейнеризації" "24.x" {
+                        deploymentNode ".NET Runtime" "ASP.NET Core" "8.0" {
+                            apiLive = containerInstance eshop.api
+                            cacheLive = containerInstance eshop.cache
+                            loggerLive = containerInstance eshop.logger
+                        }
+                    }
+                }
+                
+                deploymentNode "Database Service" "Managed Database" "Render MySQL" {
+                    deploymentNode "MySQL" "Сервер БД" "8.0" {
+                        databaseLive = containerInstance eshop.database
+                    }
+                }
+                
+                deploymentNode "Storage Service" "Object Storage" "Render Private Service" {
+                    deploymentNode "Docker" "Платформа контейнеризації" "24.x" {
+                        deploymentNode "MinIO" "S3-сумісне сховище" "Latest" {
+                            minioLive = softwareSystemInstance minio
+                        }
+                    }
+                }
+            }
+            
+            deploymentNode "External Services" "Зовнішні API" "Cloud/SaaS" {
+                deploymentNode "Stripe" "Платіжна платформа" "SaaS" {
+                    stripeLive = softwareSystemInstance stripe
+                }
+                
+                deploymentNode "Nova Poshta" "Служба доставки" "SaaS" {
+                    novaposhtaLive = softwareSystemInstance novaposhta
+                }
+                
+                deploymentNode "Email Provider" "SMTP сервіс" "Gmail/SendGrid" {
+                    emailLive = softwareSystemInstance email
+                }
+		deploymentNode "University" "Університетська система" "API Server" {
+    		    universityLive = softwareSystemInstance university
+		}
+            }
+        }
+    }
+    
+    views {
+        deployment eshop production "Deployment" "Схема розгортання інтернет-магазину ХДУ на Render.com" {
+            include *
+            autolayout tb
+        }
+        
+        styles {
+            element "Person" {
+                shape person
+                background #08427b
+                color #ffffff
+            }
+            
+            element "Frontend" {
+                background #438dd5
+                color #ffffff
+            }
+            
+            element "Backend" {
+                background #1168bd
+                color #ffffff
+            }
+            
+            element "Database" {
+                shape cylinder
+                background #e74c3c
+                color #ffffff
+            }
+            
+            element "Cache" {
+                shape pipe
+                background #f39c12
+                color #ffffff
+            }
+            
+            element "Infrastructure" {
+                shape folder
+                background #8e44ad
+                color #ffffff
+            }
+            
+            element "External" {
+                background #7f8c8d
+                color #ffffff
+            }
+            
+            element "Software System" {
+                background #1168bd
+                color #ffffff
+            }
+        }
+    }
+}

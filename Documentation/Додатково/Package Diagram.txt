@@ -1,0 +1,253 @@
+@startuml
+!define ORANGE #FFA500
+!define GREEN #00FF00
+!define RED #FF0000
+!define DARKGREEN #008000
+!define YELLOW #FFFF00
+!define BLUE #0000CC
+!define PURPLE #4C0099
+!define CYAN #66FFFF
+!define DARKYELLOW #DEBC00
+!define PINK #CC0066
+!define BROWN #89707B
+!define DARKGRAY #5A6E5A
+!define GRAY #596E6E
+!define LIGHTPURPLE #9370DB
+
+' Frontend Layer
+package "Frontend" {
+  
+    package "OrderModule" RED {
+        component CheckoutForm
+        component OrderHistory
+        component OrderTracking
+    }
+  
+    package "CartModule" ORANGE {
+        component CartItem
+        component CartView
+    }
+  
+    package "UserModule" YELLOW {
+        component LoginForm
+        component RegisterForm
+        component UserProfile
+    }
+  
+    package "CatalogModule" GREEN {
+        component ProductList
+        component ProductDetails
+        component ProductSearch
+        component CategoryView
+    }
+  
+    package "AdminPanelModule" DARKGREEN {
+        component ProductManagement
+        component OrderManagement
+        component UserManagement
+        component AnalyticsView
+    }
+
+    package "PromotionModule" PURPLE {
+        component PromotionList
+        component PromotionDetails
+        component CreatePromotion
+        component MyPromotions
+    }
+}
+
+' Backend Layer
+package "Backend" {
+  
+    package "PaymentModule" BLUE {
+        component PaymentController
+        component PaymentService
+        component StripeIntegration
+    }
+  
+    package "ShippingModule" PURPLE {
+        component ShippingController
+        component ShippingService
+        component NovaPoshtaIntegration
+    }
+  
+    package "NotificationModule" CYAN {
+        component NotificationService
+        component EmailService
+    }
+  
+    package "OrderModule " DARKYELLOW {
+        component OrderController
+        component OrderService
+        component OrderStatusService
+    }
+  
+    package "CartModule " PINK {
+        component CartService
+        component CartController
+    }
+  
+    package "UserModule " BROWN {
+        component AuthController
+        component UserController
+        component AuthService
+        component UserService
+        component JWTService
+    }
+  
+    package "AdminPanelModule " DARKGRAY {
+        component AdminOrderController
+        component AdminUserController
+        component AdminProductController
+        component ReportService
+        component CompanyManagement
+    }
+  
+    package "CatalogModule " GRAY {
+        component ProductController
+        component CategoryController
+        component ProductService
+        component CategoryService
+    }
+  
+    package "WarehouseModule" LIGHTPURPLE {
+        component WarehouseController
+        component WarehouseService
+        component StockCalculationService
+    }
+
+    package "PromotionModule" LIGHTPURPLE {
+        component PromotionController
+        component PromotionService
+        component PromotionRepository
+    }
+
+    package "UniversityModule" DARKGREEN {
+        component UniversityIntegration
+        component StudentVerificationService
+    }
+
+    package "AnalyticsModule" CYAN {
+        component AnalyticsController
+        component AnalyticsService
+        component MetricsCalculator
+        component ReportGenerator
+    }
+}
+
+' Database Layer
+package "Database" {
+    package "Data Layer" {
+        component Payments
+        component Cart
+        component CartItems
+        component Shipping
+        component Orders
+        component OrderItems
+        component Users
+        component Products
+        component Categories
+        component ProductImages
+        component IncomingDocuments
+        component OutgoingDocuments
+        component Companies
+        component Promotions
+        component UserPromotions
+    }
+}
+
+' External Services
+package "External Service" {
+    component "MinIO Storage"
+    component "Email Service"
+    component "Nova Poshta API"
+    component "Stripe API"
+    component "University API"
+}
+
+' Frontend to Backend connections
+OrderModule -[#FF0000]-> PaymentModule : HTTP/REST
+OrderModule -[#FF0000]-> ShippingModule : HTTP/REST
+OrderModule -[#FF0000]-> "OrderModule " : HTTP/REST
+
+CartModule -[#FFA500]-> "CartModule " : HTTP/REST
+
+UserModule -[#FFFF00]-> "UserModule " : HTTP/REST
+
+CatalogModule -[#00FF00]-> "CatalogModule " : HTTP/REST
+
+AdminPanelModule -[#008000]-> "AdminPanelModule " : HTTP/REST
+AdminPanelModule -[#008000]-> WarehouseModule : HTTP/REST
+AdminPanelModule -[#008000]-> AnalyticsModule : HTTP/REST
+
+PromotionModule -[#4C0099]-> PromotionModule : HTTP/REST
+
+' Backend internal connections
+PaymentModule -[#0000CC]-> "OrderModule " : оновлює статус замовлення
+
+"CartModule " -[#CC0066]-> "CatalogModule " : отримує дані товарів
+
+ShippingModule -[#4C0099]-> "OrderModule " : оновлює статус доставки
+
+"OrderModule " -[#DEBC00]-> NotificationModule : надсилає Email
+"OrderModule " -[#DEBC00]-> ShippingModule : створює доставку
+"OrderModule " -[#DEBC00]-> "CartModule " : отримує товари з кошика
+"OrderModule " -[#DEBC00]-> PaymentModule : ініціює платіж
+"OrderModule " -[#DEBC00]-> WarehouseModule : створює видаткову накладну
+"OrderModule " -[#DEBC00]-> PromotionModule : застосовує знижки
+
+"AdminPanelModule " -[#5A6E5A]-> "OrderModule " : управління замовленнями
+"AdminPanelModule " -[#5A6E5A]-> "UserModule " : управління користувачами
+"AdminPanelModule " -[#5A6E5A]-> "CatalogModule " : управління товарами
+"AdminPanelModule " -[#5A6E5A]-> WarehouseModule : перегляд документів
+"AdminPanelModule " -[#5A6E5A]-> PromotionModule : керування акціями
+"AdminPanelModule " -[#5A6E5A]-> AnalyticsModule : перегляд аналітики
+
+"UserModule " -[#89707B]-> UniversityModule : верифікує студента
+"UserModule " -[#89707B]-> PromotionModule : призначає студентські знижки
+
+WarehouseModule -[#9370DB]-> "CatalogModule " : оновлює залишки Stock
+
+PromotionModule -[#9370DB]-> "OrderModule " : повертає розраховані ціни
+
+UniversityModule -[#004F00]-> "UserModule " : повертає studentStatus
+
+AnalyticsModule -[#66FFFF]-> "OrderModule " : читає дані замовлень
+AnalyticsModule -[#66FFFF]-> "CatalogModule " : читає дані товарів/категорій
+AnalyticsModule -[#66FFFF]-> PromotionModule : читає дані акцій
+AnalyticsModule -[#66FFFF]-> WarehouseModule : читає дані складу
+AnalyticsModule -[#66FFFF]-> "UserModule " : читає дані користувачів
+
+' Backend to Database connections
+PaymentModule -[#0000CC]-> Payments : read/write
+"CartModule " -[#CC0066]-> Cart : read/write
+"CartModule " -[#CC0066]-> CartItems : read/write
+ShippingModule -[#4C0099]-> Shipping : read/write
+"OrderModule " -[#DEBC00]-> Orders : read/write
+"OrderModule " -[#DEBC00]-> OrderItems : read/write
+"UserModule " -[#89707B]-> Users : read/write
+"CatalogModule " -[#596E6E]-> Products : read/write
+"CatalogModule " -[#596E6E]-> Categories : read/write
+"CatalogModule " -[#596E6E]-> ProductImages : read/write
+WarehouseModule -[#9370DB]-> IncomingDocuments : read/write
+WarehouseModule -[#9370DB]-> OutgoingDocuments : read/write
+WarehouseModule -[#9370DB]-> Companies : read/write
+PromotionModule -[#9370DB]-> Promotions : read/write
+PromotionModule -[#9370DB]-> UserPromotions : read/write
+AnalyticsModule -[#66FFFF]-> Orders : read
+AnalyticsModule -[#66FFFF]-> OrderItems : read
+AnalyticsModule -[#66FFFF]-> Products : read
+AnalyticsModule -[#66FFFF]-> Categories : read
+AnalyticsModule -[#66FFFF]-> Promotions : read
+AnalyticsModule -[#66FFFF]-> IncomingDocuments : read
+AnalyticsModule -[#66FFFF]-> OutgoingDocuments : read
+AnalyticsModule -[#66FFFF]-> Users : read
+
+' Backend to External Services
+NotificationModule -[#66FFFF]-> "Email Service" : send emails
+ShippingModule -[#4C0099]-> "Nova Poshta API" : "get branches,\ncalculate cost"
+PaymentModule -[#0000CC]-> "Stripe API" : "webhook,\ncreate session"
+"CatalogModule " -[#596E6E]-> "MinIO Storage" : "upload/download\nimages"
+UniversityModule -[#004F00]-> "University API" : "verify student,\nget GPA"
+
+@enduml

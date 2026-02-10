@@ -1,0 +1,181 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Адміністратор" as Admin
+actor "Менеджер" as Manager
+
+actor "Система звітності" as ReportSystem <<external system>>
+actor "Email сервіс" as EmailService <<external system>>
+
+Admin --|> Manager
+
+rectangle "Адміністративна панель інтернет-магазину" #FFCCCC {
+  
+    package "Керування замовленнями" #FFD699 {
+        usecase "Переглянути всі замовлення" as UC_ViewAllOrders
+        usecase "Переглянути деталі замовлення" as UC_ViewOrderDetails
+        usecase "Експортувати список замовлень" as UC_ExportOrders
+        usecase "Фільтрувати замовлення\n(статус, дата, клієнт)" as UC_FilterOrders
+        usecase "Обробити повернення товару" as UC_ProcessReturn
+        usecase "Скасувати замовлення" as UC_CancelOrder
+        usecase "Змінити статус замовлення" as UC_ChangeOrderStatus
+    
+        UC_FilterOrders ..> UC_ViewAllOrders : <<extend>>
+        UC_ExportOrders ..> UC_ViewAllOrders : <<extend>>
+        UC_ViewOrderDetails ..> UC_ViewAllOrders : <<extend>>
+        UC_ProcessReturn ..> UC_CancelOrder : <<extend>>
+    }
+  
+    package "Аналітика та звітність" #FFFF99 {
+        usecase "Вибрати період звіту" as UC_SelectPeriod
+        usecase "Переглянути популярність товарів" as UC_ViewProductPopularity
+        usecase "Переглянути звіт про доходи" as UC_ViewIncomeReport
+        usecase "Переглянути звіт про продажі" as UC_ViewSalesReport
+        usecase "Переглянути статистику по категоріям" as UC_ViewCategoryStats
+        usecase "Переглянути показники конверсії" as UC_ViewConversion
+        usecase "Експортувати фінансовий звіт\n(PDF, CSV)" as UC_ExportFinancialReport
+        usecase "Переглянути фінансову аналітику\n(дохід, витрати, прибуток, ROI)" as UC_ViewFinancialAnalytics
+        usecase "Переглянути метрики конверсії\n(конверсія відвідувачів, середній чек,\nRepeat Purchase Rate, Cart Abandonment)" as UC_ViewConversionMetrics
+        usecase "Аналіз поведінки користувачів\n(топ-клієнти, популярні товари,\nкогортний аналіз)" as UC_AnalyzeUserBehavior
+    
+        UC_ViewProductPopularity .> UC_SelectPeriod : <<include>>
+        UC_ViewIncomeReport .> UC_SelectPeriod : <<include>>
+        UC_ViewSalesReport .> UC_SelectPeriod : <<include>>
+        UC_ViewCategoryStats ..> UC_SelectPeriod : <<extend>>
+        UC_ViewConversion ..> UC_SelectPeriod : <<extend>>
+        UC_ExportFinancialReport ..> UC_SelectPeriod : <<extend>>
+        UC_ViewFinancialAnalytics .> UC_SelectPeriod : <<include>>
+        UC_ViewConversionMetrics .> UC_SelectPeriod : <<include>>
+        UC_AnalyzeUserBehavior .> UC_SelectPeriod : <<include>>
+        UC_ExportFinancialReport ..> UC_ViewIncomeReport : <<extend>>
+        UC_ExportFinancialReport ..> UC_ViewSalesReport : <<extend>>
+        UC_ExportFinancialReport ..> UC_ViewFinancialAnalytics : <<extend>>
+        UC_ExportFinancialReport ..> UC_ViewConversionMetrics : <<extend>>
+        UC_ExportFinancialReport ..> UC_AnalyzeUserBehavior : <<extend>>
+    }
+  
+    package "Керування користувачами" #CCFFCC {
+        usecase "Переглянути список користувачів" as UC_ViewUsers
+        usecase "Переглянути профіль користувача\n(ім'я, прізвище, email,\nтелефон, дата реєстрації,\nстатус, роль)" as UC_ViewUserProfile
+        usecase "Переглянути історію замовлень користувача" as UC_ViewUserOrderHistory
+        usecase "Фільтрувати користувачів" as UC_FilterUsers
+        usecase "Заблокувати обліковий запис" as UC_BlockUser
+        usecase "Розблокувати обліковий запис" as UC_UnblockUser
+        usecase "Скинути пароль користувача" as UC_ResetPassword
+    
+        UC_ViewUserProfile ..> UC_ViewUsers : <<extend>>
+        UC_FilterUsers ..> UC_ViewUsers : <<extend>>
+        UC_ViewUserOrderHistory ..> UC_ViewUserProfile : <<extend>>
+    }
+  
+    package "Керування налаштуваннями системи" #99CCFF {
+        usecase "Налаштувати параметри доставки" as UC_ConfigureDelivery
+        usecase "Налаштувати зони доставки" as UC_SetupDeliveryZones
+        usecase "Налаштувати тарифи доставки" as UC_SetupDeliveryTariffs
+        usecase "Налаштувати валюту системи" as UC_SetupCurrency
+        usecase "Налаштувати мову інтерфейсу" as UC_SetupLanguage
+        usecase "Налаштувати загальні параметри магазину" as UC_ConfigureStoreSettings
+    
+        UC_ConfigureDelivery .> UC_SetupDeliveryTariffs : <<include>>
+        UC_ConfigureDelivery .> UC_SetupDeliveryZones : <<include>>
+    }
+  
+    package "Доступ до всіх модулів адмін-панелі" #99DDFF {
+        usecase "Отримати доступ до модуля Каталогу" as UC_AccessCatalog
+        usecase "Отримати доступ до модуля Замовлень" as UC_AccessOrders
+        usecase "Отримати доступ до модуля Користувачів" as UC_AccessUsers
+        usecase "Отримати доступ до модуля Платежів" as UC_AccessPayments
+        usecase "Отримати доступ до модуля Доставки" as UC_AccessDelivery
+        usecase "Отримати доступ до модуля Звітів" as UC_AccessReports
+    }
+  
+    package "Перегляд складських документів" #E6E6FA {
+        usecase "Переглянути прибуткові накладні" as UC_ViewIncoming
+        usecase "Переглянути видаткові накладні" as UC_ViewOutgoing
+        usecase "Фільтрувати документи\n(за датою, товаром, типом)" as UC_FilterWarehouseDocs
+        usecase "Переглянути деталі документа" as UC_ViewDocDetails
+        usecase "Експортувати звіт по складу" as UC_ExportWarehouse
+        usecase "Аналіз руху товарів" as UC_AnalyzeMovement
+
+        UC_FilterWarehouseDocs ..> UC_ViewIncoming : <<extend>>
+        UC_FilterWarehouseDocs ..> UC_ViewOutgoing : <<extend>>
+        UC_ViewDocDetails ..> UC_ViewIncoming : <<extend>>
+        UC_ViewDocDetails ..> UC_ViewOutgoing : <<extend>>
+        UC_ExportWarehouse ..> UC_ViewIncoming : <<extend>>
+        UC_ExportWarehouse ..> UC_ViewOutgoing : <<extend>>
+        UC_AnalyzeMovement .> UC_ViewIncoming : <<include>>
+        UC_AnalyzeMovement .> UC_ViewOutgoing : <<include>>
+    }
+
+    package "Керування акціями та знижками" #FFE6F0 {
+        usecase "Переглянути всі активні акції" as UC_ViewActivePromotions
+        usecase "Переглянути ефективність акцій\n(кількість використань,\nзагальна сума знижок)" as UC_ViewPromotionEffectiveness
+        usecase "Експортувати звіт по акціях" as UC_ExportPromotionsReport
+        usecase "Схвалити/відхилити студентську верифікацію\n(якщо автоматична перевірка не вдалася)" as UC_ApproveStudentVerification
+    
+        UC_ViewPromotionEffectiveness ..> UC_ViewActivePromotions : <<extend>>
+        UC_ExportPromotionsReport ..> UC_ViewPromotionEffectiveness : <<extend>>
+    }
+}
+
+Admin -- UC_ViewAllOrders
+Admin -- UC_CancelOrder
+Admin -- UC_ChangeOrderStatus
+Admin -- UC_ViewProductPopularity
+Admin -- UC_ViewIncomeReport
+Admin -- UC_ViewSalesReport
+Admin -- UC_ViewUsers
+Admin -- UC_BlockUser
+Admin -- UC_UnblockUser
+Admin -- UC_ResetPassword
+Admin -- UC_ConfigureDelivery
+Admin -- UC_SetupCurrency
+Admin -- UC_SetupLanguage
+Admin -- UC_ConfigureStoreSettings
+Admin -- UC_AccessCatalog
+Admin -- UC_AccessOrders
+Admin -- UC_AccessUsers
+Admin -- UC_AccessPayments
+Admin -- UC_AccessDelivery
+Admin -- UC_AccessReports
+Admin -- UC_AnalyzeMovement	
+Admin -- UC_ExportWarehouse
+Admin -- UC_ViewActivePromotions
+Admin -- UC_ViewPromotionEffectiveness
+Admin -- UC_ApproveStudentVerification
+Admin -- UC_ViewFinancialAnalytics
+Admin -- UC_ViewConversionMetrics
+Admin -- UC_AnalyzeUserBehavior
+
+UC_ViewIncomeReport -- ReportSystem
+UC_ViewSalesReport -- ReportSystem
+UC_ResetPassword -- EmailService
+
+note top of "Керування замовленнями" : FR-A-01
+
+note top of "Керування користувачами" : FR-A-02
+
+note top of "Аналітика та звітність" : FR-A-03
+
+note top of "Керування налаштуваннями системи" : FR-A-04
+
+note top of "Доступ до всіх модулів адмін-панелі" : FR-A-05
+
+note top of "Перегляд складських документів" : FR-A-06
+
+note top of "Керування акціями та знижками" : FR-A-07
+
+note right of UC_ViewFinancialAnalytics
+    FR-A-08
+end note
+
+note right of UC_ViewConversionMetrics
+    FR-A-09
+end note
+
+note right of UC_AnalyzeUserBehavior
+    FR-A-10
+end note
+
+@enduml

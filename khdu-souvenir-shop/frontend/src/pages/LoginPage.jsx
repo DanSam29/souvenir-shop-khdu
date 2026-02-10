@@ -74,7 +74,7 @@ function LoginPage() {
               value={formData.email}
               onChange={handleChange}
               required
-              placeholder="example@khdu.edu.ua"
+              placeholder="example@ksu.edu.ua"
             />
           </div>
 

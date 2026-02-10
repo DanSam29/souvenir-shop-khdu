@@ -1,0 +1,92 @@
+@startuml "State Machine Diagram - Order (Замовлення)"
+
+[*] --> PendingPayment : Користувач підтверджує замовлення
+
+state PendingPayment {
+    state "Очікує оплати" as Pending
+    [*] --> Pending
+    Pending : entry / Створити запис Order
+    Pending : entry / Створити видаткові накладні
+    Pending : entry / Зарезервувати товари (зменшити Stock)
+    Pending : do / Очікувати підтвердження оплати
+}
+
+PendingPayment --> Processing : [Оплата онлайн] Stripe webhook: payment_succeeded
+PendingPayment --> Processing : [Оплата при отриманні] Автоматично після створення
+PendingPayment --> Cancelled : [Оплата онлайн] Stripe webhook: payment_failed
+PendingPayment --> Cancelled : Адміністратор/Користувач скасовує
+
+state Processing {
+    state "Обробляється" as Proc
+    [*] --> Proc
+    Proc : entry / Додати запис в OrderHistory
+    Proc : entry / Надіслати Email-підтвердження
+    Proc : entry / Очистити кошик користувача
+    Proc : do / Очікувати відправку
+}
+
+Processing --> Shipped : Адміністратор змінює статус на "Відправлено"
+Processing --> Cancelled : Адміністратор скасовує замовлення
+
+state Shipped {
+    state "Відправлено" as Ship
+    [*] --> Ship
+    Ship : entry / Додати запис в OrderHistory
+    Ship : entry / Зберегти ТТН в коментарі
+    Ship : entry / Надіслати Email зі статусом
+    Ship : do / Відстежувати доставку через Nova Poshta
+}
+
+Shipped --> Delivered : Адміністратор підтверджує доставку
+Shipped --> Cancelled : [Рідко] Адміністратор скасовує при доставці
+
+state Delivered {
+    state "Доставлено" as Deliv
+    [*] --> Deliv
+    Deliv : entry / Додати запис в OrderHistory
+    Deliv : entry / Надіслати Email про доставку
+    Deliv : entry / [Якщо оплата при отриманні] Оновити Payment.status = "PAID"
+}
+
+state Cancelled {
+    state "Скасовано" as Cancel
+    [*] --> Cancel
+    Cancel : entry / Додати запис in OrderHistory
+    Cancel : entry / Створити запис в OrderCancellations
+    Cancel : entry / Видалити видаткові накладні
+    Cancel : entry / Повернути товари на склад (збільшити Stock)
+    Cancel : entry / [Якщо оплачено] Ініціювати refund через Stripe
+    Cancel : entry / Надіслати Email про скасування
+}
+
+Delivered --> [*]
+Cancelled --> [*]
+
+note right of PendingPayment
+    Початковий стан після підтвердження замовлення.
+    Товари зарезервовані через OutgoingDocuments.
+end note
+
+note right of Processing
+    Замовлення оплачено і готується до відправки.
+    Статус встановлюється автоматично (при оплаті)
+    або вручну адміністратором.
+end note
+
+note right of Shipped
+    Замовлення відправлено користувачу.
+    ТТН зберігається в OrderHistory.comment.
+end note
+
+note right of Delivered
+    Фінальний успішний стан.
+    Для "Оплата при отриманні" - оновлюється статус Payment.
+end note
+
+note right of Cancelled
+    Фінальний стан скасування.
+    Всі резервування товарів скасовуються.
+    Гроші повертаються (якщо були оплачені).
+end note
+
+@enduml

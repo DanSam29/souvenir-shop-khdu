@@ -1,0 +1,325 @@
+@startuml
+title Sequence Diagram: Налаштування інтеграції Stripe
+
+actor "СуперАдмін" as SuperAdmin
+participant "Admin Panel" as AdminPanel
+participant "Browser" as Browser
+participant "AdminController" as AdminCtrl
+participant "ConfigurationService" as ConfigSvc
+participant "StripeIntegration" as StripeInt
+participant "ValidationService" as Validation
+participant "EncryptionService" as Encryption
+participant "Serilog" as Logger
+participant "Stripe Dashboard" as StripeDash
+participant "Stripe API" as StripeAPI
+database "Database" as DB
+database "Config Storage\n(env/secrets)" as ConfigStore
+
+== Вхід в систему ==
+SuperAdmin -> AdminPanel: Входить в адмін-панель
+AdminPanel -> AdminPanel: Перевіряє JWT токен
+note right: Role: SUPERADMIN
+
+== Перехід до налаштувань ==
+SuperAdmin -> AdminPanel: Переходить до\n"Системні налаштування"
+AdminPanel -> AdminPanel: Відображає меню:\n- Інтеграції\n- Безпека\n- Резервне копіювання
+
+SuperAdmin -> AdminPanel: Обирає "Інтеграції"
+AdminPanel -> AdminCtrl: GET /api/admin/integrations/status
+AdminCtrl -> ConfigSvc: getIntegrationsStatus()
+ConfigSvc -> DB: SELECT * FROM IntegrationSettings
+DB --> ConfigSvc: Integration configs
+ConfigSvc --> AdminCtrl: { integrations[] }
+AdminCtrl --> AdminPanel: Status of all integrations
+note right
+    {
+        stripe: 
+        { 
+            status: "Потребує налаштування",
+            configured: false 
+        },
+        novaposhta: 
+        { 
+            status: "Активна",
+            configured: true 
+        }
+    }
+end note
+
+AdminPanel --> SuperAdmin: Відображає список інтеграцій
+
+== Відкриття форми Stripe ==
+SuperAdmin -> AdminPanel: Натискає "Stripe (Платежі)"
+AdminPanel -> AdminCtrl: GET /api/admin/integrations/stripe
+AdminCtrl -> ConfigSvc: getStripeConfig()
+ConfigSvc -> ConfigStore: Read STRIPE_* variables
+ConfigStore --> ConfigSvc: Existing config (masked)
+ConfigSvc --> AdminCtrl: { webhookUrl, mode, hasKeys }
+AdminCtrl --> AdminPanel: Current configuration
+note right
+    {
+        webhookUrl: "https://api.khdu-eshop.../webhooks/stripe",
+        mode: "sandbox",
+        hasPublishableKey: false,
+        hasSecretKey: false,
+        hasWebhookSecret: false
+    }
+end note
+
+AdminPanel --> SuperAdmin: Відображає форму налаштувань
+
+== Налаштування Webhook в Stripe ==
+SuperAdmin -> AdminPanel: Копіює Webhook URL
+note left
+    https://api.khdu-eshop.onrender.com
+    /api/webhooks/stripe
+end note
+
+SuperAdmin -> Browser: Відкриває Stripe Dashboard\n(нова вкладка)
+Browser -> StripeDash: Відображає панель
+SuperAdmin -> StripeDash: Переходить до "Webhooks"
+SuperAdmin -> StripeDash: Натискає "Add endpoint"
+
+StripeDash --> SuperAdmin: Форма додавання endpoint
+SuperAdmin -> StripeDash: Вставляє Webhook URL
+SuperAdmin -> StripeDash: Обирає події webhook
+
+SuperAdmin -> StripeDash: Зберігає webhook
+StripeDash -> StripeDash: Генерує Webhook Secret
+StripeDash --> SuperAdmin: Відображає Webhook Secret
+note right: "whsec_xxxxxxxxxxxxx"
+
+SuperAdmin -> StripeDash: Копіює Webhook Secret
+SuperAdmin -> StripeDash: Копіює Publishable Key
+note right: "pk_test_xxxxxxxxxxxxx"
+SuperAdmin -> StripeDash: Копіює Secret Key
+note right: "sk_test_xxxxxxxxxxxxx"
+
+== Заповнення форми ==
+SuperAdmin -> AdminPanel: Повертається до адмін-панелі
+SuperAdmin -> AdminPanel: Вставляє Publishable Key
+SuperAdmin -> AdminPanel: Вставляє Secret Key
+SuperAdmin -> AdminPanel: Вставляє Webhook Secret
+SuperAdmin -> AdminPanel: Обирає режим "Sandbox"
+
+alt Режим = Production
+    AdminPanel --> SuperAdmin: Попередження про Production режим
+    SuperAdmin -> AdminPanel: Підтверджує
+end
+
+SuperAdmin -> AdminPanel: Натискає "Зберегти налаштування"
+
+== Валідація на Frontend ==
+AdminPanel -> AdminPanel: Валідує формат ключів
+
+alt Publishable Key не починається з "pk_"
+    AdminPanel --> SuperAdmin: Помилка формату Publishable Key
+else Secret Key не починається з "sk_"
+    AdminPanel --> SuperAdmin: Помилка формату Secret Key
+else Webhook Secret не починається з "whsec_"
+    AdminPanel --> SuperAdmin: Помилка формату Webhook Secret
+else Валідація пройдена
+    AdminPanel -> AdminCtrl: PUT /api/admin/integrations/stripe
+    note right
+        {
+            publishableKey: "pk_test_xxx",
+            secretKey: "sk_test_xxx",
+            webhookSecret: "whsec_xxx",
+            mode: "sandbox"
+        }
+    end note
+end
+
+== Обробка на Backend ==
+AdminCtrl -> AdminCtrl: Перевіряє роль (SUPERADMIN)
+
+alt Недостатньо прав
+    AdminCtrl --> AdminPanel: 403 Forbidden
+    AdminPanel --> SuperAdmin: "Недостатньо прав"
+else Права достатні
+    AdminCtrl -> Validation: validate(StripeConfigDTO)
+    
+    alt Валідація не пройдена
+        Validation --> AdminCtrl: ValidationError[]
+        AdminCtrl --> AdminPanel: 400 Bad Request
+        AdminPanel --> SuperAdmin: Показує помилки
+    else Валідація пройдена
+        Validation --> AdminCtrl: Valid
+        
+        AdminCtrl -> ConfigSvc: updateStripeConfig(dto)
+        activate ConfigSvc
+        
+        == Шифрування ключів ==
+        ConfigSvc -> Encryption: encrypt(secretKey)
+        Encryption --> ConfigSvc: Encrypted secret key
+        ConfigSvc -> Encryption: encrypt(webhookSecret)
+        Encryption --> ConfigSvc: Encrypted webhook secret
+        
+        == Збереження конфігурації ==
+        ConfigSvc -> ConfigStore: Write environment variables
+        note right
+            STRIPE_PUBLISHABLE_KEY=pk_test_xxx
+            STRIPE_SECRET_KEY=encrypted_value
+            STRIPE_WEBHOOK_SECRET=encrypted_value
+            STRIPE_MODE=sandbox
+        end note
+        ConfigStore --> ConfigSvc: Saved
+        
+        ConfigSvc -> DB: UPDATE IntegrationSettings
+        note right
+            {
+                integration: "stripe",
+                configured: true,
+                mode: "sandbox",
+                updatedAt: NOW(),
+                updatedBy: superAdminId
+            }
+        end note
+        DB --> ConfigSvc: OK
+        
+        == Оновлення Stripe SDK ==
+        ConfigSvc -> StripeInt: reinitialize(newConfig)
+        activate StripeInt
+        StripeInt -> StripeInt: Оновлює Stripe Client\nз новими ключами
+        StripeInt --> ConfigSvc: Initialized
+        deactivate StripeInt
+        
+        ConfigSvc -> Logger: LogInformation("Stripe config updated")
+        note right
+            {
+                action: "Stripe config updated",
+                mode: "sandbox",
+                updatedBy: superAdminId
+            }
+        end note
+        
+        ConfigSvc --> AdminCtrl: { success: true }
+        deactivate ConfigSvc
+        
+        AdminCtrl --> AdminPanel: 200 OK
+        note right
+            {
+                message: "Налаштування збережено",
+                status: "Потребує тестування"
+            }
+        end note
+        
+        AdminPanel --> SuperAdmin: "Налаштування збережено"
+        AdminPanel --> SuperAdmin: Пропонує тестувати інтеграцію
+    end
+end
+
+== Тестування інтеграції ==
+SuperAdmin -> AdminPanel: Натискає "Тестувати інтеграцію"
+AdminPanel -> AdminCtrl: POST /api/admin/integrations/stripe/test
+
+AdminCtrl -> StripeInt: testConnection()
+activate StripeInt
+
+== Тест 1: Створення платіжної сесії ==
+StripeInt -> StripeAPI: POST /v1/checkout/sessions
+note right
+    {
+        payment_method_types: ["card"],
+        line_items: 
+        [{
+            price_data: 
+            {
+                currency: "uah",
+                product_data: { name: "Test" },
+                unit_amount: 10000
+            },
+            quantity: 1
+        }],
+        mode: "payment",
+        success_url: "...",
+        cancel_url: "..."
+    }
+end note
+
+alt Stripe API недоступний
+    StripeAPI --> StripeInt: Connection Error
+    StripeInt -> Logger: LogError("Stripe connection failed")
+    StripeInt --> AdminCtrl: { success: false, error: "API недоступний" }
+    AdminCtrl --> AdminPanel: 500 Internal Error
+    AdminPanel --> SuperAdmin: "Не вдалося підключитися до Stripe"
+    AdminPanel -> AdminPanel: Встановлює статус "Помилка" (червоний)
+    
+else Stripe API доступний
+    StripeAPI --> StripeInt: 401 Unauthorized
+    
+    alt Secret Key некоректний
+        StripeInt -> Logger: LogError("Invalid Stripe Secret Key")
+        StripeInt --> AdminCtrl: { success: false, error: "Некоректний Secret Key" }
+        AdminCtrl --> AdminPanel: 400 Bad Request
+        AdminPanel --> SuperAdmin: "Перевірте правильність Secret Key"
+        AdminPanel -> AdminPanel: Встановлює статус "Помилка" (червоний)
+        
+    else Secret Key валідний
+        StripeAPI --> StripeInt: 200 OK
+        note right
+            {
+                id: "cs_test_xxx",
+                url: "https://checkout.stripe.com/..."
+            }
+        end note
+        
+        StripeInt -> Logger: LogInformation("Test session created", sessionId)
+        
+        == Тест 2: Перевірка webhook ==
+        StripeInt -> StripeInt: Чекає webhook (таймаут 30 сек)
+        note right: Симулюємо webhook через Stripe CLI\nабо просто перевіряємо налаштування
+        
+        StripeInt -> StripeAPI: GET /v1/webhook_endpoints
+        note right: Перевіряємо, чи webhook endpoint створений
+        
+        StripeAPI --> StripeInt: Webhook endpoints list
+        
+        alt Webhook не знайдено
+            StripeInt -> Logger: LogWarning("Webhook not configured")
+            StripeInt --> AdminCtrl: Success with warning
+            AdminCtrl --> AdminPanel: 200 OK (with warning)
+            AdminPanel --> SuperAdmin: "Webhook налаштовано некоректно"
+            AdminPanel --> SuperAdmin: Показує інструкцію з перевірки
+            AdminPanel -> AdminPanel: Встановлює статус "Потребує перевірки"
+            
+        else Webhook знайдено
+            StripeInt -> StripeInt: Симулює тестовий webhook
+            StripeInt -> StripeInt: Перевіряє підпис webhook
+            
+            alt Webhook Secret некоректний
+                StripeInt -> Logger: LogError("Invalid Webhook Secret")
+                StripeInt --> AdminCtrl: Error invalid webhook secret
+                AdminCtrl --> AdminPanel: 400 Bad Request
+                AdminPanel --> SuperAdmin: "Перевірте правильність Webhook Secret"
+                AdminPanel -> AdminPanel: Встановлює статус "Помилка"
+                
+            else Webhook Secret валідний
+                StripeInt -> Logger: LogInformation("Stripe integration test passed")
+                StripeInt --> AdminCtrl: Test successful
+                deactivate StripeInt
+                
+                AdminCtrl -> DB: UPDATE IntegrationSettings
+                note right: SET status = 'active'
+                DB --> AdminCtrl: OK
+                
+                AdminCtrl --> AdminPanel: 200 OK
+                note right
+                    {
+                        success: true,
+                        message: "Інтеграція працює коректно",
+                        status: "active"
+                    }
+                end note
+                
+                AdminPanel --> SuperAdmin: "Інтеграція працює коректно! ✓"
+                AdminPanel -> AdminPanel: Встановлює статус "Активна" (зелений)
+                AdminPanel -> AdminPanel: Оновлює індикатор в списку інтеграцій
+            end
+        end
+    end
+end
+
+SuperAdmin -> AdminPanel: Переглядає статус "Активна"
+
+@enduml

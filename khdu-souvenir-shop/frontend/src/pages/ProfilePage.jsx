@@ -52,6 +52,13 @@ function ProfilePage() {
             <p>{user.email}</p>
           </div>
 
+          {user.studentStatus && user.studentStatus !== 'NONE' && (
+            <div className="info-group">
+              <label>Статус студента:</label>
+              <p className="role-badge">Студент</p>
+            </div>
+          )}
+
           {user.phone && (
             <div className="info-group">
               <label>Телефон:</label>

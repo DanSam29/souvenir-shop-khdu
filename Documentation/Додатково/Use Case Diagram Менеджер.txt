@@ -1,0 +1,217 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Менеджер" as Manager
+
+actor "Email сервіс" as EmailService <<external system>>
+actor "MinIO" as MinIO <<external system>>
+
+rectangle "Адміністративна панель інтернет-магазину" #FFCCCC {
+  
+    package "Керування каталогом товарів" #FFFF99 {
+        usecase "Редагувати товар" as UC_EditProduct
+        usecase "Керувати атрибутами товару" as UC_ManageAttributes
+        usecase "Додати новий товар" as UC_AddProduct
+        usecase "Встановити базову знижку для товару" as UC_SetProductBaseDiscount
+        usecase "Видалити товар" as UC_DeleteProduct
+        usecase "Переглянути список товарів" as UC_ViewProducts
+
+        UC_EditProduct .> UC_ManageAttributes : <<include>>
+        UC_AddProduct .> UC_ManageAttributes : <<include>>
+        UC_SetProductBaseDiscount ..> UC_AddProduct : <<extend>>
+        UC_SetProductBaseDiscount ..> UC_EditProduct : <<extend>>
+    }
+  
+    package "Керування категоріями товарів" #CCFFCC {
+        usecase "Створити категорію" as UC_CreateCategory
+        usecase "Редагувати категорію" as UC_EditCategory
+        usecase "Призначити товари до категорії" as UC_AssignProducts
+        usecase "Видалити категорію" as UC_DeleteCategory
+        usecase "Налаштувати ієрархію категорій" as UC_SetupHierarchy
+    
+        UC_AssignProducts ..> UC_CreateCategory : <<extend>>
+        UC_AssignProducts ..> UC_EditCategory : <<extend>>
+    }
+  
+    package "Керування зображеннями" #99CCFF {
+        usecase "Завантажити зображення товару" as UC_UploadImage
+        usecase "Валідувати формат та розмір файлу" as UC_ValidateImage
+        usecase "Встановити головне зображення" as UC_SetMainImage
+        usecase "Редагувати зображення" as UC_EditImage
+        usecase "Видалити зображення" as UC_DeleteImage
+    
+        UC_UploadImage .> UC_ValidateImage : <<include>>
+        UC_SetMainImage ..> UC_UploadImage : <<extend>>
+    }
+  
+    package "Керування акціями та знижками" #99DDFF {
+        usecase "Створити акцію/знижку" as UC_CreatePromo
+        usecase "Вибрати тип знижки\n(%, фіксована, спеціальна ціна)" as UC_SelectDiscountType
+        usecase "Встановити цільову аудиторію\n(всі, студенти, персонально)" as UC_SetAudience
+        usecase "Налаштувати умови застосування\n(мін. сума, мін. кількість)" as UC_SetConditions
+        usecase "Встановити дати дії" as UC_SetDates
+        usecase "Згенерувати промокод" as UC_GeneratePromoCode
+        usecase "Застосувати знижку до категорії" as UC_ApplyDiscountCategory
+        usecase "Застосувати знижку до товару" as UC_ApplyDiscountProduct
+        usecase "Застосувати знижку на кошик" as UC_ApplyDiscountCart
+        usecase "Призначити персональну знижку користувачу" as UC_AssignPersonalDiscount
+        usecase "Редагувати акцію" as UC_EditPromo
+        usecase "Деактивувати акцію" as UC_DeactivatePromo
+        usecase "Видалити акцію" as UC_DeletePromo
+        usecase "Фільтрувати акції за статусом/типом" as UC_FilterPromotions
+        usecase "Переглянути список активних акцій" as UC_ViewActivePromotions
+
+        UC_CreatePromo .> UC_SelectDiscountType : <<include>>
+        UC_CreatePromo .> UC_SetAudience : <<include>>
+        UC_CreatePromo .> UC_SetConditions : <<include>>
+        UC_SetDates ..> UC_CreatePromo : <<extend>>
+        UC_GeneratePromoCode ..> UC_CreatePromo : <<extend>>
+        UC_ApplyDiscountCategory ..> UC_CreatePromo : <<extend>>
+        UC_ApplyDiscountProduct ..> UC_CreatePromo : <<extend>>
+        UC_ApplyDiscountCart ..> UC_CreatePromo : <<extend>>
+        UC_AssignPersonalDiscount ..> UC_CreatePromo : <<extend>>
+        UC_FilterPromotions ..> UC_ViewActivePromotions : <<extend>>
+    }
+
+    package "Аналітика" #FFE6CC {
+        usecase "Переглянути аналітику продажів" as UC_ViewSalesAnalytics
+        usecase "Вибрати період" as UC_AnalyticsSelectPeriod
+        usecase "Застосувати фільтри\n(товар, категорія, дата)" as UC_AnalyticsApplyFilters
+        usecase "Переглянути популярність товарів\n(за кількістю продажів,\nдоходом, прибутком)" as UC_ViewProductPopularityManager
+        usecase "Переглянути аналітику категорій\n(дохід, кількість продажів,\nдинаміка, частка)" as UC_ViewCategoryAnalytics
+        usecase "Переглянути аналітику акцій та знижок\n(кількість використань, сума знижок,\nROI, конверсія з акцією vs без)" as UC_ViewPromotionAnalytics
+        usecase "Експортувати аналітичний звіт\n(PDF, CSV, Excel)" as UC_ExportAnalyticsReport
+
+        UC_ViewSalesAnalytics .> UC_AnalyticsSelectPeriod : <<include>>
+        UC_ViewSalesAnalytics .> UC_AnalyticsApplyFilters : <<include>>
+        UC_ViewProductPopularityManager .> UC_AnalyticsSelectPeriod : <<include>>
+        UC_ViewCategoryAnalytics .> UC_AnalyticsSelectPeriod : <<include>>
+        UC_ViewPromotionAnalytics .> UC_AnalyticsSelectPeriod : <<include>>
+        UC_ExportAnalyticsReport ..> UC_ViewSalesAnalytics : <<extend>>
+        UC_ExportAnalyticsReport ..> UC_ViewProductPopularityManager : <<extend>>
+        UC_ExportAnalyticsReport ..> UC_ViewCategoryAnalytics : <<extend>>
+        UC_ExportAnalyticsReport ..> UC_ViewPromotionAnalytics : <<extend>>
+    }
+
+    package "Перегляд запасів" #FFD699 {
+        usecase "Переглянути залишки товарів на складі" as UC_ViewStock
+        usecase "Отримати сповіщення про низький запас" as UC_LowStockAlert
+        usecase "Експортувати звіт про запаси" as UC_ExportReport
+        usecase "Фільтрувати товари за рівнем запасу" as UC_FilterStock
+    
+        UC_FilterStock ..> UC_ViewStock : <<extend>>
+        UC_ViewStock .> UC_LowStockAlert : <<include>>
+        UC_ExportReport ..> UC_ViewStock : <<extend>>
+    }
+  
+    package "Керування фірмами-постачальниками" #CCCCFF {
+        usecase "Переглянути список фірм" as UC_ViewCompanies
+        usecase "Додати нову фірму" as UC_AddCompany
+        usecase "Редагувати фірму" as UC_EditCompany
+        usecase "Деактивувати фірму" as UC_DeactivateCompany
+        usecase "Фільтрувати фірми за статусом" as UC_FilterCompanies
+        usecase "Пошук фірми за назвою" as UC_SearchCompany
+  
+        UC_FilterCompanies ..> UC_ViewCompanies : <<extend>>
+        UC_SearchCompany ..> UC_ViewCompanies : <<extend>>
+    }
+
+    package "Складський облік" #CCFFFF {
+        usecase "Оформити прибуткову накладну" as UC_CreateIncomingDoc
+        usecase "Ввести дані надходження:\n- Товар\n- Кількість\n- Закупівельна ціна\n- Обрати фірму-постачальника\n- Дата надходження" as UC_EnterIncomingData
+        usecase "Оформити видаткову накладну" as UC_CreateOutgoingDoc
+        usecase "Ввести дані списання:\n- Товар\n- Кількість\n- Причина списання\n- Фірма (якщо повернення)\n- Примітки" as UC_EnterOutgoingData
+        usecase "Переглянути історію надходжень" as UC_ViewIncomingHistory
+        usecase "Переглянути історію списань" as UC_ViewOutgoingHistory
+        usecase "Фільтрувати накладні за датою" as UC_FilterIncoming
+        usecase "Експортувати звіт\nнадходжень/списань" as UC_ExportIncoming
+        usecase "Переглянути поточні залишки" as UC_ViewCurrentStock
+        usecase "Розрахувати залишки на основі документів" as UC_CalculateStock
+    
+        UC_CreateIncomingDoc .> UC_EnterIncomingData : <<include>>
+        UC_CreateOutgoingDoc .> UC_EnterOutgoingData : <<include>>
+        UC_FilterIncoming ..> UC_ViewIncomingHistory : <<extend>>
+        UC_FilterIncoming ..> UC_ViewOutgoingHistory : <<extend>>
+        UC_ExportIncoming ..> UC_ViewIncomingHistory : <<extend>>
+        UC_ExportIncoming ..> UC_ViewOutgoingHistory : <<extend>>
+        UC_ViewCurrentStock .> UC_CalculateStock : <<include>>
+    }
+}
+
+Manager -- UC_ViewStock
+Manager -- UC_EditProduct
+Manager -- UC_AddProduct
+Manager -- UC_DeleteProduct
+Manager -- UC_ViewProducts
+Manager -- UC_CreateCategory
+Manager -- UC_EditCategory
+Manager -- UC_DeleteCategory
+Manager -- UC_SetupHierarchy
+Manager -- UC_UploadImage
+Manager -- UC_EditImage
+Manager -- UC_DeleteImage
+Manager -- UC_CreatePromo
+Manager -- UC_EditPromo
+Manager -- UC_DeactivatePromo
+Manager -- UC_DeletePromo
+Manager -- UC_ViewActivePromotions
+Manager -- UC_AssignPersonalDiscount
+Manager -- UC_CreateIncomingDoc
+Manager -- UC_CreateOutgoingDoc
+Manager -- UC_ViewIncomingHistory
+Manager -- UC_ViewOutgoingHistory
+Manager -- UC_ViewCurrentStock
+Manager -- UC_ViewCompanies
+Manager -- UC_AddCompany
+Manager -- UC_EditCompany
+Manager -- UC_DeactivateCompany
+Manager -- UC_ViewSalesAnalytics
+Manager -- UC_ViewProductPopularityManager
+Manager -- UC_ViewCategoryAnalytics
+Manager -- UC_ViewPromotionAnalytics
+
+UC_LowStockAlert -- EmailService
+UC_UploadImage -- MinIO
+
+note top of "Керування каталогом товарів" : FR-M-01
+
+note top of "Керування категоріями товарів" : FR-M-02
+
+note right of UC_UploadImage
+    FR-M-03
+end note
+
+note top of "Керування акціями та знижками" : FR-M-04
+
+note top of "Перегляд запасів"
+    FR-M-05
+end note
+
+note right of UC_EnterIncomingData
+    FR-M-06
+end note
+
+note right of UC_EnterOutgoingData
+    FR-M-07
+end note
+
+note top of "Керування фірмами-постачальниками" : FR-M-08
+
+note right of UC_ViewSalesAnalytics
+    FR-M-09
+end note
+
+note right of UC_ViewProductPopularityManager
+    FR-M-10
+end note
+
+note right of UC_ViewCategoryAnalytics
+    FR-M-11
+end note
+
+note right of UC_ExportAnalyticsReport
+    FR-M-12
+end note
+
+@enduml

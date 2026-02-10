@@ -1,0 +1,337 @@
+@startuml
+title Sequence Diagram: Створення видаткової накладної (автоматично при замовленні)
+
+actor "Користувач" as User
+participant "Frontend" as Frontend
+participant "OrderController" as OrderCtrl
+participant "OrderService" as OrderSvc
+participant "WarehouseService" as WarehouseSvc
+participant "ProductService" as ProductSvc
+participant "Serilog" as Logger
+database "Database" as DB
+
+note over User, DB: Цей процес є частиною оформлення замовлення
+
+== Користувач підтвердив замовлення ==
+User -> Frontend: Натискає "Підтвердити замовлення"
+Frontend -> OrderCtrl: POST /api/orders
+note right
+    {
+        items: 
+        [
+            {productId: 1, quantity: 2},
+            {productId: 3, quantity: 1}
+        ],
+        shippingAddress: {...},
+        paymentMethod: "CARD_ONLINE"
+    }
+end note
+
+OrderCtrl -> OrderSvc: createOrder(dto, userId)
+activate OrderSvc
+
+== Отримання товарів з OrderItems (включаючи знижки) ==
+OrderSvc -> DB: SELECT * FROM OrderItems WHERE orderId = ?
+DB --> OrderSvc: OrderItems[]
+note right
+    [{
+        productId: 1,
+        quantity: 2,
+        originalPrice: 450.00,
+        appliedPromotionId: 15,
+        discountAmount: 92.50,
+        finalPrice: 357.50
+    },
+    {
+        productId: 3,
+        quantity: 1,
+        originalPrice: 850.00,
+        appliedPromotionId: 8,
+        discountAmount: 85.00,
+        finalPrice: 765.00
+    }]
+    
+    Дані про знижки вже розраховані в OrderService
+    при оформленні замовлення
+end note
+
+== Перевірка доступності ==
+loop Для кожного товару
+    OrderSvc -> ProductSvc: checkAvailability(productId, quantity)
+    ProductSvc -> DB: SELECT stock FROM Products WHERE id = ?
+    DB --> ProductSvc: Stock value
+    
+    alt Stock < quantity
+        ProductSvc --> OrderSvc: NotAvailableError
+        OrderSvc --> OrderCtrl: 400 Bad Request
+        OrderCtrl --> Frontend: Товар недоступний
+        Frontend --> User: "Товар недоступний у потрібній кількості"
+        note right: Процес припиняється
+    else Stock >= quantity
+        ProductSvc --> OrderSvc: Available
+    end
+end
+
+== Початок транзакції ==
+OrderSvc -> DB: BEGIN TRANSACTION
+
+== Створення замовлення ==
+OrderSvc -> DB: INSERT INTO Orders
+note right
+    {
+        userId: 5,
+        orderNumber: "ORD-20241229-00123",
+        status: "PENDING_PAYMENT",
+        totalAmount: 1750.00,
+        createdAt: NOW()
+    }
+end note
+DB --> OrderSvc: orderId = 123
+
+OrderSvc -> DB: INSERT INTO OrderItems
+note right: Для кожного товару
+DB --> OrderSvc: OrderItems created
+
+OrderSvc -> DB: INSERT INTO Shipping
+DB --> OrderSvc: Shipping created
+
+== Резервування товарів через WarehouseService ==
+OrderSvc -> WarehouseSvc: createOutgoingDocument(orderId, items)
+activate WarehouseSvc
+note right of WarehouseSvc
+    Автоматичне створення
+    видаткової накладної
+end note
+
+WarehouseSvc -> DB: SELECT * FROM OrderItems WHERE orderId = ?
+DB --> WarehouseSvc: OrderItems[]
+
+== Обробка кожного товару ==
+loop Для кожного товару в замовленні
+    WarehouseSvc -> DB: SELECT id, name, stock FROM Products WHERE id = ?
+    DB --> WarehouseSvc: Product data
+    note right
+        {
+            id: 1,
+            name: "Футболка ХДУ",
+            stock: 145
+        }
+    end note
+    
+    WarehouseSvc -> WarehouseSvc: Перевіряє наявність
+    note right: stock >= quantity
+    
+    alt Stock < quantity
+        WarehouseSvc -> Logger: LogError("Insufficient stock", productId)
+        WarehouseSvc --> OrderSvc: InsufficientStockError
+        note right
+            {
+                productId: 1,
+                required: 2,
+                available: 0
+            }
+        end note
+        OrderSvc -> DB: ROLLBACK TRANSACTION
+        OrderSvc --> OrderCtrl: 400 Bad Request
+        OrderCtrl --> Frontend: Error response
+        Frontend --> User: "Недостатньо товару на складі"
+        note right: Весь процес відкатується
+        
+    else Stock >= quantity
+        == Створення видаткової накладної з інформацією про знижки ==
+        WarehouseSvc -> WarehouseSvc: Отримати дані про знижки з OrderItems
+        note right
+            Для productId: 1
+            - originalPrice: 450.00
+            - appliedPromotionId: 15
+            - discountAmount: 92.50
+            - finalPrice: 357.50
+        end note
+        
+        WarehouseSvc -> DB: INSERT INTO OutgoingDocuments
+        note right
+            {
+                productId: 1,
+                quantity: 2,
+                orderId: 123,
+                companyId: NULL,
+                reason: "ORDER",
+                originalPrice: 450.00,
+                appliedPromotionId: 15,
+                discountAmount: 92.50,
+                finalPrice: 357.50,
+                notes: "Автоматичне списання для замовлення №ORD-20241229-00123",
+                documentDate: CURRENT_DATE,
+                createdAt: NOW(),
+                createdBy: NULL
+            }
+        end note
+        DB --> WarehouseSvc: documentId = 85
+
+        note over WarehouseSvc
+            Інформація про знижки зберігається для:
+            - Фінансової звітності
+            - Аналізу ефективності акцій
+            - Історії складських операцій
+          
+            CompanyId = NULL для reason=ORDER (автоматичні списання).
+          
+            Для reason=RETURN (повернення постачальнику):
+            - CompanyId ОБОВ'ЯЗКОВИЙ
+            - originalPrice, appliedPromotionId, discountAmount = NULL
+          
+            Для reason=DAMAGED/LOST/INVENTORY:
+            - CompanyId = NULL
+            - originalPrice, appliedPromotionId, discountAmount = NULL
+        end note
+        
+        == Зменшення Stock ==
+        WarehouseSvc -> DB: SELECT stock FROM Products WHERE id = ?
+        DB --> WarehouseSvc: currentStock = 145
+        
+        WarehouseSvc -> WarehouseSvc: Розраховує новий stock
+        note right: newStock = 145 - 2 = 143
+        
+        WarehouseSvc -> DB: UPDATE Products SET stock = ? WHERE id = ?
+        note right: stock = 143
+        DB --> WarehouseSvc: Rows affected: 1
+        
+        == Логування операції ==
+        WarehouseSvc -> Logger: LogInformation("Outgoing document created")
+        note right
+            {
+                action: "outgoing_doc_auto_created",
+                documentId: 85,
+                orderId: 123,
+                productId: 1,
+                productName: "Футболка ХДУ",
+                quantity: 2,
+                oldStock: 145,
+                newStock: 143,
+                reason: "ORDER",
+                pricing: 
+                {
+                    originalPrice: 450.00,
+                    appliedPromotionId: 15,
+                    promotionName: "Промокод KSU2026",
+                    discountAmount: 92.50,
+                    finalPrice: 357.50,
+                    totalValue: 715.00
+                }
+            }
+        end note
+        
+        == Збереження в audit log ==
+        WarehouseSvc -> DB: INSERT INTO AuditLog
+        note right
+            {
+                action: "STOCK_DECREASED",
+                entityType: "OutgoingDocument",
+                entityId: 85,
+                userId: NULL,
+                changes: 
+                {
+                    productId: 1,
+                    orderId: 123,
+                    oldStock: 145,
+                    newStock: 143,
+                    quantity: 2,
+                    originalPrice: 450.00,
+                    appliedPromotionId: 15,
+                    discountAmount: 92.50,
+                    finalPrice: 357.50
+                },
+                timestamp: NOW()
+            }
+        end note
+        DB --> WarehouseSvc: OK
+    end
+end
+
+== Повернення результату ==
+WarehouseSvc --> OrderSvc: Success
+note right
+    {
+        success: true,
+        documents: 
+        [
+            {documentId: 85, productId: 1, quantity: 2},
+            {documentId: 86, productId: 3, quantity: 1}
+        ],
+        updatedStocks: 
+        [
+            {productId: 1, oldStock: 145, newStock: 143},
+            {productId: 3, oldStock: 30, newStock: 29}
+        ]
+    }
+end note
+deactivate WarehouseSvc
+
+== Продовження створення замовлення ==
+alt Спосіб оплати = "CARD_ONLINE"
+    OrderSvc -> OrderSvc: Створює платіжну сесію Stripe
+    note right: Процес продовжується як в діаграмі оформлення замовлення
+else Спосіб оплати = "CASH_ON_DELIVERY"
+    OrderSvc -> DB: UPDATE Orders SET status = 'PROCESSING'
+    DB --> OrderSvc: OK
+end
+
+OrderSvc -> DB: COMMIT TRANSACTION
+
+alt Транзакція не вдалася
+    DB --> OrderSvc: Error
+    OrderSvc -> DB: ROLLBACK TRANSACTION
+    note right
+        Всі зміни відкатуються:
+        - Order
+        - OrderItems
+        - Shipping
+        - OutgoingDocuments
+        - Products.stock
+    end note
+    
+    OrderSvc -> Logger: LogError("Order transaction failed", error)
+    OrderSvc --> OrderCtrl: 500 Internal Error
+    OrderCtrl --> Frontend: Error response
+    Frontend --> User: "Помилка при оформленні замовлення"
+    
+else Транзакція успішна
+    DB --> OrderSvc: Success
+    
+    OrderSvc -> Logger: LogInformation("Order created with outgoing docs")
+    note right
+        {
+            action: "order_created",
+            orderId: 123,
+            userId: 5,
+            totalAmount: 1750.00,
+            itemsCount: 2,
+            outgoingDocsCreated: [85, 86]
+        }
+    end note
+    
+    OrderSvc --> OrderCtrl: Order created
+    deactivate OrderSvc
+    OrderCtrl --> Frontend: Success response
+    Frontend --> User: "Замовлення успішно створено!"
+end
+
+note over User, DB
+    Видаткові накладні створені автоматично та товари зарезервовані для замовлення.
+    
+    Інформація про знижки зберігається в OutgoingDocuments:
+    - originalPrice: базова ціна товару
+    - appliedPromotionId: ID застосованої знижки/промокоду
+    - discountAmount: сума знижки
+    - finalPrice: фінальна ціна після знижки
+    
+    CompanyId = NULL для reason=ORDER (замовлення).
+    
+    Для ручного створення видаткової накладної
+    з reason=RETURN (повернення постачальнику):
+    - Менеджер використовує окрему форму
+    - CompanyId ОБОВ'ЯЗКОВИЙ (фірма-постачальник)
+    - Поля знижок = NULL (тільки finalPrice = ціна повернення)
+end note
+
+@enduml

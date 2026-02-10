@@ -1,0 +1,359 @@
+workspace "Інтернет-магазин сувенірної продукції ХДУ" "C3: Component - Компоненти API Gateway" {
+    !identifiers hierarchical
+    
+    model {
+        # Актори
+        webapp = person "Web Application" "React клієнт" {
+            tags "Frontend"
+        }
+        adminpanel = person "Admin Panel" "React Admin" {
+            tags "Frontend"
+        }
+        
+        # API Gateway з компонентами
+        api = softwareSystem "API Gateway" {
+            
+            # Middleware компоненти
+            authMiddleware = container "Authentication Middleware" "Перевіряє JWT токени" "ASP.NET Core Middleware" {
+                tags "Middleware"
+            }
+            corsMiddleware = container "CORS Middleware" "Налаштовує політики CORS" "ASP.NET Core Middleware" {
+                tags "Middleware"
+            }
+            rateLimiter = container "Rate Limiter" "Обмежує кількість запитів" "ASP.NET Core Middleware" {
+                tags "Middleware"
+            }
+            
+            # Controllers
+            authController = container "AuthController" "Реєстрація та авторизація" ".NET Controller" {
+                tags "Controller"
+            }
+            productController = container "ProductController" "Керування товарами" ".NET Controller" {
+                tags "Controller"
+            }
+            categoryController = container "CategoryController" "Керування категоріями" ".NET Controller" {
+                tags "Controller"
+            }
+            cartController = container "CartController" "Керування кошиком" ".NET Controller" {
+                tags "Controller"
+            }
+            orderController = container "OrderController" "Керування замовленнями" ".NET Controller" {
+                tags "Controller"
+            }
+            paymentController = container "PaymentController" "Обробка платежів" ".NET Controller" {
+                tags "Controller"
+            }
+            shippingController = container "ShippingController" "Керування доставкою" ".NET Controller" {
+                tags "Controller"
+            }
+            userController = container "UserController" "Керування користувачами" ".NET Controller" {
+                tags "Controller"
+            }
+            adminController = container "AdminController" "Адміністративні функції" ".NET Controller" {
+                tags "Controller"
+            }
+            warehouseController = container "WarehouseController" "Складський облік" ".NET Controller" {
+                tags "Controller"
+            }
+            promotionController = container "PromotionController" "Керування акціями та знижками" ".NET Controller" {
+                tags "Controller"
+            }
+	    analyticsController = container "AnalyticsController" "Аналітика продажів, товарів та категорій" ".NET Controller" {
+                tags "Controller"
+            }
+
+            # Services
+            authService = container "AuthService" "Бізнес-логіка автентифікації" ".NET Service" {
+                tags "Service"
+            }
+            productService = container "ProductService" "Бізнес-логіка товарів" ".NET Service" {
+                tags "Service"
+            }
+            categoryService = container "CategoryService" "Бізнес-логіка категорій" ".NET Service" {
+                tags "Service"
+            }
+            cartService = container "CartService" "Бізнес-логіка кошика" ".NET Service" {
+                tags "Service"
+            }
+            orderService = container "OrderService" "Бізнес-логіка замовлень" ".NET Service" {
+                tags "Service"
+            }
+            paymentService = container "PaymentService" "Бізнес-логіка платежів" ".NET Service" {
+                tags "Service"
+            }
+            shippingService = container "ShippingService" "Бізнес-логіка доставки" ".NET Service" {
+                tags "Service"
+            }
+            userService = container "UserService" "Бізнес-логіка користувачів" ".NET Service" {
+                tags "Service"
+            }
+            reportService = container "ReportService" "Бізнес-логіка звітів" ".NET Service" {
+                tags "Service"
+            }
+            notificationService = container "NotificationService" "Бізнес-логіка сповіщень" ".NET Service" {
+                tags "Service"
+            }
+            warehouseService = container "WarehouseService" "Бізнес-логіка складу, керування фірмами-постачальниками" ".NET Service" {
+                tags "Service"
+            }
+            promotionService = container "PromotionService" "Бізнес-логіка акцій та знижок, розрахунок цін зі знижками, стакування знижок" ".NET Service" {
+                tags "Service"
+            }
+	    analyticsService = container "AnalyticsService" "Бізнес-логіка аналітики продажів, товарів, категорій та акцій" ".NET Service" {
+                tags "Service"
+            }
+
+            # Integrations
+            stripeIntegration = container "Stripe Integration" "Інтеграція з Stripe" ".NET Integration" {
+                tags "Integration"
+            }
+            novaposhtaIntegration = container "Nova Poshta Integration" "Інтеграція з Nova Poshta" ".NET Integration" {
+                tags "Integration"
+            }
+            emailIntegration = container "Email Integration" "Інтеграція з Email Service" ".NET Integration" {
+                tags "Integration"
+            }
+            minioIntegration = container "MinIO Integration" "Інтеграція з MinIO" ".NET Integration" {
+                tags "Integration"
+            }
+            universityIntegration = container "University Integration" "Інтеграція з University API для верифікації студентів" ".NET Integration" {
+                tags "Integration"
+            }
+
+            # Infrastructure
+            jwtService = container "JWT Service" "Генерація та валідація токенів" ".NET Service" {
+                tags "Infrastructure"
+            }
+            validation = container "Validation" "Валідація даних" "FluentValidation" {
+                tags "Infrastructure"
+            }
+            configuration = container "Configuration" "Конфігурація системи" "appsettings.json" {
+                tags "Infrastructure"
+            }
+            
+            # Repositories
+            productRepo = container "Product Repository" "Доступ до Products" "Repository Pattern" {
+                tags "Repository"
+            }
+            orderRepo = container "Order Repository" "Доступ до Orders" "Repository Pattern" {
+                tags "Repository"
+            }
+            userRepo = container "User Repository" "Доступ до Users" "Repository Pattern" {
+                tags "Repository"
+            }
+            paymentRepo = container "Payment Repository" "Доступ до Payments" "Repository Pattern" {
+                tags "Repository"
+            }
+            incomingRepo = container "Incoming Repository" "Доступ до IncomingDocuments" "Repository Pattern" {
+                tags "Repository"
+            }
+            outgoingRepo = container "Outgoing Repository" "Доступ до OutgoingDocuments" "Repository Pattern" {
+                tags "Repository"
+            }
+            companyRepo = container "Company Repository" "Доступ до Companies" "Repository Pattern" {
+                tags "Repository"
+            }
+            promotionRepo = container "Promotion Repository" "Доступ до Promotions" "Repository Pattern" {
+                tags "Repository"
+            }
+            userPromotionRepo = container "UserPromotion Repository" "Доступ до UserPromotions" "Repository Pattern" {
+                tags "Repository"
+            }
+            dbContext = container "DbContext" "Entity Framework Core контекст" "EF Core" {
+                tags "Repository"
+            }
+        }
+        
+        # Зовнішні системи
+        database = softwareSystem "MySQL Database" {
+            tags "Database"
+        }
+        cache = softwareSystem "In-Memory Cache" {
+            tags "Cache"
+        }
+        stripe = softwareSystem "Stripe API" {
+            tags "External"
+        }
+        novaposhta = softwareSystem "Nova Poshta API" {
+            tags "External"
+        }
+        email = softwareSystem "Email Service" {
+            tags "External"
+        }
+        minio = softwareSystem "MinIO Storage" {
+            tags "External"
+        }
+        university = softwareSystem "University API" {
+            tags "External"
+        }
+
+        # Взаємодії Frontend -> Middleware
+        webapp -> api.authMiddleware "HTTP Request"
+        adminpanel -> api.authMiddleware "HTTP Request"
+        
+        # Middleware -> Controllers
+        api.authMiddleware -> api.corsMiddleware "Next"
+        api.corsMiddleware -> api.rateLimiter "Next"
+        api.rateLimiter -> api.authController "Route"
+        api.rateLimiter -> api.productController "Route"
+        api.rateLimiter -> api.categoryController "Route"
+        api.rateLimiter -> api.cartController "Route"
+        api.rateLimiter -> api.orderController "Route"
+        api.rateLimiter -> api.paymentController "Route"
+        api.rateLimiter -> api.shippingController "Route"
+        api.rateLimiter -> api.userController "Route"
+        api.rateLimiter -> api.adminController "Route"
+        api.rateLimiter -> api.warehouseController "Route"
+        api.rateLimiter -> api.promotionController "Route"
+        api.rateLimiter -> api.analyticsController "Route"
+        
+        # Controllers -> Services
+        api.authController -> api.authService "Uses"
+        api.productController -> api.productService "Uses"
+        api.categoryController -> api.categoryService "Uses"
+        api.cartController -> api.cartService "Uses"
+        api.orderController -> api.orderService "Uses"
+        api.paymentController -> api.paymentService "Uses"
+        api.shippingController -> api.shippingService "Uses"
+        api.userController -> api.userService "Uses"
+        api.adminController -> api.reportService "Uses"
+        api.warehouseController -> api.warehouseService "Uses"
+        api.promotionController -> api.promotionService "Uses"
+	api.analyticsController -> api.analyticsService "Uses"
+        
+        # Services взаємодії між собою
+        api.orderService -> api.cartService "Calls"
+        api.orderService -> api.paymentService "Calls"
+        api.orderService -> api.shippingService "Calls"
+        api.orderService -> api.warehouseService "Calls"
+        api.orderService -> api.notificationService "Calls"
+        api.cartService -> api.productService "Calls"
+        api.warehouseService -> api.productService "Calls"
+        api.paymentService -> api.notificationService "Calls"
+        api.orderService -> api.promotionService "Calls"
+        api.promotionService -> api.userService "Calls"
+        api.authService -> api.promotionService "Calls"
+        api.analyticsService -> api.orderService "Calls"
+        api.analyticsService -> api.productService "Calls"
+        api.analyticsService -> api.promotionService "Calls"
+
+        # Services -> Integrations
+        api.paymentService -> api.stripeIntegration "Uses"
+        api.shippingService -> api.novaposhtaIntegration "Uses"
+        api.notificationService -> api.emailIntegration "Uses"
+        api.productService -> api.minioIntegration "Uses"
+        api.authService -> api.universityIntegration "Uses"
+
+        # Services -> Infrastructure
+        api.authService -> api.jwtService "Uses"
+        api.productService -> api.validation "Uses"
+        api.orderService -> api.validation "Uses"
+        api.promotionService -> api.validation "Uses"
+	api.analyticsService -> api.validation "Uses"
+        
+        # Services -> Repositories
+        api.productService -> api.productRepo "Uses"
+        api.orderService -> api.orderRepo "Uses"
+        api.authService -> api.userRepo "Uses"
+        api.userService -> api.userRepo "Uses"
+        api.paymentService -> api.paymentRepo "Uses"
+        api.warehouseService -> api.incomingRepo "Uses"
+        api.warehouseService -> api.outgoingRepo "Uses"
+        api.warehouseService -> api.companyRepo "Uses"
+        api.promotionService -> api.promotionRepo "Uses"
+        api.promotionService -> api.userPromotionRepo "Uses"
+        api.analyticsService -> api.orderRepo "Uses"
+        api.analyticsService -> api.productRepo "Uses"
+        api.analyticsService -> api.promotionRepo "Uses"
+
+        # Repositories -> DbContext
+        api.productRepo -> api.dbContext "Uses"
+        api.orderRepo -> api.dbContext "Uses"
+        api.userRepo -> api.dbContext "Uses"
+        api.paymentRepo -> api.dbContext "Uses"
+        api.incomingRepo -> api.dbContext "Uses"
+        api.outgoingRepo -> api.dbContext "Uses"
+        api.companyRepo -> api.dbContext "Uses"
+        api.promotionRepo -> api.dbContext "Uses"
+        api.userPromotionRepo -> api.dbContext "Uses"
+
+        # DbContext -> Database
+        api.dbContext -> database "Reads/Writes"
+        
+        # Services -> Cache
+        api.productService -> cache "Reads/Writes"
+        api.categoryService -> cache "Reads/Writes"
+        api.promotionService -> cache "Reads/Writes"
+	api.analyticsService -> cache "Reads/Writes"
+
+        # Integrations -> External Systems
+        api.stripeIntegration -> stripe "HTTPS/REST"
+        api.novaposhtaIntegration -> novaposhta "HTTPS/REST"
+        api.emailIntegration -> email "SMTP"
+        api.minioIntegration -> minio "S3 API"
+        api.universityIntegration -> university "HTTPS/REST"
+    }
+    
+    views {
+        container api "Component" "Діаграма компонентів API Gateway" {
+            include *
+            autolayout tb
+        }
+        
+        styles {
+            element "Frontend" {
+                shape person
+                background #08427b
+                color #ffffff
+            }
+            element "Middleware" {
+                shape component
+                background #e67e22
+                color #ffffff
+            }
+            element "Controller" {
+                shape component
+                background #3498db
+                color #ffffff
+            }
+            element "Service" {
+                shape component
+                background #1abc9c
+                color #ffffff
+            }
+            element "Integration" {
+                shape component
+                background #9b59b6
+                color #ffffff
+            }
+            element "Infrastructure" {
+                shape component
+                background #34495e
+                color #ffffff
+            }
+            element "Repository" {
+                shape component
+                background #e74c3c
+                color #ffffff
+            }
+            element "Database" {
+                shape cylinder
+                background #ff6b6b
+                color #ffffff
+            }
+            element "Cache" {
+                shape pipe
+                background #f39c12
+                color #ffffff
+            }
+            element "External" {
+                background #999999
+                color #ffffff
+            }
+            relationship "Relationship" {
+                thickness 1
+                color #707070
+            }
+        }
+    }
+}

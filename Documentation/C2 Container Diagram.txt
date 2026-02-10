@@ -1,0 +1,132 @@
+workspace "Інтернет-магазин сувенірної продукції ХДУ" "C2: Container - Контейнери системи" {
+    !identifiers hierarchical
+    
+    model {
+        # Актори
+        guest = person "Гість"
+        customer = person "Користувач"
+        manager = person "Менеджер"
+        admin = person "Адміністратор"
+        superadmin = person "СуперАдмін"
+        
+        # Головна система з контейнерами
+        eshop = softwareSystem "Інтернет-магазин ХДУ" {
+            
+            # Frontend контейнери
+            webapp = container "Web Application" "Клієнтський інтерфейс магазину" "React, JavaScript" {
+                tags "Web Browser"
+            }
+            adminpanel = container "Admin Panel" "Адміністративна панель" "React Admin, JavaScript" {
+                tags "Web Browser"
+            }
+            
+            # Backend контейнер
+            api = container "API Gateway" "REST API для обробки запитів" ".NET Core, C#" {
+                tags "API"
+            }
+            
+            # База даних
+            database = container "Database" "Зберігає користувачів, товари, замовлення, платежі, складські документи" "MySQL" {
+                tags "Database"
+            }
+            
+            # Кеш
+            cache = container "Cache" "Кешування товарів, категорій та аналітичних метрик" "In-Memory Cache" {
+                tags "Cache"
+            }
+            
+            # Логування
+            logger = container "Logger" "Логування подій та помилок системи" "Serilog" {
+                tags "Logger"
+            }
+        }
+        
+        # Зовнішні системи
+        stripe = softwareSystem "Stripe API" {
+            tags "External System"
+        }
+        novaposhta = softwareSystem "Nova Poshta API" {
+            tags "External System"
+        }
+        email = softwareSystem "Email Service" {
+            tags "External System"
+        }
+        minio = softwareSystem "MinIO Storage" {
+            tags "External System"
+        }
+	university = softwareSystem "University API" {
+    	    tags "External System"
+        }
+        
+        # Взаємодії користувачів з Frontend
+        guest -> eshop.webapp "Переглядає каталог, шукає товари" "HTTPS"
+        customer -> eshop.webapp "Додає товари до кошика, оформлює замовлення" "HTTPS"
+        manager -> eshop.adminpanel "Керує товарами, складом, переглядає аналітику" "HTTPS"
+        admin -> eshop.adminpanel "Керує замовленнями, користувачами, аналітикою та звітами" "HTTPS"
+        superadmin -> eshop.adminpanel "Керує системою, ролями, інтеграціями" "HTTPS"
+        
+        # Взаємодії Frontend з Backend
+        eshop.webapp -> eshop.api "Надсилає запити" "REST API, JSON/HTTPS"
+        eshop.adminpanel -> eshop.api "Надсилає адміністративні запити" "REST API, JSON/HTTPS"
+        
+        # Взаємодії Backend з базою даних та кешем
+        eshop.api -> eshop.database "Читає/записує дані" "Entity Framework Core"
+        eshop.api -> eshop.cache "Читає/записує кеш" "In-Memory"
+        eshop.api -> eshop.logger "Записує логи" "Serilog"
+        
+        # Взаємодії Backend з зовнішніми сервісами
+        eshop.api -> stripe "Створює платіжні сесії, обробляє webhook" "HTTPS/REST API"
+        eshop.api -> novaposhta "Отримує міста, відділення, розраховує доставку" "HTTPS/REST API"
+        eshop.api -> email "Відправляє Email-сповіщення" "SMTP"
+        eshop.api -> minio "Завантажує/завантажує зображення" "S3 API"
+	eshop.api -> university "Верифікує студентів, отримує академічні дані" "HTTPS/REST API"
+    }
+    
+    views {
+        container eshop "Container" "Діаграма контейнерів системи інтернет-магазину" {
+            include *
+            autolayout tb
+        }
+        
+        styles {
+            element "Person" {
+                shape person
+                background #08427b
+                color #ffffff
+            }
+            element "Web Browser" {
+                shape webbrowser
+                background #438dd5
+                color #ffffff
+            }
+            element "API" {
+                shape hexagon
+                background #1168bd
+                color #ffffff
+            }
+            element "Database" {
+                shape cylinder
+                background #ff6b6b
+                color #ffffff
+            }
+            element "Cache" {
+                shape pipe
+                background #f39c12
+                color #ffffff
+            }
+            element "Logger" {
+                shape folder
+                background #8e44ad
+                color #ffffff
+            }
+            element "External System" {
+                background #999999
+                color #ffffff
+            }
+            relationship "Relationship" {
+                thickness 2
+                color #707070
+            }
+        }
+    }
+}

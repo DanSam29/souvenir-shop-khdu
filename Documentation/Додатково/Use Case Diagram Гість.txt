@@ -1,0 +1,53 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Гість" as Guest
+
+rectangle "Інтернет-магазин" {
+  
+    package "Перегляд товарів" #FFFF00 {
+        usecase UC_Search as "Шукати товари за назвою"
+        usecase UC_Catalog as "Переглянути каталог товарів"
+        usecase UC_Filter as "Фільтрувати товари"
+        usecase UC_Sort as "Сортувати товари"
+        usecase UC_Details as "Переглянути детальну інформацію про товар"
+
+        UC_Catalog .> UC_Details : <<extend>>
+        UC_Catalog .> UC_Sort : <<extend>>
+    }
+  
+    package "Аутентифікація" #00FF00 {
+        usecase UC_Register as "Зареєструватися в системі"
+        usecase UC_Login as "Увійти в систему (авторизація)"
+    }
+}
+
+Guest -- UC_Search
+Guest -- UC_Catalog
+Guest -- UC_Filter
+Guest -- UC_Register
+Guest -- UC_Login
+Guest -- UC_Details
+
+note right of UC_Catalog
+    FR-G-01
+end note
+
+note right of UC_Search 
+    FR-G-02
+end note
+
+note right of UC_Filter 
+    FR-G-02
+end note
+
+note right of UC_Details
+    FR-G-03
+end note
+
+note right of UC_Register
+    FR-G-04
+end note
+
+@enduml

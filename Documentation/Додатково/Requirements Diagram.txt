@@ -1,0 +1,327 @@
+@startuml "Діаграма вимог інтернет-магазину"
+
+' Актори
+package "Актори" {
+actor "Гість" as Guest #000000
+actor "Користувач" as User #330066
+actor "Менеджер" as Manager #CC00CC
+actor "Адміністратор" as Admin #000052
+actor "СуперАдмін" as SuperAdmin #999900
+}
+
+' Компоненти системи
+package "Компоненти системи" {
+    component "<<component>>\nCatalogModule" as CatalogModule #FF0000
+    component "<<component>>\nCartModule" as CartModule #FFA500
+    component "<<component>>\nOrderModule" as OrderModule #FFFF00
+    component "<<component>>\nPaymentModule" as PaymentModule #00FF00
+    component "<<component>>\nUserModule" as UserModule #008000
+    component "<<component>>\nShippingModule" as ShippingModule #0000CC
+    component "<<component>>\nAdminPanelModule" as AdminPanelModule #00BFFF
+    component "<<component>>\nNotificationModule" as NotificationModule #4C0099
+    component "<<component>>\nWarehouseModule" as WarehouseModule #9370DB
+    component "<<component>>\nPromotionModule" as PromotionModule #9370DB
+    component "<<component>>\nUniversityModule" as UniversityModule #4B0082
+    component "<<component>>\nAnalyticsModule" as AnalyticsModule #00CED1
+}
+
+' Функціональні вимоги
+package "Функціональні вимоги" {
+    rectangle "<<requirement>>\nID: FR-G-01\nSource: Гість\nName: Перегляд каталогу товарів\nRisk: Низький\nPriority: Високий" as FRG01 #0000CC
+    rectangle "<<requirement>>\nID: FR-G-02\nSource: Гість\nName: Пошук та фільтрація товарів\nRisk: Низький\nPriority: Високий" as FRG02 #00CC00
+    rectangle "<<requirement>>\nID: FR-G-03\nSource: Гість\nName: Перегляд детальної інформації про товар\nRisk: Низький\nPriority: Високий" as FRG03 #CC0000
+    rectangle "<<requirement>>\nID: FR-G-04\nSource: Гість\nName: Реєстрація та авторизація\nRisk: Середній\nPriority: Високий" as FRG04 #FF8000
+    rectangle "<<requirement>>\nID: FR-C-01\nSource: Користувач\nName: Додавання товарів до кошика\nRisk: Середній\nPriority: Високий" as FRC01 #000000
+    rectangle "<<requirement>>\nID: FR-C-02\nSource: Користувач\nName: Оформлення замовлення\n(з видатковою накладною)\nRisk: Високий\nPriority: Високий" as FRC02 #008080
+    rectangle "<<requirement>>\nID: FR-C-03\nSource: Користувач\nName: Керування особистим кабінетом\nRisk: Низький\nPriority: Середній" as FRC03 #CC0066
+    rectangle "<<requirement>>\nID: FR-C-04\nSource: Користувач\nName: Перегляд історії замовлень\nRisk: Низький\nPriority: Середній" as FRC04 #006600
+    rectangle "<<requirement>>\nID: FR-C-05\nSource: Користувач\nName: Відстеження статусів замовлення\nRisk: Середній\nPriority: Середній" as FRC05 #4C0099
+    rectangle "<<requirement>>\nID: FR-C-06\nSource: Користувач\nName: Збереження даних для доставки\nRisk: Низький\nPriority: Низький" as FRC06 #99004D
+    rectangle "<<requirement>>\nID: FR-C-07\nSource: Користувач\nName: Отримання персональних пропозицій та автоматичних знижок\nRisk: Середній\nPriority: Низький" as FRC07 #808000
+    rectangle "<<requirement>>\nID: FR-C-08\nSource: Користувач\nName: Перегляд доступних знижок\nRisk: Низький\nPriority: Середній" as FRC08 #FF1493
+    rectangle "<<requirement>>\nID: FR-C-09\nSource: Користувач\nName: Верифікація студентського статусу\nRisk: Середній\nPriority: Високий" as FRC09 #8B008B
+    rectangle "<<requirement>>\nID: FR-C-10\nSource: Користувач\nName: Введення промокоду при оформленні\nRisk: Середній\nPriority: Середній" as FRC10 #FF69B4
+    rectangle "<<requirement>>\nID: FR-C-11\nSource: Користувач\nName: Перегляд історії використаних знижок\nRisk: Низький\nPriority: Низький" as FRC11 #DB7093
+    rectangle "<<requirement>>\nID: FR-M-01\nSource: Менеджер\nName: Керування каталогом товарів\n(Stock через накладні)\nRisk: Середній\nPriority: Високий" as FRM01 #708090
+    rectangle "<<requirement>>\nID: FR-M-02\nSource: Менеджер\nName: Керування категоріями товарів\nRisk: Низький\nPriority: Високий" as FRM02 #66FFFF
+    rectangle "<<requirement>>\nID: FR-M-03\nSource: Менеджер\nName: Завантаження зображень товарів\nRisk: Низький\nPriority: Високий" as FRM03 #DEBC00
+    rectangle "<<requirement>>\nID: FR-M-04\nSource: Менеджер\nName: Керування акціями та знижками\nRisk: Середній\nPriority: Середній" as FRM04 #600000
+    rectangle "<<requirement>>\nID: FR-M-05\nSource: Менеджер\nName: Перегляд запасів на складі\n(розраховується з документів)\nRisk: Низький\nPriority: Середній" as FRM05 #B9E0A5
+    rectangle "<<requirement>>\nID: FR-M-06\nSource: Менеджер\nName: Оформлення прибуткової накладної\nRisk: Середній\nPriority: Високий" as FRM06 #9370DB
+    rectangle "<<requirement>>\nID: FR-M-07\nSource: Менеджер/Адміністратор\nName: Оформлення видаткової накладної\nRisk: Середній\nPriority: Високий" as FRM07 #8B7D9B
+    rectangle "<<requirement>>\nID: FR-M-08\nSource: Менеджер\nName: Керування фірмами-постачальниками\nRisk: Низький\nPriority: Середній" as FRM08 #A8D5BA
+    rectangle "<<requirement>>\nID: FR-M-09\nSource: Менеджер\nName: Перегляд аналітики продажів\nRisk: Низький\nPriority: Високий" as FRM09 #20B2AA
+    rectangle "<<requirement>>\nID: FR-M-10\nSource: Менеджер\nName: Перегляд популярності товарів\nRisk: Низький\nPriority: Високий" as FRM10 #48D1CC
+    rectangle "<<requirement>>\nID: FR-M-11\nSource: Менеджер\nName: Перегляд аналітики категорій\nRisk: Низький\nPriority: Середній" as FRM11 #40E0D0
+    rectangle "<<requirement>>\nID: FR-M-12\nSource: Менеджер\nName: Експорт аналітичних звітів\nRisk: Низький\nPriority: Середній" as FRM12 #7FFFD4
+    rectangle "<<requirement>>\nID: FR-A-01\nSource: Адміністратор\nName: Керування замовленнями\nRisk: Високий\nPriority: Високий" as FRA01 #0066CC
+    rectangle "<<requirement>>\nID: FR-A-02\nSource: Адміністратор\nName: Керування користувачами\nRisk: Середній\nPriority: Високий" as FRA02 #999999
+    rectangle "<<requirement>>\nID: FR-A-03\nSource: Адміністратор\nName: Перегляд фінансових звітів\nRisk: Низький\nPriority: Середній" as FRA03 #FF99FF
+    rectangle "<<requirement>>\nID: FR-A-04\nSource: Адміністратор\nName: Керування налаштуваннями системи\nRisk: Середній\nPriority: Середній" as FRA04 #FFFF99
+    rectangle "<<requirement>>\nID: FR-A-05\nSource: Адміністратор\nName: Доступ до всіх модулів адмін-панелі\nRisk: Високий\nPriority: Високий" as FRA05 #FFCCCC
+    rectangle "<<requirement>>\nID: FR-A-06\nSource: Адміністратор\nName: Перегляд складських документів\nRisk: Низький\nPriority: Середній" as FRA06 #C8A2C8
+    rectangle "<<requirement>>\nID: FR-A-07\nSource: Адміністратор\nName: Перегляд ефективності акцій та керування студентськими верифікаціями\nRisk: Низький\nPriority: Середній" as FRA07 #FFB6C1
+    rectangle "<<requirement>>\nID: FR-A-08\nSource: Адміністратор\nName: Перегляд повної фінансової аналітики\nRisk: Середній\nPriority: Високий" as FRA08 #E0FFFF
+    rectangle "<<requirement>>\nID: FR-A-09\nSource: Адміністратор\nName: Перегляд метрик конверсії\nRisk: Низький\nPriority: Високий" as FRA09 #AFEEEE
+    rectangle "<<requirement>>\nID: FR-A-10\nSource: Адміністратор\nName: Аналіз поведінки користувачів\nRisk: Середній\nPriority: Середній" as FRA10 #B0E0E6
+    rectangle "<<requirement>>\nID: FR-SA-01\nSource: СуперАдмін\nName: Керування ролями та дозволами\nRisk: Високий\nPriority: Високий" as FRSA01 #9999FF
+    rectangle "<<requirement>>\nID: FR-SA-02\nSource: СуперАдмін\nName: Доступ до системних налаштувань\nRisk: Високий\nPriority: Високий" as FRSA02 #6A4F30
+    rectangle "<<requirement>>\nID: FR-SA-03\nSource: СуперАдмін\nName: Перегляд системних логів\nRisk: Низький\nPriority: Середній" as FRSA03 #5A6E5A
+    rectangle "<<requirement>>\nID: FR-SA-04\nSource: СуперАдмін\nName: Керування інтеграціями\nRisk: Високий\nPriority: Високий" as FRSA04 #89707B
+    rectangle "<<requirement>>\nID: FR-SA-05\nSource: СуперАдмін\nName: Резервне копіювання та відновлення\nRisk: Високий\nPriority: Високий" as FRSA05 #596E6E
+}
+
+' Нефункціональні вимоги
+package "Нефункціональні вимоги" {
+    rectangle "<<requirement>>\nID: NFR-P-01\nSource: Продуктивність\nName: Обробка одночасних користувачів\nRisk: Високий\nPriority: Високий" as NFRP01
+    rectangle "<<requirement>>\nID: NFR-P-02\nSource: Продуктивність\nName: Час відгуку системи\nRisk: Високий\nPriority: Високий" as NFRP02
+    rectangle "<<requirement>>\nID: NFR-P-03\nSource: Продуктивність\nName: Обробка транзакцій\nRisk: Середній\nPriority: Високий" as NFRP03
+    rectangle "<<requirement>>\nID: NFR-R-01\nSource: Надійність\nName: Доступність системи\nRisk: Високий\nPriority: Високий" as NFRR01
+    rectangle "<<requirement>>\nID: NFR-R-02\nSource: Надійність\nName: Резервне копіювання даних\nRisk: Високий\nPriority: Високий" as NFRR02
+    rectangle "<<requirement>>\nID: NFR-R-03\nSource: Надійність\nName: Стійкість до помилок інтеграцій\nRisk: Середній\nPriority: Середній" as NFRR03
+    rectangle "<<requirement>>\nID: NFR-S-01\nSource: Безпека\nName: Захищене з'єднання\nRisk: Високий\nPriority: Високий" as NFRS01
+    rectangle "<<requirement>>\nID: NFR-S-02\nSource: Безпека\nName: Аутентифікація та авторизація\nRisk: Високий\nPriority: Високий" as NFRS02
+    rectangle "<<requirement>>\nID: NFR-S-03\nSource: Безпека\nName: Захист платіжних даних\nRisk: Високий\nPriority: Високий" as NFRS03
+    rectangle "<<requirement>>\nID: NFR-S-04\nSource: Безпека\nName: Захист від веб-загроз\nRisk: Високий\nPriority: Високий" as NFRS04
+    rectangle "<<requirement>>\nID: NFR-U-01\nSource: Зручність використання\nName: Інтуїтивність інтерфейсу\nRisk: Низький\nPriority: Високий" as NFRU01
+    rectangle "<<requirement>>\nID: NFR-U-02\nSource: Зручність використання\nName: Адаптивність дизайну\nRisk: Середній\nPriority: Високий" as NFRU02
+    rectangle "<<requirement>>\nID: NFR-U-03\nSource: Зручність використання\nName: Локалізація\nRisk: Низький\nPriority: Середній" as NFRU03
+    rectangle "<<requirement>>\nID: NFR-SC-01\nSource: Масштабованість\nName: Горизонтальне масштабування\nRisk: Високий\nPriority: Високий" as NFRSC01
+    rectangle "<<requirement>>\nID: NFR-CO-01\nSource: Сумісність\nName: Сумісність з браузерами\nRisk: Низький\nPriority: Високий" as NFRCO01
+    rectangle "<<requirement>>\nID: NFR-CO-02\nSource: Сумісність\nName: Інтеграція з зовнішніми сервісами\nRisk: Високий\nPriority: Високий" as NFRCO02
+    rectangle "<<requirement>>\nID: NFR-CO-03\nSource: Сумісність\nName: Мультивалютна підтримка платежів\nRisk: Середній\nPriority: Середній" as NFRCO03
+    rectangle "<<requirement>>\nID: NFR-M-01\nSource: Супроводжуваність\nName: Модульність та документація\nRisk: Низький\nPriority: Середній" as NFRM01
+}
+
+' Зв'язки trace (Актор -> Функціональна вимога)
+Guest -[#000000]-> FRG01 : trace
+Guest -[#000000]-> FRG02 : trace
+Guest -[#000000]-> FRG03 : trace
+Guest -[#000000]-> FRG04 : trace
+
+User -[#330066]-> FRC01 : trace
+User -[#330066]-> FRC02 : trace
+User -[#330066]-> FRC03 : trace
+User -[#330066]-> FRC04 : trace
+User -[#330066]-> FRC05 : trace
+User -[#330066]-> FRC06 : trace
+User -[#330066]-> FRC07 : trace
+User -[#330066]-> FRC08 : trace
+User -[#330066]-> FRC09 : trace
+User -[#330066]-> FRC10 : trace
+User -[#330066]-> FRC11 : trace
+
+Manager -[#CC00CC]-> FRM01 : trace
+Manager -[#CC00CC]-> FRM02 : trace
+Manager -[#CC00CC]-> FRM03 : trace
+Manager -[#CC00CC]-> FRM04 : trace
+Manager -[#CC00CC]-> FRM05 : trace
+Manager -[#CC00CC]-> FRM06 : trace
+Manager -[#CC00CC]-> FRM07 : trace
+Manager -[#CC00CC]-> FRM08 : trace
+Manager -[#CC00CC]-> FRM09 : trace
+Manager -[#CC00CC]-> FRM10 : trace
+Manager -[#CC00CC]-> FRM11 : trace
+Manager -[#CC00CC]-> FRM12 : trace
+
+Admin -[#000052]-> FRA01 : trace
+Admin -[#000052]-> FRA02 : trace
+Admin -[#000052]-> FRA03 : trace
+Admin -[#000052]-> FRA04 : trace
+Admin -[#000052]-> FRA05 : trace
+Admin -[#000052]-> FRA06 : trace
+Admin -[#000052]-> FRA07 : trace
+Admin -[#000052]-> FRA08 : trace
+Admin -[#000052]-> FRA09 : trace
+Admin -[#000052]-> FRA10 : trace
+
+SuperAdmin -[#999900]-> FRSA01 : trace
+SuperAdmin -[#999900]-> FRSA02 : trace
+SuperAdmin -[#999900]-> FRSA03 : trace
+SuperAdmin -[#999900]-> FRSA04 : trace
+SuperAdmin -[#999900]-> FRSA05 : trace
+
+' Зв'язки satisfy (Компонент системи -->> Функціональна вимога)
+CatalogModule .[#FF0000].> FRG01 : satisfy
+CatalogModule .[#FF0000].> FRG02 : satisfy
+CatalogModule .[#FF0000].> FRG03 : satisfy
+CatalogModule .[#FF0000].> FRM01 : satisfy
+CatalogModule .[#FF0000].> FRM02 : satisfy
+CatalogModule .[#FF0000].> FRM03 : satisfy
+CatalogModule .[#FF0000].> FRM04 : satisfy
+CatalogModule .[#FF0000].> FRM05 : satisfy
+
+CartModule .[#FFA500].> FRC01 : satisfy
+CartModule .[#FFA500].> FRC02 : satisfy
+
+OrderModule .[#FFFF00].> FRC03 : satisfy
+OrderModule .[#FFFF00].> FRC04 : satisfy
+OrderModule .[#FFFF00].> FRC05 : satisfy
+OrderModule .[#FFFF00].> FRA01 : satisfy
+
+PaymentModule .[#00FF00].> FRC02 : satisfy
+PaymentModule .[#00FF00].> FRC03 : satisfy
+PaymentModule .[#00FF00].> FRC06 : satisfy
+PaymentModule .[#00FF00].> FRA04 : satisfy
+
+UserModule .[#008000].> FRG04 : satisfy
+UserModule .[#008000].> FRC07 : satisfy
+UserModule .[#008000].> FRA02 : satisfy
+
+AdminPanelModule .[#00BFFF].> FRM03 : satisfy
+AdminPanelModule .[#00BFFF].> FRM04 : satisfy
+AdminPanelModule .[#00BFFF].> FRM05 : satisfy
+AdminPanelModule .[#00BFFF].> FRA03 : satisfy
+AdminPanelModule .[#00BFFF].> FRA05 : satisfy
+AdminPanelModule .[#00BFFF].> FRSA01 : satisfy
+AdminPanelModule .[#00BFFF].> FRSA02 : satisfy
+AdminPanelModule .[#00BFFF].> FRSA03 : satisfy
+AdminPanelModule .[#00BFFF].> FRSA04 : satisfy
+AdminPanelModule .[#00BFFF].> FRSA05 : satisfy
+
+ShippingModule .[#0000CC].> FRC02 : satisfy
+ShippingModule .[#0000CC].> FRC05 : satisfy
+ShippingModule .[#0000CC].> FRSA04 : satisfy
+
+NotificationModule .[#4C0099].> FRC05 : satisfy
+
+WarehouseModule .[#9370DB].> FRC02 : satisfy
+WarehouseModule .[#9370DB].> FRM01 : satisfy
+WarehouseModule .[#9370DB].> FRM05 : satisfy
+WarehouseModule .[#9370DB].> FRM06 : satisfy
+WarehouseModule .[#8B7D9B].> FRM07 : satisfy
+WarehouseModule .[#9370DB].> FRM08 : satisfy
+WarehouseModule .[#9370DB].> FRA06 : satisfy
+
+PromotionModule .[#9370DB].> FRC02 : satisfy
+PromotionModule .[#9370DB].> FRC07 : satisfy
+PromotionModule .[#9370DB].> FRC08 : satisfy
+PromotionModule .[#9370DB].> FRC10 : satisfy
+PromotionModule .[#9370DB].> FRC11 : satisfy
+PromotionModule .[#9370DB].> FRM04 : satisfy
+PromotionModule .[#9370DB].> FRA07 : satisfy
+
+UniversityModule .[#4B0082].> FRC09 : satisfy
+UniversityModule .[#4B0082].> FRA07 : satisfy
+UniversityModule .[#4B0082].> FRSA04 : satisfy
+
+AnalyticsModule .[#00CED1].> FRM09 : satisfy
+AnalyticsModule .[#00CED1].> FRM10 : satisfy
+AnalyticsModule .[#00CED1].> FRM11 : satisfy
+AnalyticsModule .[#00CED1].> FRM12 : satisfy
+AnalyticsModule .[#00CED1].> FRA03 : satisfy
+AnalyticsModule .[#00CED1].> FRA08 : satisfy
+AnalyticsModule .[#00CED1].> FRA09 : satisfy
+AnalyticsModule .[#00CED1].> FRA10 : satisfy
+
+' Зв'язки deriveReqt (Функціональна вимога -> Функціональна вимога)
+FRG04 -[#FF8000]-> FRC02 : deriveReqt
+FRC02 -[#008080]-> FRA01 : deriveReqt
+FRC02 -[#008080]-> FRA06 : deriveReqt
+FRC08 -[#FF1493]-> FRC11 : deriveReqt
+FRC09 -[#8B008B]-> FRC07 : deriveReqt
+FRC09 -[#8B008B]-> FRC08 : deriveReqt
+FRC10 -[#FF69B4]-> FRC02 : deriveReqt
+FRM06 -[#9370DB]-> FRM05 : deriveReqt
+FRM07 -[#8B7D9B]-> FRM05 : deriveReqt
+FRM08 -[#A8D5BA]-> FRM06 : deriveReqt
+FRM08 -[#A8D5BA]-> FRM07 : deriveReqt
+FRM09 -[#20B2AA]-> FRM12 : deriveReqt
+FRM10 -[#48D1CC]-> FRM12 : deriveReqt
+FRM11 -[#40E0D0]-> FRM12 : deriveReqt
+FRA08 -[#E0FFFF]-> FRM09 : deriveReqt
+FRA09 -[#AFEEEE]-> FRM09 : deriveReqt
+
+' Зв'язки refine (Функціональна вимога ..> Нефункціональна вимога)
+FRG01 .[#0000CC].> NFRP01 : refine
+FRG01 .[#0000CC].> NFRP02 : refine
+FRG01 .[#0000CC].> NFRU01 : refine
+FRG01 .[#0000CC].> NFRU02 : refine
+
+FRG02 .[#00CC00].> NFRP01 : refine
+FRG02 .[#00CC00].> NFRP02 : refine
+FRG02 .[#00CC00].> NFRU01 : refine
+FRG02 .[#00CC00].> NFRU02 : refine
+
+FRG03 .[#CC0000].> NFRP01 : refine
+FRG03 .[#CC0000].> NFRP02 : refine
+FRG03 .[#CC0000].> NFRU01 : refine
+FRG03 .[#CC0000].> NFRU02 : refine
+
+FRG04 .[#FF8000].> NFRU01 : refine
+FRG04 .[#FF8000].> NFRU02 : refine
+
+FRC01 .[#000000].> NFRU01 : refine
+FRC01 .[#000000].> NFRU02 : refine
+
+FRC02 .[#008080].> NFRCO03 : refine
+
+FRC03 .[#CC0066].> NFRS01 : refine
+FRC03 .[#CC0066].> NFRS02 : refine
+FRC03 .[#CC0066].> NFRS03 : refine
+FRC03 .[#CC0066].> NFRCO02 : refine
+
+FRC04 .[#006600].> NFRS01 : refine
+FRC04 .[#006600].> NFRS02 : refine
+FRC04 .[#006600].> NFRS03 : refine
+
+FRC08 .[#FF1493].> NFRS01 : refine
+FRC08 .[#FF1493].> NFRS02 : refine
+
+FRC09 .[#8B008B].> NFRR03 : refine
+FRC09 .[#8B008B].> NFRCO02 : refine
+
+FRC10 .[#FF69B4].> NFRS02 : refine
+FRC10 .[#FF69B4].> NFRP02 : refine
+
+FRM04 .[#600000].> NFRS02 : refine
+FRM04 .[#600000].> NFRM01 : refine
+
+FRM06 .[#9370DB].> NFRR02 : refine
+
+FRM07 .[#8B7D9B].> NFRR02 : refine
+
+FRM08 .[#A8D5BA].> NFRM01 : refine
+
+FRM09 .[#20B2AA].> NFRP02 : refine
+FRM09 .[#20B2AA].> NFRM01 : refine
+
+FRM10 .[#48D1CC].> NFRP02 : refine
+
+FRM11 .[#40E0D0].> NFRP02 : refine
+
+FRM12 .[#7FFFD4].> NFRM01 : refine
+
+FRA01 .[#0066CC].> NFRR01 : refine
+FRA01 .[#0066CC].> NFRR02 : refine
+
+FRA02 .[#999999].> NFRR01 : refine
+FRA02 .[#999999].> NFRR02 : refine
+
+FRA04 .[#FFFF99].> NFRR01 : refine
+FRA04 .[#FFFF99].> NFRS02 : refine
+FRA04 .[#FFFF99].> NFRCO02 : refine
+
+FRA06 .[#C8A2C8].> NFRR01 : refine
+
+FRA07 .[#FFB6C1].> NFRR01 : refine
+FRA07 .[#FFB6C1].> NFRM01 : refine
+
+FRA08 .[#E0FFFF].> NFRR01 : refine
+FRA08 .[#E0FFFF].> NFRS02 : refine
+FRA08 .[#E0FFFF].> NFRP02 : refine
+
+FRA09 .[#AFEEEE].> NFRP02 : refine
+FRA09 .[#AFEEEE].> NFRM01 : refine
+
+FRA10 .[#B0E0E6].> NFRR01 : refine
+FRA10 .[#B0E0E6].> NFRS02 : refine
+FRA10 .[#B0E0E6].> NFRM01 : refine
+
+FRSA01 .[#9999FF].> NFRSC01 : refine
+
+FRSA02 .[#6A4F30].> NFRSC01 : refine
+
+FRSA04 .[#89707B].> NFRR03 : refine
+
+@enduml

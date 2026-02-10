@@ -1,0 +1,126 @@
+@startuml Оформлення_видаткової_накладної
+
+|Система (OrderModule)|
+start
+note right: Видаткова накладна створюється \nавтоматично при підтвердженні замовлення
+
+:Користувач підтвердив замовлення;
+:Отримати список товарів з кошика;
+
+|Система (Backend - OrderService)|
+:Розпочати транзакцію БД;
+
+:Створити запис Order в БД;
+
+fork
+    :Створити записи OrderItems для кожного товару;
+fork again
+    :Зарезервувати товари через WarehouseService;
+end fork
+
+|Система (Backend - WarehouseService)|
+:Отримати запит на резервування товарів;
+
+partition "Для кожного товару в замовленні" {
+    :Отримати ProductId та Quantity;
+  
+    :Перевірити поточний Stock товару;
+  
+    if (Stock >= Quantity?) then (Ні)
+        :Повернути помилку "Недостатньо товару на складі";
+        :Відкотити транзакцію;
+    
+        |Система|
+        :Показати повідомлення "Товар [назва] недоступний у потрібній кількості";
+        stop
+    else (Так)
+        :Отримати дані про знижки з OrderItems для цього товару;
+
+        :Створити запис в таблиці OutgoingDocuments:
+        - ProductId
+        - Quantity
+        - OrderId
+        - CompanyId = null
+        - Reason = "Order"
+        - originalPrice (з OrderItem)
+        - appliedPromotionId (з OrderItem, nullable)
+        - discountAmount (з OrderItem)
+        - finalPrice (з OrderItem)
+        - DocumentDate = поточна дата
+        - CreatedAt
+        - CreatedBy = null (автоматично)
+        - Notes = "Автоматичне списання для замовлення №[OrderId]";
+
+        note right
+            Інформація про знижки копіюється з OrderItems:
+            - originalPrice: базова ціна товару
+            - appliedPromotionId: ID застосованої знижки/промокоду
+            - discountAmount: сума знижки
+            - finalPrice: фінальна ціна після знижки
+
+            CompanyId NULL для автоматичних списань.
+            CompanyId обов'язковий тільки для reason=RETURN
+        end note
+    
+        :Оновити Products.Stock:
+        Stock = Stock - Quantity;
+    
+        :Логувати створення видаткової накладної в Serilog;
+    endif
+}
+
+:Повернути успішний результат в OrderService;
+
+|Система (Backend - OrderService)|
+:Продовжити обробку замовлення;
+
+if (Спосіб оплати?) then (Карткою онлайн)
+    :Створити сесію оплати в Stripe;
+    :Перенаправити на Stripe;
+else (При отриманні)
+    :Встановити статус "Очікує оплати при отриманні";
+    :Надіслати Email-підтвердження;
+endif
+
+:Зафіксувати транзакцію БД;
+
+if (Транзакція успішна?) then (Ні)
+    :Відкотити всі зміни:
+    - Order
+    - OrderItems  
+    - OutgoingDocuments
+    - Stock;
+  
+    :Логувати помилку в Serilog;
+  
+    |Система|
+    :Показати повідомлення "Помилка при оформленні замовлення";
+    stop
+else (Так)
+    :Логувати успішне створення замовлення в Serilog;
+endif
+
+|Система|
+:Відобразити підтвердження замовлення;
+
+note right
+    Видаткові накладні з reason=ORDER (автоматичне списання):
+    - Створюються автоматично при оформленні замовлення
+    - companyId = NULL
+    - Зберігають інформацію про знижки з OrderItems
+  
+    Видаткові накладні з reason=RETURN (повернення постачальнику):
+    - Створюються ВРУЧНУ менеджером через окрему форму
+    - companyId ОБОВ'ЯЗКОВИЙ (фірма, якій повертається товар)
+    - originalPrice, appliedPromotionId, discountAmount = NULL
+    - finalPrice = ціна повернення
+  
+    Для інших причин (DAMAGED, LOST, INVENTORY):
+    - companyId = NULL
+    - originalPrice, appliedPromotionId, discountAmount = NULL
+    - finalPrice = ціна списання (може дорівнювати originalPrice товару)
+end note
+
+stop
+
+@enduml

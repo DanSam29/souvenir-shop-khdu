@@ -1,0 +1,146 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Користувач" as User
+actor "Гість" as Guest
+actor "Email сервіс" as EmailService <<external system>>
+actor "Stripe API" as StripeAPI <<external system>>
+actor "Nova Poshta API" as NovaPoshtaAPI <<external system>>
+actor "University API" as UniversityAPI <<external system>>
+
+User --|> Guest
+
+rectangle "Інтернет-магазин" {
+  
+    package "Особистий кабінет" #FFA500 {
+        usecase UC_ChangePassword as "Змінити пароль"
+        usecase UC_EditContact as "Редагувати контактні дані"
+        usecase UC_ManageAddresses as "Керувати адресами доставки"
+        usecase UC_DeleteAddress as "Видалити адресу"
+        usecase UC_AddAddress as "Додати нову адресу"
+        usecase UC_EditAddress as "Редагувати адресу"
+
+        UC_DeleteAddress .> UC_ManageAddresses : <<extend>>
+        UC_AddAddress .> UC_ManageAddresses : <<extend>>
+        UC_EditAddress .> UC_ManageAddresses : <<extend>>
+    }
+  
+    package "Робота з кошиком" #FFFF00 {
+        usecase UC_ChangeQuantity as "Змінити кількість товарів у кошику"
+        usecase UC_RemoveFromCart as "Видалити товар з кошика"
+        usecase UC_ViewCart as "Переглянути кошик"
+        usecase UC_AddToCart as "Додати товар до кошика"
+
+        UC_AddToCart ..> UC_ViewCart : <<include>>
+        UC_ChangeQuantity .> UC_AddToCart : <<extend>>
+        UC_RemoveFromCart .> UC_AddToCart : <<extend>>
+    }
+  
+    package "Оформлення замовлення" #00FF00 {
+        usecase UC_SelectCity as "Вибрати населений пункт"
+        usecase UC_SelectPickup as "Вибрати відділення Nova Poshta"
+        usecase UC_SelectDelivery as "Вибрати спосіб доставки (Nova Poshta)"
+        usecase UC_SelectPayment as "Вибрати спосіб оплати (Картка онлайн / При отриманні)"
+        usecase UC_EnterPromoCode as "Ввести промокод"
+        usecase UC_ConfirmOrder as "Підтвердити замовлення"
+        usecase UC_PlaceOrder as "Оформити замовлення"
+
+        UC_PlaceOrder ..> UC_ConfirmOrder : <<include>>
+        UC_PlaceOrder ..> UC_SelectPayment : <<include>>
+        UC_PlaceOrder ..> UC_SelectDelivery : <<include>>
+        UC_SelectDelivery ..> UC_SelectCity : <<include>>
+        UC_SelectDelivery ..> UC_SelectPickup : <<include>>
+        UC_EnterPromoCode ..> UC_PlaceOrder : <<extend>>
+    }
+  
+    package "Історія та відстеження" #008000 {
+        usecase UC_EmailNotification as "Отримати Email-сповіщення про зміну статусу"
+        usecase UC_TrackOrder as "Відстежувати статус замовлення"
+        usecase UC_ViewOrderDetails as "Переглянути деталі замовлення"
+        usecase UC_ViewOrderHistory as "Переглянути історію замовлень"
+
+        UC_TrackOrder ..> UC_EmailNotification : <<include>>
+        UC_ViewOrderDetails .> UC_ViewOrderHistory : <<extend>>
+    }
+  
+    package "Персоналізація" #00BFFF {
+        usecase UC_GetRecommendations as "Отримати персональні рекомендації товарів"
+    }
+
+    package "Робота зі знижками" #FF69B4 {
+        usecase "Переглянути доступні знижки" as UC_ViewAvailablePromotions
+        usecase "Верифікувати студентський статус" as UC_VerifyStudentStatus
+        usecase "Ввести промокод при оформленні" as UC_EnterPromoCode
+        usecase "Переглянути історію використаних знижок" as UC_ViewPromotionHistory
+        usecase "Отримати Email про нові знижки" as UC_GetPromotionNotification
+    
+        UC_ViewPromotionHistory ..> UC_ViewAvailablePromotions : <<extend>>
+        UC_GetPromotionNotification ..> UC_VerifyStudentStatus : <<extend>>
+    }
+}
+
+User -- UC_ChangePassword
+User -- UC_EditContact
+User -- UC_ManageAddresses
+User -- UC_AddToCart
+User -- UC_PlaceOrder
+User -- UC_TrackOrder
+User -- UC_ViewOrderHistory
+User -- UC_GetRecommendations
+User -- UC_ViewAvailablePromotions
+User -- UC_VerifyStudentStatus
+
+UC_SelectCity --> NovaPoshtaAPI
+UC_SelectPickup --> NovaPoshtaAPI
+UC_SelectDelivery --> NovaPoshtaAPI
+UC_SelectPayment --> StripeAPI
+UC_EmailNotification --> EmailService
+UC_VerifyStudentStatus --> "University API"
+UC_GetPromotionNotification --> EmailService
+
+note right of UC_AddToCart
+    FR-C-01
+end note
+
+note right of UC_PlaceOrder
+    FR-C-02
+end note
+
+note right of UC_ManageAddresses
+    FR-C-03
+end note
+
+note right of UC_ViewOrderHistory
+    FR-C-04
+end note
+
+note right of UC_TrackOrder
+    FR-C-05
+end note
+
+note right of UC_ManageAddresses
+    FR-C-06
+end note
+
+note right of UC_GetRecommendations
+    FR-C-07
+end note
+
+note right of UC_ViewAvailablePromotions
+    FR-C-08
+end note
+
+note right of UC_VerifyStudentStatus
+    FR-C-09
+end note
+
+note right of UC_EnterPromoCode
+    FR-C-10
+end note
+
+note right of UC_ViewPromotionHistory
+    FR-C-11
+end note
+
+@enduml
