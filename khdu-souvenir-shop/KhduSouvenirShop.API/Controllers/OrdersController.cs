@@ -115,18 +115,18 @@ namespace KhduSouvenirShop.API.Controllers
                     var now = DateTime.UtcNow;
                     var promo = await _context.Promotions
                         .FirstOrDefaultAsync(p =>
-                            p.Code == dto.PromoCode &&
-                            p.Active &&
-                            (p.StartsAt == null || p.StartsAt <= now) &&
-                            (p.EndsAt == null || p.EndsAt >= now) &&
-                            (p.MaxUsage == null || p.TimesUsed < p.MaxUsage));
+                            p.PromoCode == dto.PromoCode &&
+                            p.IsActive &&
+                            (p.StartDate == null || p.StartDate <= now) &&
+                            (p.EndDate == null || p.EndDate >= now) &&
+                            (p.UsageLimit == null || p.CurrentUsage < p.UsageLimit));
 
                     if (promo != null)
                     {
                         var subtotal = orderItems.Sum(oi => oi.OriginalPrice * oi.Quantity);
                         if (subtotal > 0)
                         {
-                            if (promo.Type == "Percent")
+                            if (promo.Type == "PERCENTAGE")
                             {
                                 var percent = Math.Clamp((double)promo.Value, 0, 100);
                                 foreach (var oi in orderItems)
@@ -139,7 +139,7 @@ namespace KhduSouvenirShop.API.Controllers
                                     totalDiscount += totalItemDiscount;
                                 }
                             }
-                            else if (promo.Type == "Fixed")
+                            else if (promo.Type == "FIXED_AMOUNT")
                             {
                                 var fixedAmount = Math.Max(0, promo.Value);
                                 var appliedTotal = Math.Min(fixedAmount, subtotal);
@@ -159,7 +159,7 @@ namespace KhduSouvenirShop.API.Controllers
                             totalAmount = Math.Max(0, subtotal - totalDiscount);
                             payment.Amount = totalAmount;
 
-                            promo.TimesUsed += 1;
+                            promo.CurrentUsage += 1;
                         }
                     }
                 }

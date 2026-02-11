@@ -67,13 +67,22 @@ namespace KhduSouvenirShop.API.Controllers
                 CreatedAt = DateTime.UtcNow
             };
 
-            // MVP: Автовизначення студентського статусу за доменом email
+            // Логіка: Встановлення студентського статусу за доменом email
+            // Якщо домен університету @university.ks.ua → студент (REGULAR)
+            // Інші домени → зовнішній користувач (NONE)
             var emailLower = (newUser.Email ?? string.Empty).ToLowerInvariant();
-            if (emailLower.EndsWith("@ksu.edu.ua") || emailLower.EndsWith("@student.ksu.edu.ua"))
+            if (emailLower.EndsWith("@university.ks.ua"))
             {
-                newUser.StudentStatus = "STUDENT";
+                newUser.StudentStatus = "REGULAR";
                 newUser.StudentVerifiedAt = DateTime.UtcNow;
                 newUser.StudentExpiresAt = DateTime.UtcNow.AddYears(1);
+                _logger.LogInformation("Користувач {Email} зареєстрований як студент", newUser.Email);
+            }
+            else
+            {
+                // Всі інші домени - це зовнішні користувачі
+                newUser.StudentStatus = "NONE";
+                _logger.LogInformation("Користувач {Email} зареєстрований як зовнішній користувач", newUser.Email);
             }
 
             _context.Users.Add(newUser);
@@ -129,15 +138,9 @@ namespace KhduSouvenirShop.API.Controllers
                 return Unauthorized(new { error = "Невірний email або пароль" });
             }
 
-            // MVP: Автовизначення студентського статусу за доменом email при вході
-            var emailLower = (user.Email ?? string.Empty).ToLowerInvariant();
-            if ((emailLower.EndsWith("@ksu.edu.ua") || emailLower.EndsWith("@student.ksu.edu.ua")) && user.StudentStatus == "NONE")
-            {
-                user.StudentStatus = "STUDENT";
-                user.StudentVerifiedAt = DateTime.UtcNow;
-                user.StudentExpiresAt = DateTime.UtcNow.AddYears(1);
-                await _context.SaveChangesAsync();
-            }
+            // ВАЖЛИВО: StudentStatus НЕ змінюється при вході
+            // Він встановлюється один раз при реєстрації (або вручну в БД для адмінів/менеджерів)
+            // і зберігається протягом всього часу існування акаунту
 
             // Генеруємо JWT токен
             var token = GenerateJwtToken(user);

@@ -34,7 +34,7 @@ namespace KhduSouvenirShop.API.Models
         public string Role { get; set; } = "Customer"; // Guest, Customer, Manager, Administrator, SuperAdmin
 
         [MaxLength(20)]
-        public string StudentStatus { get; set; } = "NONE";
+        public string StudentStatus { get; set; } = "NONE"; // NONE, REGULAR, SCHOLARSHIP, HIGH_ACHIEVER
 
         [Column(TypeName = "decimal(3,2)")]
         public decimal? GPA { get; set; }
@@ -47,5 +47,7 @@ namespace KhduSouvenirShop.API.Models
         // Навігаційні властивості (зв'язки)
         public virtual Cart? Cart { get; set; }
         public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
+        public virtual ICollection<UserPromotion> UserPromotions { get; set; } = new List<UserPromotion>();
     }
 }
+

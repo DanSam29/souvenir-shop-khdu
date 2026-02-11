@@ -7,7 +7,7 @@ Table Users {
   FirstName varchar(50) [not null]
   LastName varchar(50) [not null]
   Email varchar(100) [unique, not null]
-  PasswordHash varchar(255) [not null, note: 'Хешований пароль (bcrypt)']
+  Password varchar(255) [not null, note: 'Хешований пароль (bcrypt)']
   Phone varchar(20)
   Role enum('Guest', 'Customer', 'Manager', 'Administrator', 'SuperAdmin') [not null, default: 'Customer']
   StudentStatus enum('NONE', 'REGULAR', 'SCHOLARSHIP', 'HIGH_ACHIEVER') [not null, default: 'NONE', note: 'Статус студента для знижок']

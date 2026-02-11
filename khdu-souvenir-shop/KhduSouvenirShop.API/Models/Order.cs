@@ -35,6 +35,7 @@ namespace KhduSouvenirShop.API.Models
         public virtual User User { get; set; } = null!;
 
         public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+        public virtual ICollection<OrderHistory> OrderHistories { get; set; } = new List<OrderHistory>();
         public virtual Shipping? Shipping { get; set; }
         public virtual Payment? Payment { get; set; }
     }
