@@ -84,6 +84,10 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 
+// Обслуговування статичних файлів (зображення, тощо)
+// Доступні за адресою: http://localhost:5000/images/products/image.jpg
+app.UseStaticFiles();
+
 app.UseAuthentication();  // Спочатку аутентифікація
 app.UseAuthorization();   // Потім авторизація
 
