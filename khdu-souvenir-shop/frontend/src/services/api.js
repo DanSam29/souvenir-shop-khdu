@@ -38,6 +38,15 @@ api.interceptors.response.use(
   }
 );
 
+// Побудова повного URL для зображень, якщо у БД зберігається відносний шлях
+const IMAGES_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '');
+export const buildImageUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (path.startsWith('/')) return `${IMAGES_BASE_URL}${path}`;
+  return `${IMAGES_BASE_URL}/${path}`;
+};
+
 // API функції для Products
 export const productsAPI = {
   // GET всі товари

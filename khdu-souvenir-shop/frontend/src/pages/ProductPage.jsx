@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { productsAPI } from '../services/api';
+import { productsAPI, buildImageUrl } from '../services/api';
 import './ProductPage.css';
 
 function ProductPage() {
@@ -41,7 +41,7 @@ function ProductPage() {
   }
 
   const imageUrl = product.images && product.images.length > 0 
-    ? product.images[0].imageURL 
+    ? buildImageUrl(product.images[0].imageURL)
     : 'https://via.placeholder.com/500x500?text=No+Image';
 
   return (

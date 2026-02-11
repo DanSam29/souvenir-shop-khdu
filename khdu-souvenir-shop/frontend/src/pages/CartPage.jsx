@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { cartAPI } from '../services/api';
+import { cartAPI, buildImageUrl } from '../services/api';
 import './CartPage.css';
 
 function CartPage() {
@@ -136,7 +136,7 @@ function CartPage() {
             <div key={item.cartItemId} className="cart-item">
               <div className="item-image">
                 {item.productImage ? (
-                  <img src={item.productImage} alt={item.productName} />
+                  <img src={buildImageUrl(item.productImage)} alt={item.productName} />
                 ) : (
                   <div className="no-image">Без фото</div>
                 )}

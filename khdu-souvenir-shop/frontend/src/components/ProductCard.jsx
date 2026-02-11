@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { cartAPI } from '../services/api';
+import { cartAPI, buildImageUrl } from '../services/api';
 import './ProductCard.css';
 
 function ProductCard({ product }) {
@@ -11,6 +11,7 @@ function ProductCard({ product }) {
 
   const primaryImage = product.images?.find(img => img.isPrimary)?.imageURL 
                       || product.images?.[0]?.imageURL;
+  const primaryImageUrl = buildImageUrl(primaryImage);
 
   const handleAddToCart = async (e) => {
     e.preventDefault(); // Запобігаємо переходу по Link
@@ -45,8 +46,8 @@ function ProductCard({ product }) {
     <div className="product-card">
       <Link to={`/product/${product.productId}`} className="product-link">
         <div className="product-image">
-          {primaryImage ? (
-            <img src={primaryImage} alt={product.name} />
+          {primaryImageUrl ? (
+            <img src={primaryImageUrl} alt={product.name} />
           ) : (
             <div className="no-image">Без фото</div>
           )}
