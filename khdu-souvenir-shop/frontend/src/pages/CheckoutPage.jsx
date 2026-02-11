@@ -11,6 +11,7 @@ function CheckoutPage() {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [orderResult, setOrderResult] = useState(null);
+  const [calcPreview, setCalcPreview] = useState(null);
 
   const [form, setForm] = useState({
     city: '',
@@ -67,6 +68,29 @@ function CheckoutPage() {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
+
+  // Автоперерахунок при введенні промокоду (debounce)
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      const code = form.promoCode?.trim();
+      try {
+        if (!code) {
+          setCalcPreview(null);
+          await loadCart();
+          return;
+        }
+
+        const payload = { promoCode: code };
+        const res = await ordersAPI.calculate(payload);
+        setCalcPreview(res.data);
+      } catch (err) {
+        // якщо код недійсний, показуємо помилку користувачеві простим способом
+        setCalcPreview(null);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [form.promoCode]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -185,16 +209,16 @@ function CheckoutPage() {
         <div style={{ background: '#fff', padding: 16, borderRadius: 8, boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
           <h2>Ваше замовлення</h2>
           <ul style={{ listStyle: 'none', padding: 0 }}>
-            {cart.items.map((item) => (
-              <li key={item.cartItemId} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span>{item.productName} × {item.quantity}</span>
-                <span>{(item.productPrice * item.quantity).toFixed(2)} грн</span>
+            {(calcPreview?.items ?? cart.items).map((item) => (
+              <li key={item.cartItemId || item.productId} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span>{item.name || item.productName} × {item.quantity}</span>
+                <span>{(item.subtotal).toFixed(2)} грн</span>
               </li>
             ))}
           </ul>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, marginTop: 12 }}>
             <span>Разом</span>
-            <span>{cart.totalAmount.toFixed(2)} грн</span>
+            <span>{((calcPreview?.totalAmount ?? cart.totalAmount) || 0).toFixed(2)} грн</span>
           </div>
 
           {orderResult && (

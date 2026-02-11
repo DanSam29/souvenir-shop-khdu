@@ -54,13 +54,14 @@ namespace KhduSouvenirShop.API.Models
 
         public bool IsActive { get; set; } = true;
 
-        [ForeignKey("CreatedBy")]
+        [Column("CreatedBy")]
         public int CreatedByUserId { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         // Навігаційна властивість
+        [ForeignKey("CreatedByUserId")]
         public virtual User? CreatedByUser { get; set; }
     }
 }

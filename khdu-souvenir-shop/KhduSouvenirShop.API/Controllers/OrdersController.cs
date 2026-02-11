@@ -15,10 +15,13 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly AppDbContext _context;
         private readonly ILogger<OrdersController> _logger;
 
-        public OrdersController(AppDbContext context, ILogger<OrdersController> logger)
+        private readonly KhduSouvenirShop.API.Services.PromotionService _promotionService;
+
+        public OrdersController(AppDbContext context, ILogger<OrdersController> logger, KhduSouvenirShop.API.Services.PromotionService promotionService)
         {
             _context = context;
             _logger = logger;
+            _promotionService = promotionService;
         }
 
         [HttpPost("checkout")]
@@ -192,6 +195,82 @@ namespace KhduSouvenirShop.API.Controllers
                 _logger.LogError(ex, "Помилка під час оформлення замовлення користувача {UserId}", userId);
                 return StatusCode(500, new { error = "Не вдалося оформити замовлення" });
             }
+        }
+
+        // POST: api/Orders/calculate - попередній розрахунок з урахуванням промокоду та користувацьких знижок
+        [HttpPost("calculate")]
+        public async Task<ActionResult> Calculate([FromBody] CheckoutDto dto)
+        {
+            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+            var cart = await _context.Carts
+                .Include(c => c.CartItems)
+                    .ThenInclude(ci => ci.Product)
+                .FirstOrDefaultAsync(c => c.UserId == userId);
+
+            if (cart == null || cart.CartItems.Count == 0)
+            {
+                return BadRequest(new { error = "Кошик порожній" });
+            }
+
+            var user = await _context.Users.FindAsync(userId);
+            string studentStatus = user?.StudentStatus ?? "NONE";
+            var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
+
+            var items = cart.CartItems.Select(ci => new
+            {
+                productId = ci.ProductId,
+                name = ci.Product.Name,
+                quantity = ci.Quantity,
+                originalPrice = ci.Product.Price,
+                priceAfterUserPromos = _promotionService.GetPriceAfterPromotions(ci.Product, promos)
+            }).ToList();
+
+            decimal subtotal = items.Sum(i => i.originalPrice * i.quantity);
+            decimal totalAfterUserPromos = items.Sum(i => i.priceAfterUserPromos * i.quantity);
+
+            decimal totalDiscount = subtotal - totalAfterUserPromos;
+            decimal totalAmount = totalAfterUserPromos;
+
+            // Якщо є промокод — застосовуємо додатково
+            if (!string.IsNullOrWhiteSpace(dto.PromoCode))
+            {
+                var now = DateTime.UtcNow;
+                var promo = await _context.Promotions
+                    .FirstOrDefaultAsync(p =>
+                        p.PromoCode == dto.PromoCode &&
+                        p.IsActive &&
+                        (p.StartDate == null || p.StartDate <= now) &&
+                        (p.EndDate == null || p.EndDate >= now) &&
+                        (p.UsageLimit == null || p.CurrentUsage < p.UsageLimit));
+
+                if (promo != null)
+                {
+                    if (promo.Type == "PERCENTAGE")
+                    {
+                        var percent = Math.Min(100M, Math.Max(0M, promo.Value));
+                        // Застосуємо на вже зменшені ціни
+                        var perUnitDiscountTotal = Math.Round((percent / 100.0M) * totalAfterUserPromos, 2);
+                        totalDiscount += perUnitDiscountTotal;
+                        totalAmount = Math.Max(0, totalAfterUserPromos - perUnitDiscountTotal);
+                    }
+                    else if (promo.Type == "FIXED_AMOUNT")
+                    {
+                        var fixedAmount = Math.Max(0, promo.Value);
+                        var applied = Math.Min(fixedAmount, totalAfterUserPromos);
+                        totalDiscount += applied;
+                        totalAmount = Math.Max(0, totalAfterUserPromos - applied);
+                    }
+                }
+            }
+
+            return Ok(new
+            {
+                items = items.Select(i => new { i.productId, i.name, i.quantity, i.originalPrice, priceAfterUserPromos = i.priceAfterUserPromos, subtotal = i.priceAfterUserPromos * i.quantity }),
+                subtotal = subtotal,
+                discountTotal = totalDiscount,
+                totalAmount = totalAmount
+            });
         }
 
         [HttpGet("my")]

@@ -15,10 +15,13 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly AppDbContext _context;
         private readonly ILogger<CartController> _logger;
 
-        public CartController(AppDbContext context, ILogger<CartController> logger)
+        private readonly KhduSouvenirShop.API.Services.PromotionService _promotionService;
+
+        public CartController(AppDbContext context, ILogger<CartController> logger, KhduSouvenirShop.API.Services.PromotionService promotionService)
         {
             _context = context;
             _logger = logger;
+            _promotionService = promotionService;
         }
 
         // GET: api/Cart - отримання кошика поточного користувача
@@ -49,23 +52,36 @@ namespace KhduSouvenirShop.API.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            // Розраховуємо загальну суму
-            var totalAmount = cart.CartItems.Sum(ci => ci.Product.Price * ci.Quantity);
+            // Розраховуємо загальну суму з урахуванням промо (якщо є)
+            // Отримуємо studentStatus для поточного користувача
+            var user = await _context.Users.FindAsync(cart.UserId);
+            string studentStatus = user?.StudentStatus ?? "NONE";
 
-            return Ok(new
+            var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
+
+            var itemsDto = cart.CartItems.Select(ci =>
             {
-                cartId = cart.CartId,
-                items = cart.CartItems.Select(ci => new
+                var discountedPrice = _promotionService.GetPriceAfterPromotions(ci.Product, promos);
+                return new
                 {
                     cartItemId = ci.CartItemId,
                     productId = ci.ProductId,
                     productName = ci.Product.Name,
-                    productPrice = ci.Product.Price,
+                    productPrice = discountedPrice,
+                    originalPrice = ci.Product.Price,
                     productImage = ci.Product.Images.FirstOrDefault(i => i.IsPrimary)?.ImageURL 
                                    ?? ci.Product.Images.FirstOrDefault()?.ImageURL,
                     quantity = ci.Quantity,
-                    subtotal = ci.Product.Price * ci.Quantity
-                }),
+                    subtotal = discountedPrice * ci.Quantity
+                };
+            }).ToList();
+
+            var totalAmount = itemsDto.Sum(i => (decimal)i.subtotal);
+
+            return Ok(new
+            {
+                cartId = cart.CartId,
+                items = itemsDto,
                 totalAmount = totalAmount,
                 itemCount = cart.CartItems.Count
             });

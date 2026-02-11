@@ -114,6 +114,7 @@ export const cartAPI = {
 // API функції для Orders (потребують авторизації)
 export const ordersAPI = {
   checkout: (payload) => api.post('/Orders/checkout', payload),
+  calculate: (payload) => api.post('/Orders/calculate', payload),
   getMy: () => api.get('/Orders/my'),
   getById: (id) => api.get(`/Orders/${id}`),
 };

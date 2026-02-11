@@ -49,6 +49,9 @@ builder.Services.AddAuthorization();
 // Кеш пам'яті для швидких GET-запитів каталогу
 builder.Services.AddMemoryCache();
 
+// Promotion service
+builder.Services.AddScoped<KhduSouvenirShop.API.Services.PromotionService>();
+
 // Додавання контролерів з обробкою циклічних посилань
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

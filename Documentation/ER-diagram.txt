@@ -299,7 +299,7 @@ Table Promotions {
   Value decimal(10,2) [not null, note: 'Значення знижки (%, грн або спеціальна ціна)']
   TargetType enum('PRODUCT', 'CATEGORY', 'CART', 'SHIPPING') [not null, note: 'Область застосування']
   TargetId int [null, note: 'ID товару або категорії (NULL для CART/SHIPPING)']
-  AudienceType enum('ALL', 'STUDENTS', 'STAFF', 'ALUMNI', 'CUSTOM') [not null, default: 'ALL', note: 'Цільова аудиторія']
+  AudienceType enum('ALL', 'STUDENTS', 'STAFF', 'ALUMNI', 'CUSTOM', 'NONE', 'REGULAR', 'SCHOLARSHIP', 'HIGH_ACHIEVER') [not null, default: 'ALL', note: 'Цільова аудиторія. Підтримує прив\'язку до конкретного StudentStatus']
   StartDate timestamp [null, note: 'Дата початку дії (NULL = без обмеження)']
   EndDate timestamp [null, note: 'Дата закінчення дії (NULL = без обмеження)']
   PromoCode varchar(50) [unique, null, note: 'Промокод для активації (опціонально)']
@@ -325,7 +325,7 @@ Table Promotions {
     Priority
   }
   
-  Note: 'Акції та знижки. Підтримує різні типи знижок, цільові аудиторії, промокоди та умови застосування. Стакування знижок відбувається за пріоритетом'
+  Note: 'Акції та знижки. Підтримує різні типи знижок, цільові аудиторії (включаючи конкретні StudentStatus), промокоди та умови застосування. Стакування знижок відбувається за пріоритетом'
 }
 
 Table UserPromotions {
