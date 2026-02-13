@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="a45b76ea-25c4-4b85-8526-1177bc58ee74" name="bt200@PC0101 2026-02-13 06:55:48" runUser="PC0101\bt200" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-02-13T06:55:48.4198612+02:00" queuing="2026-02-13T06:55:48.4198615+02:00" start="2026-02-13T06:55:41.6839025+02:00" finish="2026-02-13T06:55:48.4312556+02:00" />
+  <TestSettings name="default" id="08ca7f4f-356a-47bc-9cc7-aa92fc17433d">
+    <Deployment runDeploymentRoot="bt200_PC0101_2026-02-13_06_55_48" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="dcd3987b-4080-4c27-8fbe-055217159c29" testId="2598bf18-52a5-2ba5-cebd-070b1abc1d77" testName="KhduSouvenirShop.API.Tests.PromotionServiceTests.GetPriceAfterPromotions_AppliesPercentagePromotionsCorrectly" computerName="PC0101" duration="00:00:00.0952896" startTime="2026-02-13T06:55:47.6517682+02:00" endTime="2026-02-13T06:55:47.6517957+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="dcd3987b-4080-4c27-8fbe-055217159c29" />
+    <UnitTestResult executionId="798c5915-5351-4acc-ae0a-a4a7696f48d7" testId="ec610d05-5470-8592-bfc4-6d4a4d11d862" testName="KhduSouvenirShop.API.Tests.PromotionServiceTests.GetActivePromotionsForUserAsync_FiltersByAudienceAndDates" computerName="PC0101" duration="00:00:00.6762606" startTime="2026-02-13T06:55:48.3278498+02:00" endTime="2026-02-13T06:55:48.3278500+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="798c5915-5351-4acc-ae0a-a4a7696f48d7" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="KhduSouvenirShop.API.Tests.PromotionServiceTests.GetPriceAfterPromotions_AppliesPercentagePromotionsCorrectly" storage="c:\users\bt200\desktop\souvenir-shop-khdu\khdu-souvenir-shop\khdusouvenirshop.api.tests\bin\debug\net10.0\khdusouvenirshop.api.tests.dll" id="2598bf18-52a5-2ba5-cebd-070b1abc1d77">
+      <Execution id="dcd3987b-4080-4c27-8fbe-055217159c29" />
+      <TestMethod codeBase="C:\Users\bt200\Desktop\souvenir-shop-khdu\khdu-souvenir-shop\KhduSouvenirShop.API.Tests\bin\Debug\net10.0\KhduSouvenirShop.API.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="KhduSouvenirShop.API.Tests.PromotionServiceTests" name="GetPriceAfterPromotions_AppliesPercentagePromotionsCorrectly" />
+    </UnitTest>
+    <UnitTest name="KhduSouvenirShop.API.Tests.PromotionServiceTests.GetActivePromotionsForUserAsync_FiltersByAudienceAndDates" storage="c:\users\bt200\desktop\souvenir-shop-khdu\khdu-souvenir-shop\khdusouvenirshop.api.tests\bin\debug\net10.0\khdusouvenirshop.api.tests.dll" id="ec610d05-5470-8592-bfc4-6d4a4d11d862">
+      <Execution id="798c5915-5351-4acc-ae0a-a4a7696f48d7" />
+      <TestMethod codeBase="C:\Users\bt200\Desktop\souvenir-shop-khdu\khdu-souvenir-shop\KhduSouvenirShop.API.Tests\bin\Debug\net10.0\KhduSouvenirShop.API.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="KhduSouvenirShop.API.Tests.PromotionServiceTests" name="GetActivePromotionsForUserAsync_FiltersByAudienceAndDates" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="2598bf18-52a5-2ba5-cebd-070b1abc1d77" executionId="dcd3987b-4080-4c27-8fbe-055217159c29" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ec610d05-5470-8592-bfc4-6d4a4d11d862" executionId="798c5915-5351-4acc-ae0a-a4a7696f48d7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Список результатов" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="Все загруженные результаты" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="2" executed="2" passed="2" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.4.5+1caef2f33e (64-bit .NET 10.0.1)&#xD;
+[xUnit.net 00:00:04.67]   Discovering: KhduSouvenirShop.API.Tests&#xD;
+[xUnit.net 00:00:04.71]   Discovered:  KhduSouvenirShop.API.Tests&#xD;
+[xUnit.net 00:00:04.71]   Starting:    KhduSouvenirShop.API.Tests&#xD;
+[xUnit.net 00:00:05.55]   Finished:    KhduSouvenirShop.API.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>
