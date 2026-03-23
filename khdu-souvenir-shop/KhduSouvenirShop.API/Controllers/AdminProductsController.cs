@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
+using KhduSouvenirShop.API.Models.Common;
 
 namespace KhduSouvenirShop.API.Controllers
 {
@@ -15,22 +16,14 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly ILogger<AdminProductsController> _logger = logger;
 
         [HttpPost]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> CreateProduct([FromBody] ProductDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.Name))
-            {
-                return BadRequest(new { error = "Назва товару обов'язкова" });
-            }
-
-            if (dto.Price <= 0 || dto.Weight <= 0)
-            {
-                return BadRequest(new { error = "Ціна та вага мають бути більше 0" });
-            }
-
             var category = await _context.Categories.FindAsync(dto.CategoryId);
             if (category == null)
             {
-                return BadRequest(new { error = "Категорію не знайдено" });
+                return BadRequest(ApiResponse<object>.FailureResult("Категорію не знайдено", "NotFound"));
             }
 
             var product = new Product
@@ -46,7 +39,7 @@ namespace KhduSouvenirShop.API.Controllers
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = product.ProductId }, new
+            var result = new
             {
                 productId = product.ProductId,
                 name = product.Name,
@@ -55,10 +48,14 @@ namespace KhduSouvenirShop.API.Controllers
                 weight = product.Weight,
                 categoryId = product.CategoryId,
                 stock = product.Stock
-            });
+            };
+
+            return CreatedAtAction(nameof(GetById), new { id = product.ProductId }, ApiResponse<object>.SuccessResult(result, "Товар створено"));
         }
 
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> GetById(int id)
         {
             var product = await _context.Products
@@ -68,10 +65,10 @@ namespace KhduSouvenirShop.API.Controllers
 
             if (product == null)
             {
-                return NotFound(new { error = "Товар не знайдено" });
+                return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
             }
 
-            return Ok(new
+            var result = new
             {
                 productId = product.ProductId,
                 name = product.Name,
@@ -80,16 +77,20 @@ namespace KhduSouvenirShop.API.Controllers
                 weight = product.Weight,
                 categoryId = product.CategoryId,
                 stock = product.Stock
-            });
+            };
+
+            return Ok(ApiResponse<object>.SuccessResult(result));
         }
 
         [HttpPut("{id}")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> UpdateProduct(int id, [FromBody] ProductDto dto)
         {
             var product = await _context.Products.FindAsync(id);
             if (product == null)
             {
-                return NotFound(new { error = "Товар не знайдено" });
+                return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
             }
 
             if (dto.CategoryId != product.CategoryId)
@@ -97,7 +98,7 @@ namespace KhduSouvenirShop.API.Controllers
                 var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == dto.CategoryId);
                 if (!categoryExists)
                 {
-                    return BadRequest(new { error = "Категорію не знайдено" });
+                    return BadRequest(ApiResponse<object>.FailureResult("Категорію не знайдено", "NotFound"));
                 }
             }
 
@@ -111,10 +112,12 @@ namespace KhduSouvenirShop.API.Controllers
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Товар оновлено" });
+            return Ok(ApiResponse<object>.SuccessResult(new { }, "Товар оновлено"));
         }
 
         [HttpDelete("{id}")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> DeleteProduct(int id)
         {
             var product = await _context.Products
@@ -123,7 +126,7 @@ namespace KhduSouvenirShop.API.Controllers
 
             if (product == null)
             {
-                return NotFound(new { error = "Товар не знайдено" });
+                return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
             }
 
             if (product.Images.Count > 0)
@@ -134,7 +137,7 @@ namespace KhduSouvenirShop.API.Controllers
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Товар видалено" });
+            return Ok(ApiResponse<object>.SuccessResult(new { }, "Товар видалено"));
         }
     }
 

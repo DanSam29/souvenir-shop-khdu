@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
+using KhduSouvenirShop.API.Models.Common;
 
 namespace KhduSouvenirShop.API.Controllers
 {
@@ -25,9 +26,15 @@ namespace KhduSouvenirShop.API.Controllers
         }
 
         [HttpPost("checkout")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> Checkout([FromBody] CheckoutDto dto)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            }
 
             var cart = await _context.Carts
                 .Include(c => c.CartItems)
@@ -36,14 +43,14 @@ namespace KhduSouvenirShop.API.Controllers
 
             if (cart == null || cart.CartItems.Count == 0)
             {
-                return BadRequest(new { error = "Кошик порожній" });
+                return BadRequest(ApiResponse<object>.FailureResult("Кошик порожній", "BadRequest"));
             }
 
             foreach (var item in cart.CartItems)
             {
                 if (item.Product.Stock < item.Quantity)
                 {
-                    return BadRequest(new { error = $"Недостатньо товару '{item.Product.Name}' на складі. Доступно: {item.Product.Stock}" });
+                    return BadRequest(ApiResponse<object>.FailureResult($"Недостатньо товару '{item.Product.Name}' на складі. Доступно: {item.Product.Stock}", "BadRequest"));
                 }
             }
 
@@ -92,7 +99,6 @@ namespace KhduSouvenirShop.API.Controllers
 
                 _context.Payments.Add(payment);
 
-                // Створюємо OrderItems без знижок
                 var orderItems = new List<OrderItem>();
                 foreach (var item in cart.CartItems)
                 {
@@ -111,7 +117,6 @@ namespace KhduSouvenirShop.API.Controllers
                     orderItems.Add(orderItem);
                 }
 
-                // Застосування промокоду (за наявності)
                 decimal totalDiscount = 0;
                 if (!string.IsNullOrWhiteSpace(dto.PromoCode))
                 {
@@ -179,7 +184,7 @@ namespace KhduSouvenirShop.API.Controllers
 
                 _logger.LogInformation("Замовлення {OrderNumber} створено користувачем {UserId}", order.OrderNumber, userId);
 
-                return Ok(new
+                var result = new
                 {
                     orderId = order.OrderId,
                     orderNumber = order.OrderNumber,
@@ -187,21 +192,28 @@ namespace KhduSouvenirShop.API.Controllers
                     totalAmount = order.TotalAmount,
                     discountTotal = totalDiscount,
                     createdAt = order.CreatedAt
-                });
+                };
+
+                return Ok(ApiResponse<object>.SuccessResult(result, "Замовлення оформлено"));
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
                 _logger.LogError(ex, "Помилка під час оформлення замовлення користувача {UserId}", userId);
-                return StatusCode(500, new { error = "Не вдалося оформити замовлення" });
+                return StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<object>.FailureResult("Не вдалося оформити замовлення", "InternalServerError"));
             }
         }
 
-        // POST: api/Orders/calculate - попередній розрахунок з урахуванням промокоду та користувацьких знижок
         [HttpPost("calculate")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> Calculate([FromBody] CheckoutDto dto)
         {
-            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            }
 
             var cart = await _context.Carts
                 .Include(c => c.CartItems)
@@ -210,7 +222,7 @@ namespace KhduSouvenirShop.API.Controllers
 
             if (cart == null || cart.CartItems.Count == 0)
             {
-                return BadRequest(new { error = "Кошик порожній" });
+                return BadRequest(ApiResponse<object>.FailureResult("Кошик порожній", "BadRequest"));
             }
 
             var user = await _context.Users.FindAsync(userId);
@@ -232,7 +244,6 @@ namespace KhduSouvenirShop.API.Controllers
             decimal totalDiscount = subtotal - totalAfterUserPromos;
             decimal totalAmount = totalAfterUserPromos;
 
-            // Якщо є промокод — застосовуємо додатково
             if (!string.IsNullOrWhiteSpace(dto.PromoCode))
             {
                 var now = DateTime.UtcNow;
@@ -248,29 +259,29 @@ namespace KhduSouvenirShop.API.Controllers
                 {
                     if (promo.Type == "PERCENTAGE")
                     {
-                        var percent = Math.Min(100M, Math.Max(0M, promo.Value));
-                        // Застосуємо на вже зменшені ціни
-                        var perUnitDiscountTotal = Math.Round((percent / 100.0M) * totalAfterUserPromos, 2);
-                        totalDiscount += perUnitDiscountTotal;
-                        totalAmount = Math.Max(0, totalAfterUserPromos - perUnitDiscountTotal);
+                        var percent = Math.Clamp((double)promo.Value, 0, 100);
+                        var promoDiscount = Math.Round(totalAmount * (decimal)(percent / 100.0), 2);
+                        totalDiscount += promoDiscount;
+                        totalAmount -= promoDiscount;
                     }
                     else if (promo.Type == "FIXED_AMOUNT")
                     {
-                        var fixedAmount = Math.Max(0, promo.Value);
-                        var applied = Math.Min(fixedAmount, totalAfterUserPromos);
-                        totalDiscount += applied;
-                        totalAmount = Math.Max(0, totalAfterUserPromos - applied);
+                        var promoDiscount = Math.Min(promo.Value, totalAmount);
+                        totalDiscount += promoDiscount;
+                        totalAmount -= promoDiscount;
                     }
                 }
             }
 
-            return Ok(new
+            var result = new
             {
-                items = items.Select(i => new { i.productId, i.name, i.quantity, i.originalPrice, priceAfterUserPromos = i.priceAfterUserPromos, subtotal = i.priceAfterUserPromos * i.quantity }),
                 subtotal = subtotal,
-                discountTotal = totalDiscount,
-                totalAmount = totalAmount
-            });
+                totalDiscount = totalDiscount,
+                totalAmount = totalAmount,
+                items = items
+            };
+
+            return Ok(ApiResponse<object>.SuccessResult(result));
         }
 
         [HttpGet("my")]
@@ -362,12 +373,12 @@ namespace KhduSouvenirShop.API.Controllers
 
     public class CheckoutDto
     {
+        public string RecipientName { get; set; } = string.Empty;
+        public string RecipientPhone { get; set; } = string.Empty;
         public string City { get; set; } = string.Empty;
         public string WarehouseNumber { get; set; } = string.Empty;
         public string? CityRef { get; set; }
         public string? WarehouseRef { get; set; }
-        public string RecipientName { get; set; } = string.Empty;
-        public string RecipientPhone { get; set; } = string.Empty;
         public string? PaymentMethod { get; set; }
         public string? PromoCode { get; set; }
     }

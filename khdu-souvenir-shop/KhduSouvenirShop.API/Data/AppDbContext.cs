@@ -31,6 +31,8 @@ namespace KhduSouvenirShop.API.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            var seedDate = new DateTime(2026, 1, 1);
+
             // Налаштування унікальних індексів
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
@@ -180,6 +182,46 @@ namespace KhduSouvenirShop.API.Data
                 .WithMany()
                 .HasForeignKey(od => od.CreatedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Початкові категорії
+            modelBuilder.Entity<Category>().HasData(
+                new Category { CategoryId = 1, Name = "Футболки", DisplayOrder = 1, CreatedAt = seedDate },
+                new Category { CategoryId = 2, Name = "Худі", DisplayOrder = 2, CreatedAt = seedDate },
+                new Category { CategoryId = 3, Name = "Гуртки", DisplayOrder = 3, CreatedAt = seedDate },
+                new Category { CategoryId = 4, Name = "Канцелярія", DisplayOrder = 4, CreatedAt = seedDate }
+            );
+
+            // Початкові товари
+            modelBuilder.Entity<Product>().HasData(
+                new Product { ProductId = 1, Name = "Футболка біла", Description = "Біла футболка з логотипом ХДУ", Price = 399.00m, Weight = 0.200m, CategoryId = 1, Stock = 100, CreatedAt = seedDate },
+                new Product { ProductId = 2, Name = "Футболка синя", Description = "Синя футболка з логотипом ХДУ", Price = 399.00m, Weight = 0.200m, CategoryId = 1, Stock = 100, CreatedAt = seedDate },
+                new Product { ProductId = 3, Name = "Худі чорний", Description = "Чорне худі з емблемою ХДУ", Price = 899.00m, Weight = 0.800m, CategoryId = 2, Stock = 50, CreatedAt = seedDate },
+                new Product { ProductId = 4, Name = "Худі сірий", Description = "Сіре худі з емблемою ХДУ", Price = 899.00m, Weight = 0.800m, CategoryId = 2, Stock = 50, CreatedAt = seedDate },
+                new Product { ProductId = 5, Name = "Гуртка керамічна", Description = "Біла керамічна гуртка з логотипом ХДУ", Price = 199.00m, Weight = 0.350m, CategoryId = 3, Stock = 200, CreatedAt = seedDate },
+                new Product { ProductId = 6, Name = "Термогорнятко сталь", Description = "Термогорнятко зі сталі з логотипом ХДУ", Price = 499.00m, Weight = 0.450m, CategoryId = 3, Stock = 120, CreatedAt = seedDate },
+                new Product { ProductId = 7, Name = "Ручка металева", Description = "Металева ручка з гравіюванням ХДУ", Price = 129.00m, Weight = 0.050m, CategoryId = 4, Stock = 300, CreatedAt = seedDate },
+                new Product { ProductId = 8, Name = "Блокнот A5", Description = "Блокнот формату A5 з логотипом ХДУ", Price = 149.00m, Weight = 0.250m, CategoryId = 4, Stock = 180, CreatedAt = seedDate }
+            );
+
+            // Зображення товарів
+            modelBuilder.Entity<ProductImage>().HasData(
+                // Футболки
+                new ProductImage { ImageId = 1, ProductId = 1, ImageURL = "/images/products/tshirt-white-front.jpg", IsPrimary = true, DisplayOrder = 1 },
+                new ProductImage { ImageId = 2, ProductId = 1, ImageURL = "/images/products/tshirt-white-back.jpg", IsPrimary = false, DisplayOrder = 2 },
+                new ProductImage { ImageId = 3, ProductId = 2, ImageURL = "/images/products/tshirt-blue-front.jpg", IsPrimary = true, DisplayOrder = 1 },
+                new ProductImage { ImageId = 4, ProductId = 2, ImageURL = "/images/products/tshirt-blue-back.jpg", IsPrimary = false, DisplayOrder = 2 },
+                // Худі
+                new ProductImage { ImageId = 5, ProductId = 3, ImageURL = "/images/products/hoodie-black-front.jpg", IsPrimary = true, DisplayOrder = 1 },
+                new ProductImage { ImageId = 6, ProductId = 3, ImageURL = "/images/products/hoodie-black-back.jpg", IsPrimary = false, DisplayOrder = 2 },
+                new ProductImage { ImageId = 7, ProductId = 4, ImageURL = "/images/products/hoodie-grey-front.jpg", IsPrimary = true, DisplayOrder = 1 },
+                new ProductImage { ImageId = 8, ProductId = 4, ImageURL = "/images/products/hoodie-grey-back.jpg", IsPrimary = false, DisplayOrder = 2 },
+                // Гуртки
+                new ProductImage { ImageId = 9, ProductId = 5, ImageURL = "/images/products/mug-ceramic-white.jpg", IsPrimary = true, DisplayOrder = 1 },
+                new ProductImage { ImageId = 10, ProductId = 6, ImageURL = "/images/products/mug-thermo-steel.jpg", IsPrimary = true, DisplayOrder = 1 },
+                // Канцелярія
+                new ProductImage { ImageId = 11, ProductId = 7, ImageURL = "/images/products/pen-metal.jpg", IsPrimary = true, DisplayOrder = 1 },
+                new ProductImage { ImageId = 12, ProductId = 8, ImageURL = "/images/products/notebook-a5.jpg", IsPrimary = true, DisplayOrder = 1 }
+            );
         }
     }
 }

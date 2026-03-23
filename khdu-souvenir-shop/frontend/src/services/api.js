@@ -27,7 +27,14 @@ api.interceptors.request.use(
 
 // Interceptor для обробки помилок (наприклад, 401 - неавторизовано)
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Якщо відповідь успішна і містить `data` та `success: true`, повертаємо тільки дані
+    if (response.data && response.data.success) {
+      return response.data;
+    }
+    // В іншому випадку повертаємо повну відповідь
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       // Токен невалідний або закінчився

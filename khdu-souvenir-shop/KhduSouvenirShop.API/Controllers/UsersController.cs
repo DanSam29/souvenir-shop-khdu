@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
+using KhduSouvenirShop.API.Models.Common;
 using BCrypt.Net;
 
 namespace KhduSouvenirShop.API.Controllers
@@ -29,18 +30,12 @@ namespace KhduSouvenirShop.API.Controllers
 
         // POST: api/Users/register
         [HttpPost("register")]
-        public async Task<ActionResult<User>> RegisterUser([FromBody] RegisterDto registerDto)
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+        public async Task<ActionResult> RegisterUser([FromBody] RegisterDto registerDto)
         {
             _logger.LogInformation("Спроба реєстрації користувача: {Email}", registerDto.Email);
-
-            // Валідація вхідних даних
-            if (string.IsNullOrWhiteSpace(registerDto.FirstName) ||
-                string.IsNullOrWhiteSpace(registerDto.LastName) ||
-                string.IsNullOrWhiteSpace(registerDto.Email) ||
-                string.IsNullOrWhiteSpace(registerDto.Password))
-            {
-                return BadRequest(new { error = "Всі поля обов'язкові" });
-            }
 
             // Перевірка на наявність email
             var existingUser = await _context.Users
@@ -49,7 +44,7 @@ namespace KhduSouvenirShop.API.Controllers
             if (existingUser != null)
             {
                 _logger.LogWarning("Email {Email} вже зареєстрований", registerDto.Email);
-                return Conflict(new { error = "Цей Email вже зареєстрований" });
+                return Conflict(ApiResponse<object>.FailureResult("Цей Email вже зареєстрований", "Conflict"));
             }
 
             // Хешування паролю
@@ -68,8 +63,6 @@ namespace KhduSouvenirShop.API.Controllers
             };
 
             // Логіка: Встановлення студентського статусу за доменом email
-            // Якщо домен університету @university.ks.ua → студент (REGULAR)
-            // Інші домени → зовнішній користувач (NONE)
             var emailLower = (newUser.Email ?? string.Empty).ToLowerInvariant();
             if (emailLower.EndsWith("@university.ks.ua"))
             {
@@ -80,7 +73,6 @@ namespace KhduSouvenirShop.API.Controllers
             }
             else
             {
-                // Всі інші домени - це зовнішні користувачі
                 newUser.StudentStatus = "NONE";
                 _logger.LogInformation("Користувач {Email} зареєстрований як зовнішній користувач", newUser.Email);
             }
@@ -90,11 +82,9 @@ namespace KhduSouvenirShop.API.Controllers
 
             _logger.LogInformation("Користувач {Email} успішно зареєстрований", newUser.Email);
 
-            // Генеруємо JWT токен
             var token = GenerateJwtToken(newUser);
 
-            // Повертаємо дані без паролю + токен
-            return CreatedAtAction(nameof(GetUser), new { id = newUser.UserId }, new
+            var result = new
             {
                 userId = newUser.UserId,
                 firstName = newUser.FirstName,
@@ -106,48 +96,39 @@ namespace KhduSouvenirShop.API.Controllers
                 studentVerifiedAt = newUser.StudentVerifiedAt,
                 studentExpiresAt = newUser.StudentExpiresAt,
                 token = token
-            });
+            };
+
+            return CreatedAtAction(nameof(GetUser), new { id = newUser.UserId }, ApiResponse<object>.SuccessResult(result, "Користувач успішно зареєстрований"));
         }
 
         // POST: api/Users/login
         [HttpPost("login")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> Login([FromBody] LoginDto loginDto)
         {
             _logger.LogInformation("Спроба авторизації: {Email}", loginDto.Email);
 
-            // Валідація
-            if (string.IsNullOrWhiteSpace(loginDto.Email) || string.IsNullOrWhiteSpace(loginDto.Password))
-            {
-                return BadRequest(new { error = "Email та пароль обов'язкові" });
-            }
-
-            // Пошук користувача
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
 
             if (user == null)
             {
                 _logger.LogWarning("Користувача з email {Email} не знайдено", loginDto.Email);
-                return Unauthorized(new { error = "Невірний email або пароль" });
+                return Unauthorized(ApiResponse<object>.FailureResult("Невірний email або пароль", "Unauthorized"));
             }
 
-            // Перевірка паролю
             var isValid = BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password);
             if (!isValid)
             {
                 _logger.LogWarning("Невірний пароль для {Email}", loginDto.Email);
-                return Unauthorized(new { error = "Невірний email або пароль" });
+                return Unauthorized(ApiResponse<object>.FailureResult("Невірний email або пароль", "Unauthorized"));
             }
 
-            // ВАЖЛИВО: StudentStatus НЕ змінюється при вході
-            // Він встановлюється один раз при реєстрації (або вручну в БД для адмінів/менеджерів)
-            // і зберігається протягом всього часу існування акаунту
-
-            // Генеруємо JWT токен
             var token = GenerateJwtToken(user);
 
             _logger.LogInformation("Користувач {Email} успішно авторизований", user.Email);
 
-            return Ok(new
+            var result = new
             {
                 userId = user.UserId,
                 firstName = user.FirstName,
@@ -159,29 +140,32 @@ namespace KhduSouvenirShop.API.Controllers
                 studentVerifiedAt = user.StudentVerifiedAt,
                 studentExpiresAt = user.StudentExpiresAt,
                 token = token
-            });
+            };
+
+            return Ok(ApiResponse<object>.SuccessResult(result, "Авторизація успішна"));
         }
 
-        // GET: api/Users/me - отримання даних поточного користувача
+        // GET: api/Users/me
         [Authorize]
         [HttpGet("me")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> GetCurrentUser()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-
-            if (userId == 0)
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
             {
-                return Unauthorized(new { error = "Не авторизовано" });
+                return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
 
             var user = await _context.Users.FindAsync(userId);
 
             if (user == null)
             {
-                return NotFound(new { error = "Користувача не знайдено" });
+                return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено", "NotFound"));
             }
 
-            return Ok(new
+            var result = new
             {
                 userId = user.UserId,
                 firstName = user.FirstName,
@@ -194,21 +178,25 @@ namespace KhduSouvenirShop.API.Controllers
                 studentVerifiedAt = user.StudentVerifiedAt,
                 studentExpiresAt = user.StudentExpiresAt,
                 gpa = user.GPA
-            });
+            };
+
+            return Ok(ApiResponse<object>.SuccessResult(result));
         }
 
         // GET: api/Users/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(int id)
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> GetUser(int id)
         {
             var user = await _context.Users.FindAsync(id);
 
             if (user == null)
             {
-                return NotFound(new { error = "Користувача не знайдено" });
+                return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено", "NotFound"));
             }
 
-            return Ok(new
+            var result = new
             {
                 userId = user.UserId,
                 firstName = user.FirstName,
@@ -221,7 +209,9 @@ namespace KhduSouvenirShop.API.Controllers
                 studentVerifiedAt = user.StudentVerifiedAt,
                 studentExpiresAt = user.StudentExpiresAt,
                 gpa = user.GPA
-            });
+            };
+
+            return Ok(ApiResponse<object>.SuccessResult(result));
         }
 
         // Метод генерації JWT токену

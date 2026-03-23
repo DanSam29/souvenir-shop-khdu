@@ -3,7 +3,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using KhduSouvenirShop.API.Data;
+using KhduSouvenirShop.API.Middleware;
+using KhduSouvenirShop.API.Models.Common;
 using Serilog;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,17 +57,68 @@ builder.Services.AddMemoryCache();
 // Promotion service
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.PromotionService>();
 
-// Додавання контролерів з обробкою циклічних посилань
+// FluentValidation
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+// Додавання контролерів з обробкою циклічних посилань та кастомною обробкою помилок валідації
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+    })
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errors = context.ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .ToList();
+
+            var response = ApiResponse<object>.FailureResult(errors, "Validation Error");
+            return new BadRequestObjectResult(response);
+        };
     });
 
 // Додавання Swagger для документації API
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "KhduSouvenirShop API",
+        Version = "v1",
+        Description = "API для інтернет-магазину сувенірної продукції ХДУ"
+    });
+
+    // Додавання JWT авторизації в Swagger
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Введіть 'Bearer' [пробіл] і ваш токен у текстове поле нижче.\r\n\r\nПриклад: \"Bearer 12345abcdef\""
+    });
+
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
 
 // Додавання CORS (для frontend)
 builder.Services.AddCors(options =>
@@ -76,6 +132,9 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Глобальна обробка помилок
+app.UseMiddleware<ExceptionMiddleware>();
 
 // Middleware для розробки
 if (app.Environment.IsDevelopment())

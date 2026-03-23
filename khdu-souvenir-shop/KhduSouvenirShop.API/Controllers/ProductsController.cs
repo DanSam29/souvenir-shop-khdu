@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
+using KhduSouvenirShop.API.Models.Common;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace KhduSouvenirShop.API.Controllers
@@ -17,10 +18,10 @@ namespace KhduSouvenirShop.API.Controllers
 
         // GET: api/Products
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<object>>> GetProducts()
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetProducts()
         {
             _logger.LogInformation("Запит на отримання всіх товарів");
-            // Опримуємо studentStatus (якщо користувач авторизований)
             string studentStatus = "NONE";
             if (User?.Identity?.IsAuthenticated == true)
             {
@@ -33,8 +34,7 @@ namespace KhduSouvenirShop.API.Controllers
             }
 
             var cacheKey = $"products:all:{studentStatus}";
-            var dtoList = _cache.Get<List<object>>(cacheKey);
-            if (dtoList is null)
+            if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
             {
                 var products = await _context.Products
                     .Include(p => p.Category)
@@ -55,22 +55,20 @@ namespace KhduSouvenirShop.API.Controllers
                     stock = p.Stock
                 }).ToList<object>();
 
-                _cache.Set(cacheKey, dtoList, new MemoryCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
-                });
+                _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(5));
             }
 
-            return Ok(dtoList ?? new List<object>());
+            return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
         }
 
         // GET: api/Products/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<object>> GetProduct(int id)
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> GetProduct(int id)
         {
             _logger.LogInformation("Запит на отримання товару з ID: {ProductId}", id);
 
-            // Student status for pricing
             string studentStatus = "NONE";
             if (User?.Identity?.IsAuthenticated == true)
             {
@@ -83,8 +81,7 @@ namespace KhduSouvenirShop.API.Controllers
             }
 
             var cacheKey = $"product:{id}:{studentStatus}";
-            var dto = _cache.Get<object>(cacheKey);
-            if (dto is null)
+            if (!_cache.TryGetValue(cacheKey, out object? dto))
             {
                 var product = await _context.Products
                     .Include(p => p.Category)
@@ -94,7 +91,7 @@ namespace KhduSouvenirShop.API.Controllers
                 if (product == null)
                 {
                     _logger.LogWarning("Товар з ID {ProductId} не знайдено", id);
-                    return NotFound(new { error = "Товар не знайдено" });
+                    return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
                 }
 
                 var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
@@ -111,29 +108,32 @@ namespace KhduSouvenirShop.API.Controllers
                     stock = product.Stock
                 };
 
-                _cache.Set(cacheKey, dto, new MemoryCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
-                });
+                _cache.Set(cacheKey, dto, TimeSpan.FromMinutes(5));
             }
 
-            return Ok(dto);
+            if (dto == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
+            }
+
+            return Ok(ApiResponse<object>.SuccessResult(dto));
         }
 
         // GET: api/Products/search?query=футболка
         [HttpGet("search")]
-        public async Task<ActionResult<IEnumerable<object>>> SearchProducts([FromQuery] string query)
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> SearchProducts([FromQuery] string query)
         {
             _logger.LogInformation("Пошук товарів за запитом: {Query}", query);
 
             if (string.IsNullOrWhiteSpace(query))
             {
-                return BadRequest(new { error = "Пошуковий запит не може бути порожнім" });
+                return BadRequest(ApiResponse<object>.FailureResult("Пошуковий запит не може бути порожнім", "BadRequest"));
             }
 
             var norm = query.Trim().ToLowerInvariant();
 
-            // student status
             string studentStatus = "NONE";
             if (User?.Identity?.IsAuthenticated == true)
             {
@@ -146,8 +146,7 @@ namespace KhduSouvenirShop.API.Controllers
             }
 
             var cacheKey = $"products:search:{norm}:{studentStatus}";
-            var dtoList = _cache.Get<List<object>>(cacheKey);
-            if (dtoList is null)
+            if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
             {
                 var products = await _context.Products
                     .Include(p => p.Category)
@@ -168,18 +167,16 @@ namespace KhduSouvenirShop.API.Controllers
                     stock = p.Stock
                 }).ToList<object>();
 
-                _cache.Set(cacheKey, dtoList, new MemoryCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2)
-                });
+                _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(2));
             }
 
-            return Ok(dtoList ?? new List<object>());
+            return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
         }
 
         // GET: api/Products/category/1
         [HttpGet("category/{categoryId}")]
-        public async Task<ActionResult<IEnumerable<object>>> GetProductsByCategory(int categoryId)
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetProductsByCategory(int categoryId)
         {
             _logger.LogInformation("Запит на товари категорії {CategoryId}", categoryId);
             string studentStatus = "NONE";
@@ -194,8 +191,7 @@ namespace KhduSouvenirShop.API.Controllers
             }
 
             var cacheKey = $"products:category:{categoryId}:{studentStatus}";
-            var dtoList = _cache.Get<List<object>>(cacheKey);
-            if (dtoList is null)
+            if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
             {
                 var products = await _context.Products
                     .Include(p => p.Category)
@@ -217,13 +213,10 @@ namespace KhduSouvenirShop.API.Controllers
                     stock = p.Stock
                 }).ToList<object>();
 
-                _cache.Set(cacheKey, dtoList, new MemoryCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
-                });
+                _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(5));
             }
 
-            return Ok(dtoList ?? new List<object>());
+            return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
         }
     }
 }
