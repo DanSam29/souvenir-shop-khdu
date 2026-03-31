@@ -17,6 +17,7 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly ILogger<OrdersController> _logger;
         private readonly KhduSouvenirShop.API.Services.PromotionService _promotionService;
         private readonly KhduSouvenirShop.API.Services.IPaymentService _paymentService;
+        private readonly KhduSouvenirShop.API.Services.INovaPoshtaService _novaPoshtaService;
         private readonly IConfiguration _configuration;
 
         public OrdersController(
@@ -24,12 +25,14 @@ namespace KhduSouvenirShop.API.Controllers
             ILogger<OrdersController> logger, 
             KhduSouvenirShop.API.Services.PromotionService promotionService,
             KhduSouvenirShop.API.Services.IPaymentService paymentService,
+            KhduSouvenirShop.API.Services.INovaPoshtaService novaPoshtaService,
             IConfiguration configuration)
         {
             _context = context;
             _logger = logger;
             _promotionService = promotionService;
             _paymentService = paymentService;
+            _novaPoshtaService = novaPoshtaService;
             _configuration = configuration;
         }
 
@@ -66,7 +69,16 @@ namespace KhduSouvenirShop.API.Controllers
 
             try
             {
-                var totalAmount = cart.CartItems.Sum(ci => ci.Product.Price * ci.Quantity);
+                var subtotal = cart.CartItems.Sum(ci => ci.Product.Price * ci.Quantity);
+                var totalWeight = cart.CartItems.Sum(ci => ci.Product.Weight * ci.Quantity);
+                
+                decimal shippingCost = 0;
+                if (!string.IsNullOrEmpty(dto.CityRef) && _configuration.GetValue<bool>("Features:NovaPoshtaEnabled"))
+                {
+                    shippingCost = await _novaPoshtaService.CalculateDeliveryCostAsync(dto.CityRef, totalWeight, subtotal);
+                }
+
+                var totalAmount = subtotal + shippingCost;
                 var orderNumber = $"ORD-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..6]}";
 
                 var order = new Order
@@ -75,7 +87,7 @@ namespace KhduSouvenirShop.API.Controllers
                     OrderNumber = orderNumber,
                     Status = "Processing",
                     TotalAmount = totalAmount,
-                    ShippingCost = 0,
+                    ShippingCost = shippingCost,
                     CreatedAt = DateTime.UtcNow
                 };
 
