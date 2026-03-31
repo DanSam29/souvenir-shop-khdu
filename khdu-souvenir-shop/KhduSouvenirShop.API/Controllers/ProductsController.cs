@@ -9,37 +9,79 @@ namespace KhduSouvenirShop.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ProductsController(AppDbContext context, ILogger<ProductsController> logger, IMemoryCache cache, KhduSouvenirShop.API.Services.PromotionService promotionService) : ControllerBase
+    public class ProductsController : ControllerBase
     {
-        private readonly AppDbContext _context = context;
-        private readonly ILogger<ProductsController> _logger = logger;
-        private readonly IMemoryCache _cache = cache;
-        private readonly KhduSouvenirShop.API.Services.PromotionService _promotionService = promotionService;
+        private readonly AppDbContext _context;
+        private readonly ILogger<ProductsController> _logger;
+        private readonly IMemoryCache _cache;
+        private readonly KhduSouvenirShop.API.Services.PromotionService _promotionService;
+        private readonly KhduSouvenirShop.API.Services.IImageService _imageService;
+
+        public ProductsController(AppDbContext context, ILogger<ProductsController> logger, IMemoryCache cache, KhduSouvenirShop.API.Services.PromotionService promotionService, KhduSouvenirShop.API.Services.IImageService imageService)
+        {
+            _context = context;
+            _logger = logger;
+            _cache = cache;
+            _promotionService = promotionService;
+            _imageService = imageService;
+        }
 
         // GET: api/Products
         [HttpGet]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status200OK)]
-        public async Task<ActionResult> GetProducts()
+        public async Task<ActionResult> GetProducts(
+            [FromQuery] int? categoryId, 
+            [FromQuery] string? search, 
+            [FromQuery] string? sortBy = "newest",
+            [FromQuery] decimal? minPrice = null,
+            [FromQuery] decimal? maxPrice = null)
         {
-            _logger.LogInformation("Запит на отримання всіх товарів");
-            string studentStatus = "NONE";
-            if (User?.Identity?.IsAuthenticated == true)
-            {
-                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (int.TryParse(userIdClaim, out var uid))
-                {
-                    var user = await _context.Users.FindAsync(uid);
-                    if (user != null) studentStatus = user.StudentStatus ?? "NONE";
-                }
-            }
-
-            var cacheKey = $"products:all:{studentStatus}";
+            _logger.LogInformation("Запит на отримання товарів з фільтрами");
+            
+            // Ключ кешу залежить від фільтрів
+            string cacheKey = $"Products_{categoryId}_{search}_{sortBy}_{minPrice}_{maxPrice}";
+            
             if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
             {
-                var products = await _context.Products
+                var query = _context.Products
                     .Include(p => p.Category)
                     .Include(p => p.Images)
-                    .ToListAsync();
+                    .AsQueryable();
+
+                // Фільтрація
+                if (categoryId.HasValue)
+                    query = query.Where(p => p.CategoryId == categoryId);
+
+                if (!string.IsNullOrEmpty(search))
+                    query = query.Where(p => p.Name.Contains(search) || p.Description.Contains(search));
+
+                if (minPrice.HasValue)
+                    query = query.Where(p => p.Price >= minPrice.Value);
+
+                if (maxPrice.HasValue)
+                    query = query.Where(p => p.Price <= maxPrice.Value);
+
+                // Сортування
+                query = sortBy switch
+                {
+                    "price_asc" => query.OrderBy(p => p.Price),
+                    "price_desc" => query.OrderByDescending(p => p.Price),
+                    "name_asc" => query.OrderBy(p => p.Name),
+                    _ => query.OrderByDescending(p => p.CreatedAt)
+                };
+
+                var products = await query.ToListAsync();
+                
+                string studentStatus = "NONE";
+                if (User?.Identity?.IsAuthenticated == true)
+                {
+                    var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    if (int.TryParse(userIdClaim, out var uid))
+                    {
+                        var user = await _context.Users.FindAsync(uid);
+                        if (user != null) studentStatus = user.StudentStatus ?? "NONE";
+                    }
+                }
 
                 var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
 
@@ -218,5 +260,147 @@ namespace KhduSouvenirShop.API.Controllers
 
             return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
         }
+
+        // --- Admin Methods ---
+
+        [HttpPost]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult> CreateProduct([FromBody] ProductCreateDto dto)
+        {
+            var product = new Product
+            {
+                Name = dto.Name,
+                Description = dto.Description,
+                Price = dto.Price,
+                Stock = dto.Stock,
+                CategoryId = dto.CategoryId,
+                Weight = dto.Weight,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Products.Add(product);
+            await _context.SaveChangesAsync();
+
+            InvalidateCache();
+            return Ok(ApiResponse<object>.SuccessResult(product, "Товар створено"));
+        }
+
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult> UpdateProduct(int id, [FromBody] ProductUpdateDto dto)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
+
+            product.Name = dto.Name;
+            product.Description = dto.Description;
+            product.Price = dto.Price;
+            product.Stock = dto.Stock;
+            product.CategoryId = dto.CategoryId;
+            product.Weight = dto.Weight;
+            product.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            InvalidateCache();
+            return Ok(ApiResponse<object>.SuccessResult(product, "Товар оновлено"));
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult> DeleteProduct(int id)
+        {
+            var product = await _context.Products
+                .Include(p => p.Images)
+                .FirstOrDefaultAsync(p => p.ProductId == id);
+
+            if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
+
+            // Видалення зображень з диска
+            foreach (var img in product.Images)
+            {
+                await _imageService.DeleteImageAsync(img.ImageURL);
+            }
+
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+
+            InvalidateCache();
+            return Ok(ApiResponse<object>.SuccessResult(null, "Товар видалено"));
+        }
+
+        [HttpPost("{id}/images")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult> UploadImage(int id, IFormFile file, [FromQuery] bool isPrimary = false)
+        {
+            var product = await _context.Products.Include(p => p.Images).FirstOrDefaultAsync(p => p.ProductId == id);
+            if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
+
+            try
+            {
+                var url = await _imageService.UploadImageAsync(file);
+
+                // Якщо це перше зображення, робимо його головним автоматично
+                if (!product.Images.Any()) isPrimary = true;
+
+                // Якщо ми ставимо нове головне зображення, знімаємо прапорець з інших
+                if (isPrimary)
+                {
+                    foreach (var img in product.Images) img.IsPrimary = false;
+                }
+
+                var productImage = new ProductImage
+                {
+                    ProductId = id,
+                    ImageURL = url,
+                    IsPrimary = isPrimary,
+                    DisplayOrder = product.Images.Count
+                };
+
+                _context.ProductImages.Add(productImage);
+                await _context.SaveChangesAsync();
+
+                InvalidateCache();
+                return Ok(ApiResponse<object>.SuccessResult(productImage, "Зображення завантажено"));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<object>.FailureResult(ex.Message, "UploadError"));
+            }
+        }
+
+        [HttpDelete("images/{imageId}")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult> DeleteImage(int imageId)
+        {
+            var img = await _context.ProductImages.FindAsync(imageId);
+            if (img == null) return NotFound(ApiResponse<object>.FailureResult("Зображення не знайдено", "NotFound"));
+
+            await _imageService.DeleteImageAsync(img.ImageURL);
+            _context.ProductImages.Remove(img);
+            await _context.SaveChangesAsync();
+
+            InvalidateCache();
+            return Ok(ApiResponse<object>.SuccessResult(null, "Зображення видалено"));
+        }
+
+        private void InvalidateCache()
+        {
+            _cache.Remove("Public_Products_All");
+            // В ідеалі тут треба видалити всі ключі, що починаються з Products_
+        }
     }
+
+    public class ProductCreateDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public decimal Price { get; set; }
+        public int Stock { get; set; }
+        public int CategoryId { get; set; }
+        public decimal Weight { get; set; } = 0.5m;
+    }
+
+    public class ProductUpdateDto : ProductCreateDto { }
 }

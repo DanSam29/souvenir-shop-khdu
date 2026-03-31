@@ -1,99 +1,146 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace KhduSouvenirShop.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class CategoriesController(AppDbContext context, ILogger<CategoriesController> logger, IMemoryCache cache) : ControllerBase
+    public class CategoriesController : ControllerBase
     {
-        private readonly AppDbContext _context = context;
-        private readonly ILogger<CategoriesController> _logger = logger;
-        private readonly IMemoryCache _cache = cache;
+        private readonly AppDbContext _context;
+        private readonly IMemoryCache _cache;
+        private readonly ILogger<CategoriesController> _logger;
 
-        // GET: api/Categories
+        public CategoriesController(AppDbContext context, IMemoryCache cache, ILogger<CategoriesController> logger)
+        {
+            _context = context;
+            _cache = cache;
+            _logger = logger;
+        }
+
+        // --- Public Methods ---
+
         [HttpGet]
-        [ProducesResponseType(typeof(ApiResponse<IEnumerable<Category>>), StatusCodes.Status200OK)]
         public async Task<ActionResult> GetCategories()
         {
-            _logger.LogInformation("Запит на отримання всіх категорій");
-
-            var cacheKey = "categories:roots";
-            if (!_cache.TryGetValue(cacheKey, out List<Category>? categories))
+            var cacheKey = "Public_Categories_Tree";
+            if (_cache.TryGetValue(cacheKey, out List<object>? cachedTree))
             {
-                categories = await _context.Categories
-                    .Include(c => c.SubCategories)
-                    .Where(c => c.ParentCategoryId == null)
-                    .OrderBy(c => c.DisplayOrder)
-                    .ToListAsync();
-
-                _cache.Set(cacheKey, categories, TimeSpan.FromMinutes(5));
+                return Ok(ApiResponse<object>.SuccessResult(cachedTree!));
             }
 
-            return Ok(ApiResponse<IEnumerable<Category>>.SuccessResult(categories ?? new List<Category>()));
+            var allCategories = await _context.Categories
+                .OrderBy(c => c.DisplayOrder)
+                .ToListAsync();
+
+            // Побудова дерева категорій
+            var tree = allCategories
+                .Where(c => c.ParentCategoryId == null)
+                .Select(c => BuildCategoryNode(c, allCategories))
+                .ToList<object>();
+
+            _cache.Set(cacheKey, tree, TimeSpan.FromHours(1));
+
+            return Ok(ApiResponse<object>.SuccessResult(tree));
         }
 
-        // GET: api/Categories/5
-        [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<Category>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult> GetCategory(int id)
+        private object BuildCategoryNode(Category category, List<Category> all)
         {
-            _logger.LogInformation("Запит на категорію з ID: {CategoryId}", id);
-
-            var cacheKey = $"category:{id}";
-            if (!_cache.TryGetValue(cacheKey, out Category? category))
+            return new
             {
-                category = await _context.Categories
-                    .Include(c => c.SubCategories)
-                    .Include(c => c.Products)
-                    .FirstOrDefaultAsync(c => c.CategoryId == id);
-
-                if (category != null)
-                {
-                    _cache.Set(cacheKey, category, TimeSpan.FromMinutes(5));
-                }
-            }
-
-            if (category == null)
-            {
-                _logger.LogWarning("Категорію з ID {CategoryId} не знайдено", id);
-                return NotFound(ApiResponse<object>.FailureResult("Категорію не знайдено", "NotFound"));
-            }
-
-            return Ok(ApiResponse<Category>.SuccessResult(category));
+                categoryId = category.CategoryId,
+                name = category.Name,
+                description = category.Description,
+                displayOrder = category.DisplayOrder,
+                subCategories = all
+                    .Where(c => c.ParentCategoryId == category.CategoryId)
+                    .Select(c => BuildCategoryNode(c, all))
+                    .ToList()
+            };
         }
 
-        // GET: api/Categories/5/products
-        [HttpGet("{id}/products")]
-        [ProducesResponseType(typeof(ApiResponse<IEnumerable<Product>>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult> GetCategoryProducts(int id)
-        {
-            _logger.LogInformation("Запит на товари категорії {CategoryId}", id);
+        // --- Admin Methods ---
 
+        [HttpPost]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult> CreateCategory([FromBody] CategoryDto dto)
+        {
+            var category = new Category
+            {
+                Name = dto.Name,
+                Description = dto.Description,
+                ParentCategoryId = dto.ParentCategoryId,
+                DisplayOrder = dto.DisplayOrder,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Categories.Add(category);
+            await _context.SaveChangesAsync();
+            
+            InvalidateCache();
+            return Ok(ApiResponse<object>.SuccessResult(category, "Категорію створено"));
+        }
+
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult> UpdateCategory(int id, [FromBody] CategoryDto dto)
+        {
             var category = await _context.Categories.FindAsync(id);
-            if (category == null)
-            {
-                return NotFound(ApiResponse<object>.FailureResult("Категорію не знайдено", "NotFound"));
-            }
+            if (category == null) return NotFound(ApiResponse<object>.FailureResult("Категорію не знайдено", "NotFound"));
 
-            var cacheKey = $"category:{id}:products";
-            if (!_cache.TryGetValue(cacheKey, out List<Product>? products))
-            {
-                products = await _context.Products
-                    .Include(p => p.Images)
-                    .Where(p => p.CategoryId == id)
-                    .ToListAsync();
+            category.Name = dto.Name;
+            category.Description = dto.Description;
+            category.ParentCategoryId = dto.ParentCategoryId;
+            category.DisplayOrder = dto.DisplayOrder;
+            category.UpdatedAt = DateTime.UtcNow;
 
-                _cache.Set(cacheKey, products, TimeSpan.FromMinutes(5));
-            }
-
-            return Ok(ApiResponse<IEnumerable<Product>>.SuccessResult(products ?? new List<Product>()));
+            await _context.SaveChangesAsync();
+            
+            InvalidateCache();
+            return Ok(ApiResponse<object>.SuccessResult(category, "Категорію оновлено"));
         }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult> DeleteCategory(int id)
+        {
+            var category = await _context.Categories
+                .Include(c => c.Products)
+                .Include(c => c.SubCategories)
+                .FirstOrDefaultAsync(c => c.CategoryId == id);
+
+            if (category == null) return NotFound(ApiResponse<object>.FailureResult("Категорію не знайдено", "NotFound"));
+
+            if (category.Products.Any())
+                return BadRequest(ApiResponse<object>.FailureResult("Неможливо видалити категорію, що містить товари", "Conflict"));
+
+            if (category.SubCategories.Any())
+                return BadRequest(ApiResponse<object>.FailureResult("Неможливо видалити категорію, що містить підкатегорії", "Conflict"));
+
+            _context.Categories.Remove(category);
+            await _context.SaveChangesAsync();
+            
+            InvalidateCache();
+            return Ok(ApiResponse<object>.SuccessResult(null, "Категорію видалено"));
+        }
+
+        private void InvalidateCache()
+        {
+            _cache.Remove("Public_Categories_Tree");
+            _cache.Remove("Public_Products_All"); // Про всяк випадок, бо товари пов'язані з категоріями
+        }
+    }
+
+    public class CategoryDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public int? ParentCategoryId { get; set; }
+        public int DisplayOrder { get; set; } = 0;
     }
 }
