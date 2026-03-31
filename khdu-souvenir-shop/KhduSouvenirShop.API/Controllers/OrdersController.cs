@@ -18,6 +18,7 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly KhduSouvenirShop.API.Services.PromotionService _promotionService;
         private readonly KhduSouvenirShop.API.Services.IPaymentService _paymentService;
         private readonly KhduSouvenirShop.API.Services.INovaPoshtaService _novaPoshtaService;
+        private readonly KhduSouvenirShop.API.Services.IEmailService _emailService;
         private readonly IConfiguration _configuration;
 
         public OrdersController(
@@ -26,6 +27,7 @@ namespace KhduSouvenirShop.API.Controllers
             KhduSouvenirShop.API.Services.PromotionService promotionService,
             KhduSouvenirShop.API.Services.IPaymentService paymentService,
             KhduSouvenirShop.API.Services.INovaPoshtaService novaPoshtaService,
+            KhduSouvenirShop.API.Services.IEmailService emailService,
             IConfiguration configuration)
         {
             _context = context;
@@ -33,6 +35,7 @@ namespace KhduSouvenirShop.API.Controllers
             _promotionService = promotionService;
             _paymentService = paymentService;
             _novaPoshtaService = novaPoshtaService;
+            _emailService = emailService;
             _configuration = configuration;
         }
 
@@ -220,6 +223,13 @@ namespace KhduSouvenirShop.API.Controllers
                 await transaction.CommitAsync();
 
                 _logger.LogInformation("Замовлення {OrderNumber} створено користувачем {UserId}", order.OrderNumber, userId);
+
+                // Відправка листа-підтвердження
+                var user = await _context.Users.FindAsync(userId);
+                if (user != null)
+                {
+                    await _emailService.SendOrderConfirmationAsync(order, user);
+                }
 
                 string? paymentUrl = null;
                 if (payment.Method == "Card")

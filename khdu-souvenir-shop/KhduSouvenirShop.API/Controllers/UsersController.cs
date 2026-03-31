@@ -21,17 +21,20 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly ILogger<UsersController> _logger;
         private readonly IConfiguration _configuration;
         private readonly Services.IUniversityService _universityService;
+        private readonly Services.IEmailService _emailService;
 
         public UsersController(
             AppDbContext context, 
             ILogger<UsersController> logger, 
             IConfiguration configuration,
-            Services.IUniversityService universityService)
+            Services.IUniversityService universityService,
+            Services.IEmailService emailService)
         {
             _context = context;
             _logger = logger;
             _configuration = configuration;
             _universityService = universityService;
+            _emailService = emailService;
         }
 
         // POST: api/Users/register
@@ -86,6 +89,9 @@ namespace KhduSouvenirShop.API.Controllers
                     newUser.StudentVerifiedAt = DateTime.UtcNow;
                     newUser.StudentExpiresAt = DateTime.UtcNow.AddMonths(4);
                     _logger.LogInformation("Користувач {Email} автоматично верифікований як студент. Статус: {Status}", newUser.Email, newUser.StudentStatus);
+
+                    // Відправка листа про верифікацію
+                    await _emailService.SendStudentVerificationAsync(newUser, newUser.StudentStatus);
                 }
             }
             else

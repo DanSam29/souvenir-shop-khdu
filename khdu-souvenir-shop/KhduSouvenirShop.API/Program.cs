@@ -60,6 +60,9 @@ builder.Services.AddScoped<KhduSouvenirShop.API.Services.PromotionService>();
 // Payment service
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IPaymentService, KhduSouvenirShop.API.Services.PaymentService>();
 
+// Email service
+builder.Services.AddScoped<KhduSouvenirShop.API.Services.IEmailService, KhduSouvenirShop.API.Services.EmailService>();
+
 // Nova Poshta service
 builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.INovaPoshtaService, KhduSouvenirShop.API.Services.NovaPoshtaService>();
 

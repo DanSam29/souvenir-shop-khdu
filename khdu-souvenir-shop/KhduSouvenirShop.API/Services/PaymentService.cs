@@ -11,13 +11,15 @@ namespace KhduSouvenirShop.API.Services
         private readonly AppDbContext _context;
         private readonly ILogger<PaymentService> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IEmailService _emailService;
         private readonly string _webhookSecret;
 
-        public PaymentService(AppDbContext context, ILogger<PaymentService> logger, IConfiguration configuration)
+        public PaymentService(AppDbContext context, ILogger<PaymentService> logger, IConfiguration configuration, IEmailService emailService)
         {
             _context = context;
             _logger = logger;
             _configuration = configuration;
+            _emailService = emailService;
             StripeConfiguration.ApiKey = _configuration["Stripe:SecretKey"];
             _webhookSecret = _configuration["Stripe:WebhookSecret"] ?? string.Empty;
         }
@@ -150,6 +152,10 @@ namespace KhduSouvenirShop.API.Services
 
             await _context.SaveChangesAsync();
             _logger.LogInformation("Order {OrderId} successfully paid via Stripe", orderId);
+
+            // Відправка листа про успішну оплату
+            await _emailService.SendPaymentStatusAsync(order, "Оплачено", "Дякуємо за оплату через Stripe!");
+
             return true;
         }
 
