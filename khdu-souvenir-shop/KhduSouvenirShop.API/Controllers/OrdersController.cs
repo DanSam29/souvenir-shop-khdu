@@ -386,6 +386,34 @@ namespace KhduSouvenirShop.API.Controllers
             return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(result));
         }
 
+        [HttpGet("admin")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult> GetAllOrders([FromQuery] string? status)
+        {
+            var query = _context.Orders
+                .Include(o => o.User)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                query = query.Where(o => o.Status == status);
+            }
+
+            var orders = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
+            
+            var result = orders.Select(o => new {
+                o.OrderId,
+                o.OrderNumber,
+                o.Status,
+                o.TotalAmount,
+                o.CreatedAt,
+                userName = $"{o.User.FirstName} {o.User.LastName}",
+                userEmail = o.User.Email
+            });
+
+            return Ok(ApiResponse<object>.SuccessResult(result));
+        }
+
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]

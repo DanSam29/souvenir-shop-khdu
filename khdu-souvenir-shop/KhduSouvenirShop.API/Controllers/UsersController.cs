@@ -206,6 +206,63 @@ namespace KhduSouvenirShop.API.Controllers
             return Ok(ApiResponse<object>.SuccessResult(result));
         }
 
+        // --- Admin Methods ---
+
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult> GetAllUsers([FromQuery] string? search)
+        {
+            var query = _context.Users.AsQueryable();
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(u => u.Email.Contains(search) || u.FirstName.Contains(search) || u.LastName.Contains(search));
+            }
+
+            var users = await query.OrderByDescending(u => u.CreatedAt).ToListAsync();
+            
+            var result = users.Select(u => new {
+                u.UserId,
+                u.Email,
+                u.FirstName,
+                u.LastName,
+                u.Role,
+                u.IsActive,
+                u.StudentStatus,
+                u.CreatedAt
+            });
+
+            return Ok(ApiResponse<object>.SuccessResult(result));
+        }
+
+        [HttpPatch("{id}/role")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult> UpdateUserRole(int id, [FromBody] UpdateRoleDto dto)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound();
+
+            user.Role = dto.Role;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResult(null, "Роль користувача оновлено"));
+        }
+
+        [HttpPost("{id}/toggle-block")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult> ToggleBlockUser(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound();
+
+            user.IsActive = !user.IsActive;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResult(new { isActive = user.IsActive }, user.IsActive ? "Користувача розблоковано" : "Користувача заблоковано"));
+        }
+
         // PUT: api/Users/me
         [Authorize]
         [HttpPut("me")]
@@ -348,5 +405,10 @@ namespace KhduSouvenirShop.API.Controllers
     {
         public string OldPassword { get; set; } = string.Empty;
         public string NewPassword { get; set; } = string.Empty;
+    }
+
+    public class UpdateRoleDto
+    {
+        public string Role { get; set; } = string.Empty;
     }
 }

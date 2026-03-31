@@ -121,12 +121,43 @@ export const cartAPI = {
   clearCart: () => api.delete('/Cart/clear'),
 };
 
-// API функції для Orders (потребують авторизації)
+// API функції для замовлень
 export const ordersAPI = {
   checkout: (payload) => api.post('/Orders/checkout', payload),
   calculate: (payload) => api.post('/Orders/calculate', payload),
   getOrders: () => api.get('/Orders/my'),
   getOrder: (id) => api.get(`/Orders/${id}`),
+  // Адмінські методи
+  getAll: (params) => api.get('/Orders/admin', { params }),
+  updateStatus: (id, data) => api.patch(`/Orders/${id}/status`, data),
+  cancel: (id, reason) => api.post(`/Orders/${id}/cancel`, reason),
+};
+
+// API функції для користувачів (адмін)
+export const adminUsersAPI = {
+  getAll: (params) => api.get('/Users', { params }),
+  updateRole: (id, role) => api.patch(`/Users/${id}/role`, { role }),
+  toggleBlock: (id) => api.post(`/Users/${id}/toggle-block`),
+};
+
+// API функції для складу
+export const warehouseAPI = {
+  getIncoming: () => api.get('/WarehouseDocuments/incoming'),
+  getOutgoing: () => api.get('/WarehouseDocuments/outgoing'),
+  getStock: () => api.get('/WarehouseDocuments/stock'),
+  createIncoming: (data) => api.post('/WarehouseDocuments/incoming', data),
+  createOutgoing: (data) => api.post('/WarehouseDocuments/outgoing', data),
+  getCompanies: (onlyActive) => api.get('/Companies', { params: { onlyActive } }),
+  createCompany: (data) => api.post('/Companies', data),
+  updateCompany: (id, data) => api.put(`/Companies/${id}`, data),
+  deleteCompany: (id) => api.delete(`/Companies/${id}`),
+};
+
+// API функції для інтеграцій
+export const integrationsAPI = {
+  getStatus: () => api.get('/Integrations/status'),
+  testStripe: () => api.get('/Integrations/test/stripe'),
+  testNovaPoshta: () => api.get('/Integrations/test/novaposhta'),
 };
 
 // Адмін API для Products
