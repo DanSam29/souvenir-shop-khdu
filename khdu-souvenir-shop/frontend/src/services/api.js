@@ -98,6 +98,9 @@ export const usersAPI = {
   
   // GET користувач за ID
   getById: (id) => api.get(`/Users/${id}`),
+  
+  updateProfile: (data) => api.put('/Users/me', data),
+  changePassword: (data) => api.post('/Users/change-password', data),
 };
 
 // API функції для Cart (потребують авторизації)
@@ -122,8 +125,8 @@ export const cartAPI = {
 export const ordersAPI = {
   checkout: (payload) => api.post('/Orders/checkout', payload),
   calculate: (payload) => api.post('/Orders/calculate', payload),
-  getMy: () => api.get('/Orders/my'),
-  getById: (id) => api.get(`/Orders/${id}`),
+  getOrders: () => api.get('/Orders/my'),
+  getOrder: (id) => api.get(`/Orders/${id}`),
 };
 
 // Адмін API для Products

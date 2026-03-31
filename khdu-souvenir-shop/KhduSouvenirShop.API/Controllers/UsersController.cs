@@ -206,6 +206,53 @@ namespace KhduSouvenirShop.API.Controllers
             return Ok(ApiResponse<object>.SuccessResult(result));
         }
 
+        // PUT: api/Users/me
+        [Authorize]
+        [HttpPut("me")]
+        public async Task<ActionResult> UpdateProfile([FromBody] UserUpdateDto dto)
+        {
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdStr, out var userId)) return Unauthorized();
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound();
+
+            user.FirstName = dto.FirstName;
+            user.LastName = dto.LastName;
+            user.Phone = dto.Phone;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResult(new {
+                user.FirstName,
+                user.LastName,
+                user.Phone
+            }, "Профіль оновлено"));
+        }
+
+        // POST: api/Users/change-password
+        [Authorize]
+        [HttpPost("change-password")]
+        public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+        {
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdStr, out var userId)) return Unauthorized();
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound();
+
+            if (!BCrypt.Net.BCrypt.Verify(dto.OldPassword, user.Password))
+            {
+                return BadRequest(ApiResponse<object>.FailureResult("Невірний старий пароль", "InvalidPassword"));
+            }
+
+            user.Password = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResult(null, "Пароль змінено"));
+        }
+
         // GET: api/Users/5
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
@@ -288,5 +335,18 @@ namespace KhduSouvenirShop.API.Controllers
     {
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+    }
+
+    public class UserUpdateDto
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+    }
+
+    public class ChangePasswordDto
+    {
+        public string OldPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
     }
 }
