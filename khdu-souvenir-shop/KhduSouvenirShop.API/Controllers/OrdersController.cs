@@ -195,6 +195,23 @@ namespace KhduSouvenirShop.API.Controllers
                 foreach (var oi in orderItems)
                 {
                     _context.OrderItems.Add(oi);
+
+                    // Створення видаткової накладної (OutgoingDocument) для складського обліку
+                    var outgoingDoc = new OutgoingDocument
+                    {
+                        ProductId = oi.ProductId,
+                        Quantity = oi.Quantity,
+                        OrderId = order.OrderId,
+                        Reason = "ORDER",
+                        OriginalPrice = oi.OriginalPrice,
+                        AppliedPromotionId = oi.AppliedPromotionId,
+                        DiscountAmount = oi.DiscountAmount,
+                        FinalPrice = oi.FinalPrice,
+                        DocumentDate = DateTime.UtcNow,
+                        CreatedByUserId = userId,
+                        Notes = $"Автоматично створено для замовлення {order.OrderNumber}"
+                    };
+                    _context.OutgoingDocuments.Add(outgoingDoc);
                 }
 
                 _context.CartItems.RemoveRange(cart.CartItems);
@@ -490,6 +507,10 @@ namespace KhduSouvenirShop.API.Controllers
                 {
                     item.Product.Stock += item.Quantity;
                 }
+
+                // Видалення видаткових накладних (OutgoingDocument), пов'язаних з цим замовленням
+                var docs = await _context.OutgoingDocuments.Where(d => d.OrderId == id && d.Reason == "ORDER").ToListAsync();
+                _context.OutgoingDocuments.RemoveRange(docs);
 
                 order.Status = "Cancelled";
                 order.UpdatedAt = DateTime.UtcNow;

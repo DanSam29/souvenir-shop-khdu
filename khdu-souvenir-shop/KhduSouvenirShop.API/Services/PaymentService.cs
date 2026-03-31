@@ -196,6 +196,10 @@ namespace KhduSouvenirShop.API.Services
                     item.Product.Stock += item.Quantity;
                 }
 
+                // Видалення видаткових накладних (OutgoingDocument), пов'язаних з цим замовленням
+                var docs = await _context.OutgoingDocuments.Where(d => d.OrderId == orderId && d.Reason == "ORDER").ToListAsync();
+                _context.OutgoingDocuments.RemoveRange(docs);
+
                 if (order.Payment != null)
                 {
                     order.Payment.Status = "Failed";
@@ -265,6 +269,10 @@ namespace KhduSouvenirShop.API.Services
                 {
                     item.Product.Stock += item.Quantity;
                 }
+
+                // Видалення видаткових накладних (OutgoingDocument), пов'язаних з цим замовленням
+                var docs = await _context.OutgoingDocuments.Where(d => d.OrderId == orderId && d.Reason == "ORDER").ToListAsync();
+                _context.OutgoingDocuments.RemoveRange(docs);
 
                 order.Payment.Status = "Refunded";
                 order.Payment.UpdatedAt = DateTime.UtcNow;
