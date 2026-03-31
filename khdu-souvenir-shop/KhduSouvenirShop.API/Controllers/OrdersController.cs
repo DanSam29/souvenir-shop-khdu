@@ -403,6 +403,103 @@ namespace KhduSouvenirShop.API.Controllers
 
             return Ok(ApiResponse<object>.SuccessResult(result));
         }
+
+        // --- Admin Methods ---
+
+        [HttpPatch("{id}/status")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult> UpdateOrderStatus(int id, [FromBody] UpdateStatusDto dto)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Payment)
+                .FirstOrDefaultAsync(o => o.OrderId == id);
+
+            if (order == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResult("Замовлення не знайдено", "NotFound"));
+            }
+
+            var oldStatus = order.Status;
+            order.Status = dto.Status;
+            order.UpdatedAt = DateTime.UtcNow;
+
+            // Логіка для COD (Накладений платіж)
+            if (order.Status == "Delivered" && order.Payment != null && order.Payment.Method == "CashOnDelivery")
+            {
+                order.Payment.Status = "Completed";
+                order.Payment.UpdatedAt = DateTime.UtcNow;
+            }
+
+            if (dto.Status == "Shipped" && !string.IsNullOrEmpty(dto.TrackingNumber))
+            {
+                var shipping = await _context.Shippings.FirstOrDefaultAsync(s => s.OrderId == id);
+                if (shipping != null)
+                {
+                    shipping.TrackingNumber = dto.TrackingNumber;
+                }
+            }
+
+            _context.OrderHistories.Add(new OrderHistory
+            {
+                OrderId = order.OrderId,
+                OldStatus = oldStatus,
+                NewStatus = dto.Status,
+                Comment = dto.Comment ?? $"Статус змінено адміністратором. { (dto.TrackingNumber != null ? "ТТН: " + dto.TrackingNumber : "") }",
+                Timestamp = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResult(new { orderId = order.OrderId, status = order.Status }, "Статус замовлення оновлено"));
+        }
+
+        [HttpPost("{id}/cancel")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult> CancelOrder(int id, [FromBody] string? reason)
+        {
+            var result = await _paymentService.RefundPaymentAsync(id, reason);
+            
+            // Якщо це не Stripe платіж, або Stripe повернув false, пробуємо просто скасувати (наприклад для COD)
+            if (!result)
+            {
+                var order = await _context.Orders
+                    .Include(o => o.OrderItems)
+                        .ThenInclude(oi => oi.Product)
+                    .Include(o => o.Payment)
+                    .FirstOrDefaultAsync(o => o.OrderId == id);
+
+                if (order == null) return NotFound(ApiResponse<object>.FailureResult("Замовлення не знайдено", "NotFound"));
+                if (order.Status == "Cancelled") return BadRequest(ApiResponse<object>.FailureResult("Замовлення вже скасоване", "BadRequest"));
+
+                var oldStatus = order.Status;
+                
+                // Повернення на склад
+                foreach (var item in order.OrderItems)
+                {
+                    item.Product.Stock += item.Quantity;
+                }
+
+                order.Status = "Cancelled";
+                order.UpdatedAt = DateTime.UtcNow;
+                if (order.Payment != null && order.Payment.Status != "Completed")
+                {
+                    order.Payment.Status = "Failed";
+                }
+
+                _context.OrderHistories.Add(new OrderHistory
+                {
+                    OrderId = order.OrderId,
+                    OldStatus = oldStatus,
+                    NewStatus = "Cancelled",
+                    Comment = reason ?? "Скасовано адміністратором",
+                    Timestamp = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(ApiResponse<object>.SuccessResult(null, "Замовлення скасовано"));
+        }
     }
 
     public class CheckoutDto
@@ -415,5 +512,12 @@ namespace KhduSouvenirShop.API.Controllers
         public string? WarehouseRef { get; set; }
         public string? PaymentMethod { get; set; }
         public string? PromoCode { get; set; }
+    }
+
+    public class UpdateStatusDto
+    {
+        public string Status { get; set; } = string.Empty;
+        public string? TrackingNumber { get; set; }
+        public string? Comment { get; set; }
     }
 }

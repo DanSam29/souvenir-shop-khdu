@@ -24,6 +24,15 @@ namespace KhduSouvenirShop.API.Services
 
         public async Task<Session> CreateCheckoutSessionAsync(Order order, string successUrl, string cancelUrl)
         {
+            var payment = await _context.Payments.FirstOrDefaultAsync(p => p.OrderId == order.OrderId);
+            var idempotencyKey = payment?.IdempotencyKey ?? Guid.NewGuid().ToString();
+
+            if (payment != null && string.IsNullOrEmpty(payment.IdempotencyKey))
+            {
+                payment.IdempotencyKey = idempotencyKey;
+                await _context.SaveChangesAsync();
+            }
+
             var options = new SessionCreateOptions
             {
                 PaymentMethodTypes = new List<string> { "card" },
@@ -51,11 +60,15 @@ namespace KhduSouvenirShop.API.Services
                 }
             };
 
+            var requestOptions = new RequestOptions
+            {
+                IdempotencyKey = idempotencyKey
+            };
+
             var service = new SessionService();
-            var session = await service.CreateAsync(options);
+            var session = await service.CreateAsync(options, requestOptions);
 
             // Оновлення інформації про платіж
-            var payment = await _context.Payments.FirstOrDefaultAsync(p => p.OrderId == order.OrderId);
             if (payment != null)
             {
                 payment.StripeSessionId = session.Id;
@@ -86,6 +99,13 @@ namespace KhduSouvenirShop.API.Services
 
                     return await ProcessFailedPayment(paymentIntent);
                 }
+                else if (stripeEvent.Type == "checkout.session.expired")
+                {
+                    var session = stripeEvent.Data.Object as Session;
+                    if (session == null) return false;
+
+                    return await ProcessExpiredSession(session);
+                }
 
                 return true;
             }
@@ -110,18 +130,19 @@ namespace KhduSouvenirShop.API.Services
             // Ідемпотентність: якщо вже завершено, нічого не робимо
             if (order.Payment.Status == "Completed") return true;
 
+            var oldStatus = order.Status;
             order.Payment.Status = "Completed";
             order.Payment.TransactionId = session.PaymentIntentId;
             order.Payment.StripePaymentIntentId = session.PaymentIntentId;
             order.Payment.UpdatedAt = DateTime.UtcNow;
 
-            order.Status = "Paid"; // Або Processing, залежно від логіки
+            order.Status = "Paid";
             order.UpdatedAt = DateTime.UtcNow;
 
             _context.OrderHistories.Add(new OrderHistory
             {
                 OrderId = order.OrderId,
-                OldStatus = "Processing",
+                OldStatus = oldStatus,
                 NewStatus = "Paid",
                 Comment = "Оплата отримана через Stripe",
                 Timestamp = DateTime.UtcNow
@@ -140,33 +161,79 @@ namespace KhduSouvenirShop.API.Services
 
             if (payment == null) return false;
 
-            payment.Status = "Failed";
-            payment.UpdatedAt = DateTime.UtcNow;
+            return await CancelOrderAndRestoreStock(payment.OrderId, "Помилка оплати через Stripe (PaymentIntent Failed)");
+        }
 
-            if (payment.Order != null)
+        private async Task<bool> ProcessExpiredSession(Session session)
+        {
+            var orderIdStr = session.ClientReferenceId;
+            if (!int.TryParse(orderIdStr, out var orderId)) return false;
+
+            return await CancelOrderAndRestoreStock(orderId, "Сесія оплати Stripe вичерпана (Expired)");
+        }
+
+        private async Task<bool> CancelOrderAndRestoreStock(int orderId, string comment)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Payment)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+            if (order == null) return false;
+
+            // Якщо замовлення вже скасоване, не робимо нічого
+            if (order.Status == "Cancelled") return true;
+
+            var oldStatus = order.Status;
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                payment.Order.Status = "PaymentFailed";
-                payment.Order.UpdatedAt = DateTime.UtcNow;
+                // Повернення товару на склад
+                foreach (var item in order.OrderItems)
+                {
+                    item.Product.Stock += item.Quantity;
+                }
+
+                if (order.Payment != null)
+                {
+                    order.Payment.Status = "Failed";
+                    order.Payment.UpdatedAt = DateTime.UtcNow;
+                }
+
+                order.Status = "Cancelled";
+                order.UpdatedAt = DateTime.UtcNow;
 
                 _context.OrderHistories.Add(new OrderHistory
                 {
-                    OrderId = payment.Order.OrderId,
-                    OldStatus = payment.Order.Status,
-                    NewStatus = "PaymentFailed",
-                    Comment = "Помилка оплати через Stripe",
+                    OrderId = order.OrderId,
+                    OldStatus = oldStatus,
+                    NewStatus = "Cancelled",
+                    Comment = comment,
                     Timestamp = DateTime.UtcNow
                 });
-            }
 
-            await _context.SaveChangesAsync();
-            _logger.LogWarning("Payment failed for PaymentIntent {PaymentIntentId}", paymentIntent.Id);
-            return true;
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Order {OrderId} cancelled and stock restored. Reason: {Comment}", orderId, comment);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error cancelling order {OrderId} and restoring stock", orderId);
+                return false;
+            }
         }
 
         public async Task<bool> RefundPaymentAsync(int orderId, string? reason = null)
         {
             var order = await _context.Orders
                 .Include(o => o.Payment)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
                 .FirstOrDefaultAsync(o => o.OrderId == orderId);
 
             if (order == null || order.Payment == null || string.IsNullOrEmpty(order.Payment.StripePaymentIntentId))
@@ -191,6 +258,14 @@ namespace KhduSouvenirShop.API.Services
                 var service = new RefundService();
                 var refund = await service.CreateAsync(options);
 
+                var oldStatus = order.Status;
+
+                // Повернення товару на склад при Refund
+                foreach (var item in order.OrderItems)
+                {
+                    item.Product.Stock += item.Quantity;
+                }
+
                 order.Payment.Status = "Refunded";
                 order.Payment.UpdatedAt = DateTime.UtcNow;
                 order.Status = "Cancelled";
@@ -199,14 +274,14 @@ namespace KhduSouvenirShop.API.Services
                 _context.OrderHistories.Add(new OrderHistory
                 {
                     OrderId = order.OrderId,
-                    OldStatus = "Paid",
+                    OldStatus = oldStatus,
                     NewStatus = "Cancelled",
                     Comment = $"Повернення коштів через Stripe. Причина: {reason ?? "не вказана"}",
                     Timestamp = DateTime.UtcNow
                 });
 
                 await _context.SaveChangesAsync();
-                _logger.LogInformation("Successfully refunded payment for Order {OrderId}", orderId);
+                _logger.LogInformation("Successfully refunded payment for Order {OrderId} and restored stock", orderId);
                 return true;
             }
             catch (StripeException e)
