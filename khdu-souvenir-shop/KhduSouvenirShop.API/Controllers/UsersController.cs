@@ -20,12 +20,18 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly AppDbContext _context;
         private readonly ILogger<UsersController> _logger;
         private readonly IConfiguration _configuration;
+        private readonly Services.IUniversityService _universityService;
 
-        public UsersController(AppDbContext context, ILogger<UsersController> logger, IConfiguration configuration)
+        public UsersController(
+            AppDbContext context, 
+            ILogger<UsersController> logger, 
+            IConfiguration configuration,
+            Services.IUniversityService universityService)
         {
             _context = context;
             _logger = logger;
             _configuration = configuration;
+            _universityService = universityService;
         }
 
         // POST: api/Users/register
@@ -64,12 +70,23 @@ namespace KhduSouvenirShop.API.Controllers
 
             // Логіка: Встановлення студентського статусу за доменом email
             var emailLower = (newUser.Email ?? string.Empty).ToLowerInvariant();
-            if (emailLower.EndsWith("@university.ks.ua"))
+            var allowedDomains = _configuration.GetSection("University:AllowedDomains").Get<string[]>() ?? 
+                                 new[] { "ksu.edu.ua", "student.ksu.edu.ua" };
+
+            if (allowedDomains.Any(domain => emailLower.EndsWith("@" + domain)))
             {
-                newUser.StudentStatus = "REGULAR";
-                newUser.StudentVerifiedAt = DateTime.UtcNow;
-                newUser.StudentExpiresAt = DateTime.UtcNow.AddYears(1);
-                _logger.LogInformation("Користувач {Email} зареєстрований як студент", newUser.Email);
+                var studentInfo = await _universityService.GetStudentInfoAsync(newUser.Email);
+                if (studentInfo != null && studentInfo.IsActive)
+                {
+                    newUser.GPA = studentInfo.GPA;
+                    if (newUser.GPA >= 4.8m) newUser.StudentStatus = "HIGH_ACHIEVER";
+                    else if (newUser.GPA >= 4.0m) newUser.StudentStatus = "SCHOLARSHIP";
+                    else newUser.StudentStatus = "REGULAR";
+
+                    newUser.StudentVerifiedAt = DateTime.UtcNow;
+                    newUser.StudentExpiresAt = DateTime.UtcNow.AddMonths(4);
+                    _logger.LogInformation("Користувач {Email} автоматично верифікований як студент. Статус: {Status}", newUser.Email, newUser.StudentStatus);
+                }
             }
             else
             {
