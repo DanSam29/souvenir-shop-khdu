@@ -57,6 +57,9 @@ builder.Services.AddMemoryCache();
 // Promotion service
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.PromotionService>();
 
+// Payment service
+builder.Services.AddScoped<KhduSouvenirShop.API.Services.IPaymentService, KhduSouvenirShop.API.Services.PaymentService>();
+
 // FluentValidation
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();

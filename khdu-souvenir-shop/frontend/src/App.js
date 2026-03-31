@@ -9,6 +9,8 @@ import LoginPage from './pages/LoginPage';
 import ProfilePage from './pages/ProfilePage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
+import PaymentCancelPage from './pages/PaymentCancelPage';
 import CategoriesAdmin from './pages/admin/CategoriesAdmin';
 import ProductsAdmin from './pages/admin/ProductsAdmin';
 import logo from './assets/khdu-logo.png';
@@ -29,6 +31,8 @@ function App() {
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/checkout/success" element={<PaymentSuccessPage />} />
+              <Route path="/checkout/cancel" element={<PaymentCancelPage />} />
               <Route path="/admin/categories" element={<CategoriesAdmin />} />
               <Route path="/admin/products" element={<ProductsAdmin />} />
             </Routes>

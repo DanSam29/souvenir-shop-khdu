@@ -1,0 +1,411 @@
+Таблиця інтерфейсів інтернет-магазину сувенірної продукції ХДУ
+1. CatalogModule - Модуль каталогу товарів
+1.1. Публічні інтерфейси (для Frontend)
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Frontend	CatalogModule	/api/products	GET	?page=1&limit=20&sort=price&order=asc	{products: [{id, name, price, weight, imageUrl, stock}], total, pages}
+Frontend	CatalogModule	/api/products/search	GET	?query=футболка&category=clothing	{products: [{id, name, price, imageUrl}], total}
+Frontend	CatalogModule	/api/products/{id}	GET	-	{id, name, description, price, weight, categoryId, images: [{url, isPrimary}], stock}
+Frontend	CatalogModule	/api/categories	GET	-	{categories: [{id, name, parentId, productCount}]}
+Frontend	CatalogModule	/api/categories/{id}/products	GET	?page=1&limit=20	{products: [...], total, categoryName}
+1.2. Адміністративні інтерфейси (для Менеджера)
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Admin Panel	CatalogModule	/api/admin/products	POST	{name, description, price, weight, categoryId, images: [File]}	{id, name, message: "Товар створено", imageUrls: [...]}
+Admin Panel	CatalogModule	/api/admin/products/{id}	PUT 	{name, description, price, weight, categoryId}	{id, message: "Товар оновлено"}
+Admin Panel	CatalogModule	/api/admin/products/{id} 	DELETE	-	{message: "Товар видалено"}
+Admin Panel	CatalogModule	/api/admin/categories	POST	{name, parentId}	{id, name, message: "Категорію створено"}
+Admin Panel	CatalogModule	/api/admin/categories/{id}	PUT 	{name, parentId}	{id, message: "Категорію оновлено"}
+Admin Panel	CatalogModule	/api/admin/categories/{id}	DELETE	-	{message: "Категорію видалено"}
+1.3. Внутрішні інтерфейси (між модулями)
+Відправник	Отримувач	Endpoint/Метод	Тип	Дані запиту	Дані відповіді
+CartModule	CatalogModule	ProductService.GetProductById(productId)	Internal	{productId: int}	{id, name, price, weight, stock}
+OrderModule	CatalogModule	ProductService.CheckAvailability(productId, quantity)	Internal	{productId: int, quantity: int}	{available: bool, currentStock: int}
+WarehouseModule	CatalogModule	ProductService.UpdateStock(productId, newStock)	Internal	{productId: int, newStock: int}	{success: bool, updatedStock: int}
+2. CartModule - Модуль кошика
+2.1. Публічні інтерфейси
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Frontend	CartModule	/api/cart	GET	-	{items: [{productId, name, price, quantity, imageUrl, subtotal}], total}
+Frontend	CartModule	/api/cart/add	POST	{productId: int, quantity: int}	{message: "Товар додано", cartTotal: 450.00}
+Frontend	CartModule	/api/cart/update	PUT	{productId: int, quantity: int}	{message: "Кількість оновлено", cartTotal: 600.00}
+Frontend	CartModule	/api/cart/remove	DELETE	{productId: int}	{message: "Товар видалено", cartTotal: 300.00}
+Frontend	CartModule	/api/cart/clear	DELETE	-	{message: "Кошик очищено"}
+2.2. Внутрішні інтерфейси
+Відправник	Отримувач	Endpoint/Метод	Тип	Дані запиту	Дані відповіді
+OrderModule	CartModule	CartService.GetCartItems(userId)	Internal	{userId: int}	{items: [{productId, quantity, price}], total}
+OrderModule	CartModule	CartService.ClearCart(userId)	Internal	{userId: int}	{success: bool}
+3. OrderModule - Модуль замовлень
+3.1. Публічні інтерфейси
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Frontend	OrderModule	/api/orders	POST	{items: [{productId, quantity}], shippingAddress: {city, warehouse}, paymentMethod: "card/cod", promoCode: string(optional)}}	{orderId, totalAmount, status, paymentUrl (if card) , appliedDiscounts: [{promotionId, name, discountAmount}]}
+Frontend	OrderModule	/api/orders/history	GET	?page=1&limit=10	{orders: [{id, date, total, status, items}], total}
+Frontend	OrderModule	/api/orders/{id}	GET	-	{id, orderNumber, date, status, items: [...], shipping: {...}, payment: {...}}
+Frontend	OrderModule	/api/orders/{id}/track	GET	-	{orderId, currentStatus, statusHistory: [{status, date, comment}], trackingNumber}
+3.2. Адміністративні інтерфейси
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Admin Panel	OrderModule	/api/admin/orders	GET	?status=processing&page=1&limit=20	{orders: [{id, customer, total, status, date}], total}
+Admin Panel	OrderModule	/api/admin/orders/{id}	GET	-	{id, customer: {...}, items: [...], shipping: {...}, payment: {...}, statusHistory: [...]}
+Admin Panel	OrderModule	/api/admin/orders/{id}/status	PUT	{newStatus: "shipped", comment: "ТТН: 1234567890", reason (if cancelled)}	{message: "Статус оновлено", newStatus: "shipped"}
+Admin Panel	OrderModule	/api/admin/orders/{id}/cancel	POST	{reason: "Товар пошкоджений"}	{message: "Замовлення скасовано", refundStatus: "pending"}
+3.3. Внутрішні інтерфейси
+Відправник	Отримувач	Endpoint/Метод	Тип	Дані запиту	Дані відповіді
+OrderModule	PaymentModule	PaymentService.CreatePaymentSession(orderId, amount)	Internal	{orderId: int, amount: decimal}	{sessionId, paymentUrl, expiresAt}
+OrderModule	PromotionModule	PromotionService.getApplicablePromotions(userId, cartItems)	Internal	{userId: int, cartItems: [{...}]}	{promotions: [...]sorted by priority}
+OrderModule	PromotionModule	PromotionService.validatePromoCode(code, userId, cartItems)	Internal	{code: string, userId: int, cartItems: [{...}]}	{valid: bool, promotion: {...} ORerror: string}
+OrderModule	PromotionModule	PromotionService.calculateFinalPrices(items, promotions, promoCode)	Internal	{items: [...],promotions: [...], promoCode: string}	{itemsWithPrices: [{originalPrice, appliedPromotionId, discountAmount, finalPrice}]}
+OrderModule	ShippingModule	ShippingService.CalculateShippingCost(cityRef, items)	Internal	{cityRef: string, items: [{weight}]}	{cost: decimal, estimatedDays: int}
+OrderModule	WarehouseModule	WarehouseService.CreateOutgoingDocument(orderId, items)	Internal	{orderId: int, items: [{productId, quantity}]}	{documentId, success: bool, updatedStocks: [...]}
+OrderModule	NotificationModule	NotificationService.SendOrderConfirmation(orderId, email)	Internal	{orderId: int, email: string}	{sent: bool, messageId: string}
+4. PaymentModule - Модуль платежів
+4.1. Публічні інтерфейси
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Frontend	PaymentModule	/api/payments/create-session	POST	{orderId: int, amount: decimal, currency: "UAH"}	{sessionId, paymentUrl, expiresAt}
+Frontend	PaymentModule	/api/payments/{id}/status	GET	-	{paymentId, status: "paid/pending/failed", method, amount}
+4.2. Webhook інтерфейси
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Stripe API	PaymentModule	/api/webhooks/stripe	POST	{type: "payment_intent.succeeded", data: {orderId, amount, paymentIntentId}}	{received: true}
+4.3. Внутрішні інтерфейси
+Відправник	Отримувач	Endpoint/Метод	Тип	Дані запиту	Дані відповіді
+PaymentModule	OrderModule	OrderService.UpdatePaymentStatus(orderId, status)	Internal	{orderId: int, status: "paid/failed"}	{success: bool}
+PaymentModule	NotificationModule	NotificationService.SendPaymentConfirmation(orderId)	Internal	{orderId: int}	{sent: bool}
+5. ShippingModule - Модуль доставки
+5.1. Публічні інтерфейси
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Frontend	ShippingModule	/api/shipping/cities	GET	?search=Київ	{cities: [{ref, description, area}]}
+Frontend	ShippingModule	/api/shipping/warehouses	GET	?cityRef=xxx	{warehouses: [{ref, description, number, address}]}
+Frontend	ShippingModule	/api/shipping/calculate	POST	{cityRef: string, weight: decimal}	{cost: decimal, estimatedDays: int}
+5.2. Зовнішні інтерфейси
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+ShippingModule	Nova Poshta API	/v2.0/json/	POST	{apiKey, modelName: "Address", calledMethod: "getCities", methodProperties: {FindByString: "Київ"}}	{success: bool, data: [{Ref, Description}]}
+ShippingModule	Nova Poshta API	/v2.0/json/	POST	{apiKey, modelName: "Address", calledMethod: "getWarehouses", methodProperties: {CityRef: "xxx"}}	{success: bool, data: [{Ref, Description, Number}]}
+6. UserModule - Модуль користувачів
+6.1. Публічні інтерфейси (Аутентифікація)
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Frontend	UserModule	/api/auth/register	POST	{firstName, lastName, email, password, phone}	{userId, token, message: "Реєстрація успішна", studentStatus: enum(якщо верифіковано), promotions: [{...}](якщо призначено знижки)}}
+Frontend	UserModule	/api/auth/login	POST	{email, password}	{userId, token, role, expiresAt}
+Frontend	UserModule	/api/auth/logout	POST	{token}	{message: "Вихід успішний"}
+Frontend	UserModule	/api/auth/refresh	POST	{refreshToken}	{newToken, expiresAt}
+6.2. Публічні інтерфейси (Профіль)
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Frontend	UserModule	/api/users/profile	GET	-	{id, firstName, lastName, email, phone, createdAt}
+Frontend	UserModule	/api/users/profile	PUT	{firstName, lastName, phone}	{message: "Профіль оновлено"}
+Frontend	UserModule	/api/users/change-password	POST	{currentPassword, newPassword}	{message: "Пароль змінено"}
+Frontend	UserModule	/api/users/addresses	GET	-	{addresses: [{id, city, warehouse, phone, isDefault}]}
+Frontend	UserModule	/api/users/addresses	POST	{city, warehouse, phone, isDefault}	{addressId, message: "Адресу додано"}
+Frontend	UserModule	/api/users/addresses/{id}	DELETE	-	{message: "Адресу видалено"}
+Frontend	UserModule	/api/users/verify-student	POST	-	{success: bool, message: "Верифікація розпочата", studentStatus: enum (якщо успішно), gpa: decimal, promotions: [{...}]} АБО {success: false, error: "University API недоступний"}
+Frontend	UserModule	/api/users/student-status	GET	-	{studentStatus: enum, gpa: decimal, studentVerifiedAt: DateTime, studentExpiresAt: DateTime, daysUntilExpiry: int}
+6.3. Адміністративні інтерфейси
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Admin Panel	UserModule	/api/admin/users	GET	?role=customer&status=active&page=1	{users: [{id, name, email, role, status, createdAt}], total}
+Admin Panel	UserModule	/api/admin/users/{id}	GET	-	{id, firstName, lastName, email, phone, role, status, orderCount, totalSpent}
+Admin Panel	UserModule	/api/admin/users/{id}/block	POST	{reason: "Порушення правил"}	{message: "Користувача заблоковано"}
+Admin Panel	UserModule	/api/admin/users/{id}/unblock	POST	-	{message: "Користувача розблоковано"}
+Admin Panel	UserModule	/api/admin/users/{id}/reset-password	POST	-	{message: "Пароль скинуто", tempPassword: "xxx"}
+7. WarehouseModule - Модуль складського обліку
+7.1. Адміністративні інтерфейси
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Admin Panel	WarehouseModule	/api/warehouse/incoming	POST	{productId, quantity, purchasePrice, companyId, documentDate, notes}	{documentId, message: "Прибуткову накладну створено", newStock: 150}
+Admin Panel	WarehouseModule	/api/warehouse/outgoing	POST	{productId, quantity, companyId (якщо reason=RETURN), reason, notes}	{documentId, message: "Видаткову накладну створено", newStock: 145}
+Admin Panel	WarehouseModule	/api/warehouse/incoming/history	GET	?startDate=2024-01-01&endDate=2024-12-31&productId=5	{documents: [{id, productName, quantity, supplier, date}], total}
+Admin Panel	WarehouseModule	/api/warehouse/outgoing/history	GET	?reason=order&productId=5	{documents: [{id, productName, quantity, reason, date}], total}
+Admin Panel	WarehouseModule	/api/warehouse/stock	GET	?lowStock=true	{products: [{id, name, totalIncoming, totalOutgoing, currentStock}]}
+Admin Panel	WarehouseModule	/api/warehouse/stock/export	GET	?format=csv	File: stock_report.csv
+7.2 Інтерфейси керування фірмами-постачальниками
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Admin Panel	WarehouseModule	/api/warehouse/companies	GET	?isActive=true&page=1&limit=20	{companies: [{id, name, contactPerson, phone, email, isActive}], total}
+Admin Panel	WarehouseModule	/api/warehouse/companies/{id}	GET	-	{id, name, contactPerson, phone, email, address, notes, isActive, createdAt}
+Admin Panel	WarehouseModule	/api/warehouse/companies	POST	{name, contactPerson, phone, email, address, notes}	{id, message: "Фірму створено"}
+Admin Panel	WarehouseModule	/api/warehouse/companies/{id}	PUT	{name, contactPerson, phone, email, address, notes}	{id, message: "Фірму оновлено"}
+Admin Panel	WarehouseModule	/api/warehouse/companies/{id}/deactivate	POST	-	{message: "Фірму деактивовано"}
+Admin Panel	WarehouseModule	/api/warehouse/companies/search	GET	?query=Текстиль	{companies: [{id, name, contactPerson}]}
+Примітки до валідації:
+•	POST /api/warehouse/companies: перевіряє унікальність name та email
+•	PUT /api/warehouse/companies/{id}: перевіряє унікальність email якщо змінено
+•	POST /api/warehouse/companies/{id}/deactivate: перевіряє чи фірма не використовується в активних документах
+•	POST /api/warehouse/incoming: перевіряє що companyId відповідає активній фірмі (isActive=true)
+•	POST /api/warehouse/outgoing: якщо reason=RETURN, то companyId обов'язковий та перевіряється на активність фірми
+7.3. Внутрішні інтерфейси
+Відправник	Отримувач	Endpoint/Метод	Тип	Дані запиту	Дані відповіді
+WarehouseModule	CatalogModule	ProductService.UpdateStock(productId, newStock)	Internal	{productId: int, newStock: int}	{success: bool}
+OrderModule	WarehouseModule	WarehouseService.ReserveItems(orderId, items)	Internal	{orderId: int, items: [{productId, quantity}]}	{success: bool, documents: [{documentId, productId}]}
+8. AdminPanelModule - Адміністративна панель
+8.1. Публічні інтерфейси (Звіти)
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Admin Panel	AdminPanelModule	/api/admin/reports/sales	GET	?startDate=2024-01-01&endDate=2024-12-31	{totalSales: 150000, orderCount: 320, averageOrderValue: 468.75, salesByDay: [...]}
+Admin Panel	AdminPanelModule	/api/admin/reports/revenue	GET	?period=month	{totalRevenue: 180000, expenses: 120000, profit: 60000, profitMargin: 33.33}
+Admin Panel	AdminPanelModule	/api/admin/reports/products/popular	GET	?limit=10&period=month	{products: [{id, name, soldCount, revenue}]}
+Admin Panel	AdminPanelModule	/api/admin/reports/export	POST	{reportType: "sales", format: "pdf", startDate, endDate}	File: sales_report.pdf
+Admin Panel	AdminPanelModule	/api/admin/students/active	GET	?page=1&limit=20&studentStatus	{students: [{userId, firstName, lastName, email, studentStatus, gpa, studentVerifiedAt, studentExpiresAt}], total, pages}
+Admin Panel	AdminPanelModule	/api/admin/students/ verification-queue	GET	?page=1&limit=20	{queue: [{userId, firstName, lastName, email, attemptedAt, errorReason, retryCount, nextRetryAt}], total}
+Admin Panel	AdminPanelModule	/api/admin/students/{userId}/ approve-manually	POST	{studentStatus: enum, gpa: decimal}	{message: "Статус схвалено", userId, studentStatus, gpa}
+Admin Panel	AdminPanelModule	/api/admin/students/{userId}/ reject	POST	{reason: string}	{message: "Верифікацію відхилено"}
+Admin Panel	AdminPanelModule	/api/admin/students/{userId}/ retry-verification  	POST	-	{success: bool, result: {...}}
+Admin Panel	AdminPanelModule	/api/admin/students/{userId}/ extend-status	POST	{months: int}	{message: "Термін дії продовжено", newExpiresAt: DateTime}
+Admin Panel	AdminPanelModule	/api/admin/students/ verification-history	GET	?startDate&endDate&result	{history: [{userId, email, attemptedAt, result, method, studentStatus, gpa}], total}
+Примітка: AdminPanelModule також надає доступ до AnalyticsModule для перегляду аналітики. Детальні endpoints аналітики описані в розділі 12 "AnalyticsModule".
+8.2 Публічні інтерфейси (Налаштування системи)
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Admin Panel	AdminPanelModule	/api/admin/settings	GET	-	{currency: "UAH", languages: ["uk", "en"], minOrderAmount: 100}
+Admin Panel	AdminPanelModule	/api/admin/settings	PUT	{currency, languages, minOrderAmount}	{message: "Налаштування оновлено"}
+9. PromotionModule - Модуль акцій та знижок
+9.1. Публічні інтерфейси (для Користувача)
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Frontend	PromotionModule	/api/promotions/applicable	GET	?userId=5&cartItems=[{productId, quantity}]	{promotions: [{id, name, type, value, targetType, priority}], itemsWithDiscounts: [{productId, originalPrice: 450.00, appliedPromotionId: 12, discountAmount: 67.50, finalPrice: 382.50}]}
+Frontend	PromotionModule	/api/promotions/validate-code	POST	{promoCode: "KSU2026", userId: 5, cartItems: [{...}]}	{valid: true, promoCodeDiscount: 50.00, updatedPrices: [{productId, originalPrice, autoDiscountAmount, promoCodeDiscount, totalDiscountAmount, appliedPromotionId, finalPrice}], newTotal} АБО {valid: false, error: "Промокод не знайдено"}
+Frontend	PromotionModule	/api/promotions/active	GET	-	{promotions: [{id, name, description, type, value, targetType, startDate, endDate, minOrderAmount}]}
+Frontend	PromotionModule	/api/users/my-promotions	GET	-	{promotions: [{id, name, type, value, assignedAt, usedCount, usageLimit}]}
+Frontend	PromotionModule	/api/users/promotion-history	GET	?page=1&limit=20&startDate&endDate	{history: [{promotionId, name, orderId, orderNumber, usedAt, discountAmount}], total, pages}
+9.2. Адміністративні інтерфейси (для Менеджера)
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Admin Panel	PromotionModule	/api/admin/promotions	GET	?isActive=true&page=1& limit=20&type& audienceType	{promotions: [{id, name, type, value, targetType, audienceType, startDate, endDate, promoCode, currentUsage, usageLimit, isActive, createdBy}], total, pages}
+Admin Panel	PromotionModule	/api/admin/promotions/{id}	GET	-	{id, name, description, type, value, targetType, targetId, audienceType, startDate, endDate, promoCode, minOrderAmount, minQuantity, priority, usageLimit, currentUsage, isActive, createdBy, createdAt}
+Admin Panel	PromotionModule	/api/admin/promotions	POST	{name, description, type, value, targetType, targetId, audienceType, startDate, endDate, promoCode, minOrderAmount, minQuantity, priority, usageLimit}	{id, message: "Акцію створено", promotion: {...}}
+Admin Panel	PromotionModule	/api/admin/promotions/{id}	PUT	{name, description, type, value, targetType, targetId, audienceType, startDate, endDate, promoCode, minOrderAmount, minQuantity, priority, usageLimit, isActive}	{id, message: "Акцію оновлено"}
+Admin Panel	PromotionModule	/api/admin/promotions/{id}	DELETE	-	{message: "Акцію видалено"}
+Admin Panel	PromotionModule	/api/admin/promotions/{id}/deactivate  	POST	-	{message: "Акцію деактивовано", isActive: false}
+Admin Panel	PromotionModule	/api/admin/promotions/assign	POST	{userId: 5, promotionId: 12}	{message: "Знижку призначено користувачу"}
+Admin Panel	PromotionModule	/api/admin/promotions/stats	GET	?startDate&endDate& promotionId	{totalPromotions: 25, activePromotions: 18, totalDiscounts: 125000.00, totalUsages: 3450, avgDiscountAmount: 36.23, topPromotions: [{id, name, usageCount, totalDiscount, roi}]}
+Admin Panel	PromotionModule	/api/admin/promotions/export	GET	?format=pdf&startDate&   endDate  	File: promotions_report.pdf
+9.3. Внутрішні інтерфейси (між модулями)
+Відправник	Отримувач	Endpoint/Метод	Тип	Дані запиту	Дані відповіді
+OrderModule	PromotionModule	PromotionService.getApplicablePromotions(userId, cartItems)	Internal	{userId: int, cartItems: [{productId, quantity}]}	{promotions: [{id, name, type, value, priority, targetType}],sorted by priority}
+OrderModule	PromotionModule	PromotionService.validatePromoCode(code, userId, cartItems)	Internal	{code: string, userId: int, cartItems: [{...}]}	{valid: bool, promotion: {...}OR error: string}
+OrderModule	PromotionModule	PromotionService.calculateFinalPrices(items, promotions, promoCode)	Internal	{items: [{productId, quantity, basePrice}],promotions: [{...}],promoCode: string}	{itemsWithPrices: [{productId, originalPrice, appliedPromotionId, discountAmount, finalPrice}]}
+OrderModule	PromotionModule	PromotionService.incrementUsage(promotionId)	Internal	{promotionId: int}	{success: bool, currentUsage: int}
+AuthModule	PromotionModule	PromotionService.assignStudentPromotions(userId, studentStatus)	Internal	{userId: int, studentStatus: enum}	{success: bool, assignedPromotions: [{id, name, value}]}
+10. UniversityModule - Модуль інтеграції з університетом
+10.1. Внутрішні інтерфейси (між модулями)
+Відправник	Отримувач	Endpoint/Метод	Тип	Дані запиту	Дані відповіді
+AuthModule	UniversityModule	UniversityIntegration.verifyStudent(email)	Internal	{email: string}	{found: bool, studentId: string, firstName: string, lastName: string, email: string, gpa: decimal, scholarshipStatus: string, studentStatus: string, enrollmentYear: int, faculty: string, specialty: string}АБО {found: false}АБО {apiError: true}
+AuthModule	UniversityModule	UniversityIntegration.retryVerification(userId)	Internal	{userId: int}	{success: bool, result: {...}}
+10.2. Зовнішні інтерфейси
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+UniversityModule	University API	/api/students/{email}	GET	Headers: Authorization: Bearer{UNIVERSITY_API_KEY}	{found: true, studentId: "ST2024001234",firstName: "Іван", lastName: "Петренко",email: "ivan.petrenko@student.ksu.edu.ua", gpa: 4.7, scholarshipStatus: "ACTIVE", enrollmentYear: 2021, faculty: "Інформаційні технології", specialty: "Комп'ютерні науки"} АБО {found: false}
+11. NotificationModule - Модуль сповіщень
+11.1. Внутрішні інтерфейси
+Відправник	Отримувач	Endpoint/Метод	Тип	Дані запиту	Дані відповіді
+OrderModule	NotificationModule	NotificationService.SendOrderConfirmation(orderId)	Internal	{orderId: int, email: string, orderDetails: {...}}	{sent: bool, messageId: string}
+OrderModule	NotificationModule	NotificationService.SendStatusUpdate(orderId, newStatus)	Internal	{orderId: int, newStatus: string, email: string}	{sent: bool}
+PaymentModule	NotificationModule	NotificationService.SendPaymentConfirmation(orderId)	Internal	{orderId: int, paymentDetails: {...}}	{sent: bool}
+WarehouseModule	NotificationModule	NotificationService.SendLowStockAlert(productId, currentStock)	Internal	{productId: int, productName: string, currentStock: int}	{sent: bool}
+11.2. Зовнішні інтерфейси
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+NotificationModule	Email Service	SMTP	-	{from, to, subject, body (HTML), attachments}	{sent: bool, messageId}
+12. AnalyticsModule - Модуль аналітики
+12.1. Публічні інтерфейси (для Менеджера/Адміністратора)
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+Admin Panel	AnalyticsModule	/api/analytics/sales	GET	?startDate=2025-01-01& endDate=2025-01-31& groupBy=week& categoryId=3	{period: {startDate,endDate}, totalOrders:245, totalRevenue: 123500.00,averageOrderValue: 504.08, salesByDay: [{date, revenue,orders}], salesByPaymentMethod:{CARD_ONLINE: 98400,CASH_ON_DELIVERY: 25100}, salesByStatus: {...}, topProducts: [{id,name, quantity, revenue}], changeVsPrevious: {ordersChange: +12.5%, revenueChange: +8.3%}}
+Admin Panel	AnalyticsModule	/api/analytics/products/popular	GET	?period=last_30_days& metric=revenue& limit=10&categoryId=3	{period: {...}, topByQuantity: [...], topByRevenue: [{id, name, quantity, revenue, shareOfTotal: 28.2%}], topByProfit:[...], lowStock: [...]}
+Admin Panel	AnalyticsModule	/api/analytics/categories	GET	?startDate=2025-01-01& endDate=2025-01-31	{period: {...}, revenueByCategory: [{id, name, quantity, revenue, averageOrderValue}], quantityByCategory: [...], categoryShare: [{id, name, sharePercent: 35.2%}]}
+Admin Panel	AnalyticsModule	/api/analytics/promotions/effectiveness	GET	?promotionId=5& startDate=2025-01-01& endDate=2025-01-31	{promotionId: 5, promotionName: "Знижка 15%", period: {...}, totalUsages: 156, totalDiscount: 12300, averageOrderValueWith Promo: 520, averageOrderValueWith outPromo: 480, conversionRateWith Promo: 8.5%, conversionRateWithout Promo: 6.2%, roi: 145%}
+Admin Panel 
+(тільки Адміністратор)	AnalyticsModule	/api/analytics/conversion	GET	?period=last_quarter	{period: {...}, visitorToUserRate: 12.5%, userToBuyerRate: 18.3%, cancelledOrdersRate: 2.1%, averageOrderValue: 504.08, repeatPurchaseRate: 28.5%, averageOrderItems: 2.3, cartAbandonmentRate: 35.2%}
+Admin Panel 
+(тільки Адміністратор)	AnalyticsModule	/api/analytics/financial	GET	?startDate=2025-01-01& endDate=2025-12-31	{period: {...}, totalRevenue: 1850000, shippingRevenue: 95000, purchaseCosts: 1200000, discountAmount: 125000, netProfit: 530000, roiByProduct: [{id, name, revenue, cost, profit, roi}], roiByCategory: [...], profitMargin: 28.6%}
+Admin Panel 
+(тільки Адміністратор)	AnalyticsModule	/api/analytics/user-behavior	GET	?period=last_month	{period: {...}, topCustomers: [{userId, orderCount: 15, totalSpent: 12500}], averageTimeToFirst Purchase: 3.2 днів, cohortAnalysis: [{month: "2025-01", newUsers: 145, retentionRate: 42%}], categoryHeatmap: {"Футболки": {1: 45, 2: 38, ...}}}
+Admin Panel	AnalyticsModule	/api/analytics/export	POST	{reportType: "sales", format: "PDF", period: {startDate: "2025-01-01", endDate: "2025-01-31"}, filters: {categoryId: 3}}	File download: Content-Type: application/pdf Content-Disposition: attachment; filename="sales_analytics_2025-01-01_2025-01-31.pdf"
+12.2. Внутрішні інтерфейси (між модулями)
+Відправник	Отримувач	Endpoint/Метод	Тип	Дані запиту	Дані відповіді
+AnalyticsService	OrderRepository	getOrdersByPeriod(startDate, endDate, filters)	Internal	{startDate: DateTime, endDate: DateTime, filters: {...}}	List<Order>
+AnalyticsService	OrderRepository	getOrderItemsByPeriod(startDate, endDate, filters)  	Internal	{startDate: DateTime, endDate: DateTime}	List<OrderItem>
+AnalyticsService	ProductRepository	getProductsByIds(productIds)	Internal	{productIds: int[]}	List<Product>
+AnalyticsService	ProductRepository	getProductsByCategoryId(categoryId)	Internal	{categoryId: int}	List<Product>
+AnalyticsService	CategoryRepository	getAllCategories()	Internal	{}	List<Category>
+AnalyticsService	PromotionRepository	getPromotionsByPeriod(startDate, endDate)	Internal	{startDate: DateTime, endDate: DateTime}	List<Promotion>
+AnalyticsService	IncomingRepository	getIncomingByProducts(productIds, period)	Internal	{productIds: int[],period: DateRange}	List<IncomingDocument>
+AnalyticsService	UserRepository	getUsersByRegistrationPeriod(period)	Internal	{period: DateRange}	List<User>
+AnalyticsService	CacheService	get(cacheKey)	Internal	{cacheKey: string}	cached data or null
+AnalyticsService	CacheService	set(cacheKey, data, ttl)	Internal	{cacheKey: string, data: object, ttl: int}	{success: bool}
+AnalyticsService	ReportService	generatePDF(data, template)	Internal	{data: object, template: string}	{fileStream: byte[]}
+AnalyticsService	ReportService	generateExcel(data, template)	Internal	{data: object, template: string}	{fileStream: byte[]}
+AnalyticsService	ReportService	generateCSV(data)	Internal	{data: object}	{fileStream: byte[]}
+Примітки:
+Права доступу:
+•	Менеджер (MANAGER) має доступ до:
+o	/api/analytics/sales
+o	/api/analytics/products/popular
+o	/api/analytics/categories
+o	/api/analytics/promotions/effectiveness
+o	/api/analytics/export (тільки для доступних звітів)
+•	Адміністратор (ADMIN) має доступ до всіх endpoints, включаючи:
+o	/api/analytics/conversion
+o	/api/analytics/financial
+o	/api/analytics/user-behavior
+Валідація запитів:
+•	startDate та endDate: обов'язкові для більшості endpoints
+•	Період не може перевищувати 2 роки (730 днів)
+•	groupBy: має бути один з ["day", "week", "month"], default: "day"
+•	metric: має бути один з ["quantity", "revenue", "profit"]
+•	format: має бути один з ["PDF", "CSV", "Excel"]
+•	limit: має бути в діапазоні 1-100, default: 10
+Кешування:
+•	Всі розраховані метрики кешуються в In-Memory Cache
+•	TTL для операційних звітів (sales, products, categories): 15 хвилин
+•	TTL для фінансових звітів: 30 хвилин
+•	TTL для метрик конверсії: 1 година
+•	Ключ кешу: "analytics:{type}:{period}:{filters_hash}"
+Обмеження продуктивності:
+•	Rate limiting: 10 запитів/хвилину на користувача для аналітики
+•	Обмеження на експорт: 5 експортів/годину на користувача
+•	Асинхронна генерація звітів для датасетів > 5000 записів
+Коди помилок:
+•	400 Bad Request: невалідні параметри (період > 2 роки, невалідний groupBy)
+•	403 Forbidden: недостатньо прав (користувач намагається отримати financial/conversion/user-behavior)
+•	429 Too Many Requests: перевищено rate limit
+•	500 Internal Server Error: помилка при розрахунку метрик або генерації звіту
+13. Зовнішні інтеграції
+13.1. MinIO Storage (зберігання зображень)
+Відправник	Отримувач	Метод	Дані запиту	Дані відповіді
+CatalogModule	MinIO	PutObject	{bucketName: "products", fileName: "uuid.jpg", fileStream}	{url: "https://minio.../products/uuid.jpg"}
+CatalogModule	MinIO	GetObject	{bucketName: "products", fileName: "uuid.jpg"}	{fileStream}
+CatalogModule	MinIO	DeleteObject	{bucketName: "products", fileName: "uuid.jpg"}	{success: bool}
+13.2. Stripe API (платежі)
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+PaymentModule	Stripe API	/v1/checkout/sessions	POST	{payment_method_types: ["card"], line_items: [...], mode: "payment", success_url, cancel_url}	{id, url, expires_at}
+Stripe API	PaymentModule	/api/webhooks/stripe	POST	{type: "checkout.session.completed", data: {...}}	{received: true}
+13.3. Nova Poshta API (доставка)
+Відправник	Отримувач	Endpoint	Метод	Дані запиту	Дані відповіді
+ShippingModule	Nova Poshta API	/v2.0/json/	POST	{modelName: "InternetDocument", calledMethod: "getDocumentPrice", methodProperties: {CitySender, CityRecipient, Weight}}	{success: bool, data: [{Cost}]}
+Примітки до реалізації
+Аутентифікація
+Всі endpoints, які потребують авторизації, повинні отримувати JWT токен в заголовку:
+Authorization: Bearer {token}
+Формат відповідей
+Всі відповіді повинні мати стандартну структуру:
+{
+  "success": true/false,
+  "data": {...},
+  "message": "Опис операції",
+  "errors": [] // якщо є помилки валідації
+}
+Примітки до PromotionModule
+Стакування знижок:
+Система підтримує стакування знижок за пріоритетом:
+1.	Персональні знижки (CUSTOM) - найвищий пріоритет
+2.	Студентські знижки (STUDENTS) - залежно від studentStatus
+3.	Товарні/Категорійні знижки (PRODUCT/CATEGORY)
+4.	Знижки на кошик (CART)
+5.	Промокоди
+При однаковому типі знижок застосовується поле priority (вищий = важливіший).
+Розрахунок фінальної ціни:
+finalPrice = originalPrice - discountAmount
+де discountAmount розраховується на основі типу знижки:
+•	PERCENTAGE: originalPrice * (value / 100)
+•	FIXED_AMOUNT: value
+•	SPECIAL_PRICE: originalPrice - value
+Валідація промокоду:
+Перевірки виконуються в наступному порядку:
+1.	Існування промокоду в БД
+2.	isActive = true
+3.	startDate <= now() <= endDate (якщо вказано)
+4.	currentUsage < usageLimit (якщо вказано)
+5.	orderTotal >= minOrderAmount (якщо вказано)
+6.	totalQuantity >= minQuantity (якщо вказано)
+При невдалій валідації система повертає конкретне повідомлення про причину.
+Примітки до UniversityModule
+Автоматична верифікація:
+При реєстрації користувача з email що закінчується на @ksu.edu.ua або @student.ksu.edu.ua система автоматично намагається верифікувати статус студента через University API.
+Мапування studentStatus:
+На основі відповіді University API:
+•	GPA >= 4.5 AND scholarshipStatus = "ACTIVE" → HIGH_ACHIEVER
+•	scholarshipStatus = "ACTIVE" → SCHOLARSHIP
+•	інакше → REGULAR
+Обробка помилок API:
+Якщо University API недоступний або повертає помилку:
+•	Система логує помилку
+•	Створює запис в StudentVerificationQueue
+•	Встановлює nextRetryAt = now() + 1 година
+•	Користувач отримує studentStatus = NONE (тимчасово)
+•	Повторні спроби: через 1 год, 6 год, 24 год
+•	Після 3 невдалих спроб → переводиться в ручну верифікацію адміністратором
+Термін дії studentStatus:
+За замовчуванням 4 місяці (1 семестр). За тиждень до закінчення терміну користувач отримує Email-нагадування з пропозицією оновити статус. Адміністратор може продовжити термін дії вручну.
+Безпека:
+University API викликається ТІЛЬКИ через backend. Frontend ніколи не має прямого доступу до University API. API ключ зберігається в environment variables та не передається клієнту.
+Примітки до AnalyticsModule
+Стратегія розрахунку метрик:
+AnalyticsModule використовує on-the-fly розрахунки з агресивним кешуванням:
+1.	При отриманні запиту формується ключ кешу на основі параметрів
+2.	Перевіряється наявність даних у кеші
+3.	Якщо дані актуальні (TTL не вийшов) → повертається з кешу
+4.	Якщо кеш порожній або застарілий:
+•	Запитуються дані з репозиторіїв
+•	Метрики розраховуються паралельно (Task.WhenAll)
+•	Результат зберігається в кеш
+•	Повертається клієнту
+Паралельний розрахунок метрик:
+	Для прискорення розрахунку складних звітів використовується паралельна обробка:
+•	Aggregate metrics (totalOrders, totalRevenue) - Task 1
+•	Time series (salesByDay/Week/Month) - Task 2
+•	Distributions (salesByPaymentMethod, salesByStatus) - Task 3
+•	Top lists (topProducts, topCategories) - Task 4
+•	Comparisons (changeVsPreviousPeriod) - Task 5
+Всі задачі виконуються одночасно, результати об'єднуються в фінальний DTO.
+Інвалідація кешу:
+	Кеш аналітики автоматично інвалідується при:
+•	Створенні нового замовлення (Order)
+•	Зміні статусу замовлення (Order.status)
+•	Створенні нової прибуткової накладної (IncomingDocument)
+•	Створенні нової видаткової накладної (OutgoingDocument)
+•	Активації/деактивації акції (Promotion.isActive)
+Інвалідація виконується через pub/sub механізм або через зміну версії кешу.
+	Асинхронна генерація великих звітів:
+		Якщо датасет для звіту > 5000 записів:
+•	Користувач отримує HTTP 202 Accepted з jobId
+•	Звіт генерується асинхронно в background job
+•	Користувач може перевіряти статус через GET /api/analytics/export/{jobId}/status
+•	Після завершення генерації доступний download link
+•	Згенеровані файли зберігаються 24 години, потім автоматично видаляються
+Формати експорту:
+•	PDF:
+o	Використання iText7 для генерації
+o	Включення графіків як зображень (Chart.js → Canvas → PNG → PDF)
+o	Форматування: титульна сторінка, KPI картки, графіки, таблиці, footer
+o	Розмір файлу: зазвичай 500KB - 2MB
+•	Excel (XLSX):
+o	Використання EPPlus для генерації
+o	Декілька листів: Summary, Sales Dynamics, Top Products, Charts
+o	Форматування комірок (числа, дати, валюта)
+o	Автоматична ширина колонок, freeze panes
+o	Вбудовані Excel charts
+o	Розмір файлу: зазвичай 200KB - 1MB
+•	CSV:
+o	Використання CsvHelper для генерації
+o	UTF-8 encoding з BOM (для коректного відкриття в Excel)
+o	Comma separator (або semicolon для європейських локалей)
+o	Тільки табличні дані, без графіків
+o	Ідеально для подальшої обробки в BI tools
+o	Розмір файлу: зазвичай 50KB - 500KB
+Безпека та аудит:
+•	Всі запити до аналітики логуються:
+o	Хто (userId, role)
+o	Що (тип звіту, параметри)
+o	Коли (timestamp)
+o	Результат (success/error, execution time)
+•	Логи зберігаються 90 днів для audit trail.
+•	Експорт звітів додатково логує:
+o	Формат файлу
+o	Розмір файлу
+o	Час генерації
+•	Для ADMIN ролі додатково логується доступ до фінансових даних.
+Коди статусів HTTP
+200 OK - успішна операція
+201 Created - ресурс створено
+400 Bad Request - помилка валідації
+401 Unauthorized - не авторизований
+403 Forbidden - недостатньо прав
+404 Not Found - ресурс не знайдено
+500 Internal Server Error - серверна помилка
+Пагінація
+Всі endpoints, що повертають списки, підтримують пагінацію:
+?page=1&limit=20
+Відповідь:
+{
+  "data": [...],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 5,
+    "totalItems": 95,
+    "itemsPerPage": 20
+  }
+}

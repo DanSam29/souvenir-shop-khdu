@@ -16,7 +16,7 @@ function CheckoutPage() {
   const [form, setForm] = useState({
     city: '',
     warehouseNumber: '',
-    paymentMethod: 'CashOnDelivery',
+    paymentMethod: 'Card',
     promoCode: '',
   });
   const [currentUser, setCurrentUser] = useState(null);
@@ -109,6 +109,13 @@ function CheckoutPage() {
         promoCode: form.promoCode?.trim() || null,
       };
       const res = await ordersAPI.checkout(payload);
+      
+      // Якщо є посилання на оплату (Stripe), перенаправляємо
+      if (res.data && res.data.paymentUrl) {
+        window.location.href = res.data.paymentUrl;
+        return;
+      }
+
       setOrderResult(res.data);
       await loadCart();
     } catch (err) {
@@ -181,6 +188,7 @@ function CheckoutPage() {
               onChange={handleChange}
               style={{ width: '100%', padding: 8, marginTop: 6 }}
             >
+              <option value="Card">Оплата карткою (Stripe)</option>
               <option value="CashOnDelivery">Накладений платіж</option>
             </select>
           </label>

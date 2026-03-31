@@ -15,14 +15,22 @@ namespace KhduSouvenirShop.API.Controllers
     {
         private readonly AppDbContext _context;
         private readonly ILogger<OrdersController> _logger;
-
         private readonly KhduSouvenirShop.API.Services.PromotionService _promotionService;
+        private readonly KhduSouvenirShop.API.Services.IPaymentService _paymentService;
+        private readonly IConfiguration _configuration;
 
-        public OrdersController(AppDbContext context, ILogger<OrdersController> logger, KhduSouvenirShop.API.Services.PromotionService promotionService)
+        public OrdersController(
+            AppDbContext context, 
+            ILogger<OrdersController> logger, 
+            KhduSouvenirShop.API.Services.PromotionService promotionService,
+            KhduSouvenirShop.API.Services.IPaymentService paymentService,
+            IConfiguration configuration)
         {
             _context = context;
             _logger = logger;
             _promotionService = promotionService;
+            _paymentService = paymentService;
+            _configuration = configuration;
         }
 
         [HttpPost("checkout")]
@@ -184,6 +192,16 @@ namespace KhduSouvenirShop.API.Controllers
 
                 _logger.LogInformation("Замовлення {OrderNumber} створено користувачем {UserId}", order.OrderNumber, userId);
 
+                string? paymentUrl = null;
+                if (payment.Method == "Card")
+                {
+                    var successUrl = _configuration["Stripe:SuccessUrl"] ?? "http://localhost:3000/checkout/success";
+                    var cancelUrl = _configuration["Stripe:CancelUrl"] ?? "http://localhost:3000/checkout/cancel";
+                    
+                    var session = await _paymentService.CreateCheckoutSessionAsync(order, successUrl, cancelUrl);
+                    paymentUrl = session.Url;
+                }
+
                 var result = new
                 {
                     orderId = order.OrderId,
@@ -191,7 +209,8 @@ namespace KhduSouvenirShop.API.Controllers
                     status = order.Status,
                     totalAmount = order.TotalAmount,
                     discountTotal = totalDiscount,
-                    createdAt = order.CreatedAt
+                    createdAt = order.CreatedAt,
+                    paymentUrl = paymentUrl
                 };
 
                 return Ok(ApiResponse<object>.SuccessResult(result, "Замовлення оформлено"));
@@ -285,9 +304,14 @@ namespace KhduSouvenirShop.API.Controllers
         }
 
         [HttpGet("my")]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status200OK)]
         public async Task<ActionResult> GetMyOrders()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            }
 
             var orders = await _context.Orders
                 .Include(o => o.OrderItems)
@@ -297,7 +321,7 @@ namespace KhduSouvenirShop.API.Controllers
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
 
-            return Ok(orders.Select(o => new
+            var result = orders.Select(o => new
             {
                 orderId = o.OrderId,
                 orderNumber = o.OrderNumber,
@@ -318,13 +342,21 @@ namespace KhduSouvenirShop.API.Controllers
                     quantity = oi.Quantity,
                     price = oi.FinalPrice
                 })
-            }));
+            });
+
+            return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(result));
         }
 
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> GetOrderById(int id)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            }
 
             var order = await _context.Orders
                 .Include(o => o.OrderItems)
@@ -335,10 +367,10 @@ namespace KhduSouvenirShop.API.Controllers
 
             if (order == null)
             {
-                return NotFound(new { error = "Замовлення не знайдено" });
+                return NotFound(ApiResponse<object>.FailureResult("Замовлення не знайдено", "NotFound"));
             }
 
-            return Ok(new
+            var result = new
             {
                 orderId = order.OrderId,
                 orderNumber = order.OrderNumber,
@@ -367,7 +399,9 @@ namespace KhduSouvenirShop.API.Controllers
                     quantity = oi.Quantity,
                     price = oi.FinalPrice
                 })
-            });
+            };
+
+            return Ok(ApiResponse<object>.SuccessResult(result));
         }
     }
 

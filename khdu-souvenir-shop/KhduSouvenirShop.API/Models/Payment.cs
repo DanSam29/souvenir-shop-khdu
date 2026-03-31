@@ -27,6 +27,15 @@ namespace KhduSouvenirShop.API.Models
         [MaxLength(255)]
         public string? TransactionId { get; set; }
 
+        [MaxLength(255)]
+        public string? StripeSessionId { get; set; }
+
+        [MaxLength(255)]
+        public string? StripePaymentIntentId { get; set; }
+
+        [MaxLength(100)]
+        public string? IdempotencyKey { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 
