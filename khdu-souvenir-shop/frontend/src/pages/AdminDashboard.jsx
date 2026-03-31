@@ -53,6 +53,11 @@ function AdminDashboard() {
           <p style={{ fontSize: '2rem', fontWeight: 700 }}>{stats.stock}</p>
           <Link to="/admin/warehouse">Склад →</Link>
         </div>
+        <div style={statCardStyle}>
+          <h3>Аналітика</h3>
+          <p style={{ fontSize: '2rem', fontWeight: 700 }}>📊</p>
+          <Link to="/admin/analytics">Звіти →</Link>
+        </div>
       </div>
 
       <h2 style={{ marginTop: 40 }}>Статус інтеграцій</h2>

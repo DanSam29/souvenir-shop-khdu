@@ -160,6 +160,12 @@ export const integrationsAPI = {
   testNovaPoshta: () => api.get('/Integrations/test/novaposhta'),
 };
 
+// API функції для аналітики
+export const analyticsAPI = {
+  getSummary: (params) => api.get('/Analytics/summary', { params }),
+  exportSales: (params) => api.get('/Analytics/export/sales', { params, responseType: 'blob' }),
+};
+
 // Адмін API для Products
 export const adminProductsAPI = {
   create: (data) => api.post('/admin/products', data),
