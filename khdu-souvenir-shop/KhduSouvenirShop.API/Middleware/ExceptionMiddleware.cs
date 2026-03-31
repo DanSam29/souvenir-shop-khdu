@@ -27,12 +27,18 @@ namespace KhduSouvenirShop.API.Middleware
             {
                 _logger.LogError(ex, ex.Message);
                 context.Response.ContentType = "application/json";
-                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-                var response = ApiResponse<object>.FailureResult(
-                    _env.IsDevelopment() ? ex.Message : "Internal Server Error",
-                    "An unexpected error occurred"
-                );
+                var (statusCode, errorCode, message) = ex switch
+                {
+                    UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "Unauthorized", "Доступ заборонено"),
+                    KeyNotFoundException => (HttpStatusCode.NotFound, "NotFound", "Ресурс не знайдено"),
+                    ArgumentException => (HttpStatusCode.BadRequest, "BadRequest", ex.Message),
+                    _ => (HttpStatusCode.InternalServerError, "InternalServerError", _env.IsDevelopment() ? ex.Message : "Сталася непередбачена помилка")
+                };
+
+                context.Response.StatusCode = (int)statusCode;
+
+                var response = ApiResponse<object>.FailureResult(message, errorCode);
 
                 var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
                 var json = JsonSerializer.Serialize(response, options);

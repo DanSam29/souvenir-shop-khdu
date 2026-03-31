@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Threading.RateLimiting;
 using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Middleware;
 using KhduSouvenirShop.API.Models.Common;
@@ -11,6 +12,52 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// 1. Налаштування Rate Limiting (Обмеження частоти запитів)
+builder.Services.AddRateLimiter(options =>
+{
+    // Глобальний лімітер для всіх запитів
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.User.Identity?.Name ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 100, // Максимум 100 запитів
+                QueueLimit = 0,
+                Window = TimeSpan.FromMinutes(1) // за 1 хвилину
+            }));
+
+    // Спеціальний лімітер для авторизації (захист від brute-force)
+    options.AddPolicy("AuthPolicy", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 5, // 5 спроб
+                QueueLimit = 0,
+                Window = TimeSpan.FromMinutes(5) // на 5 хвилин
+            }));
+
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsJsonAsync(ApiResponse<object>.FailureResult("Занадто багато запитів. Спробуйте пізніше.", "TooManyRequests"), token);
+    };
+});
+
+// 2. Налаштування CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DefaultPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") // Ваша адреса фронтенду
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
 
 // Налаштування Serilog для логування
 Log.Logger = new LoggerConfiguration()
@@ -136,15 +183,15 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // Додавання CORS (для frontend)
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
+// builder.Services.AddCors(options =>
+// {
+//     options.AddPolicy("AllowAll", policy =>
+//     {
+//         policy.AllowAnyOrigin()
+//               .AllowAnyMethod()
+//               .AllowAnyHeader();
+//     });
+// });
 
 var app = builder.Build();
 
@@ -157,9 +204,27 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    // Налаштування HSTS для продакшн (Stage 12: Security)
+    app.UseHsts();
+}
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+
+// Додавання Security Headers (Stage 12: Security)
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Append("X-Frame-Options", "DENY");
+    context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
+    context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    context.Response.Headers.Append("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; frame-ancestors 'none';");
+    await next();
+});
+
+app.UseCors("DefaultPolicy");
+app.UseRateLimiter();
 
 // Обслуговування статичних файлів (зображення, тощо)
 // Доступні за адресою: http://localhost:5000/images/products/image.jpg

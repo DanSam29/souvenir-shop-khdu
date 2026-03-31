@@ -45,4 +45,37 @@ namespace KhduSouvenirShop.API.Validators
                 .NotEmpty().WithMessage("Пароль обов'язковий");
         }
     }
+
+    public class UserUpdateDtoValidator : AbstractValidator<UserUpdateDto>
+    {
+        public UserUpdateDtoValidator()
+        {
+            RuleFor(x => x.FirstName)
+                .NotEmpty().WithMessage("Ім'я обов'язкове")
+                .Length(2, 50).WithMessage("Ім'я має бути від 2 до 50 символів");
+
+            RuleFor(x => x.LastName)
+                .NotEmpty().WithMessage("Прізвище обов'язкове")
+                .Length(2, 50).WithMessage("Прізвище має бути від 2 до 50 символів");
+
+            RuleFor(x => x.Phone)
+                .Matches(@"^\+380\d{9}$").WithMessage("Телефон має бути у форматі +380XXXXXXXXX")
+                .When(x => !string.IsNullOrEmpty(x.Phone));
+        }
+    }
+
+    public class ChangePasswordDtoValidator : AbstractValidator<ChangePasswordDto>
+    {
+        public ChangePasswordDtoValidator()
+        {
+            RuleFor(x => x.OldPassword).NotEmpty().WithMessage("Старий пароль обов'язковий");
+            RuleFor(x => x.NewPassword)
+                .NotEmpty().WithMessage("Новий пароль обов'язковий")
+                .MinimumLength(8).WithMessage("Новий пароль має бути не менше 8 символів")
+                .Matches(@"[A-Z]").WithMessage("Новий пароль має містити хоча б одну велику літеру")
+                .Matches(@"[a-z]").WithMessage("Новий пароль має містити хоча б одну малу літеру")
+                .Matches(@"[0-9]").WithMessage("Новий пароль має містити хоча б одну цифру")
+                .NotEqual(x => x.OldPassword).WithMessage("Новий пароль не може співпадати зі старим");
+        }
+    }
 }
