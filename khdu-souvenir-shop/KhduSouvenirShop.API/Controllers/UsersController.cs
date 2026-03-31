@@ -69,6 +69,7 @@ namespace KhduSouvenirShop.API.Controllers
                 Email = registerDto.Email,
                 Password = passwordHash,
                 Phone = registerDto.Phone,
+                Language = registerDto.Language ?? "ua",
                 Role = "Customer",
                 CreatedAt = DateTime.UtcNow
             };
@@ -199,6 +200,7 @@ namespace KhduSouvenirShop.API.Controllers
                 email = user.Email,
                 phone = user.Phone,
                 role = user.Role,
+                language = user.Language,
                 createdAt = user.CreatedAt,
                 studentStatus = user.StudentStatus,
                 studentVerifiedAt = user.StudentVerifiedAt,
@@ -280,13 +282,18 @@ namespace KhduSouvenirShop.API.Controllers
             user.FirstName = dto.FirstName;
             user.LastName = dto.LastName;
             user.Phone = dto.Phone;
+            if (!string.IsNullOrEmpty(dto.Language))
+            {
+                user.Language = dto.Language;
+            }
             user.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResult(new {
                 user.FirstName,
                 user.LastName,
-                user.Phone
+                user.Phone,
+                user.Language
             }, "Профіль оновлено"));
         }
 
@@ -334,6 +341,7 @@ namespace KhduSouvenirShop.API.Controllers
                 email = user.Email,
                 phone = user.Phone,
                 role = user.Role,
+                language = user.Language,
                 createdAt = user.CreatedAt,
                 studentStatus = user.StudentStatus,
                 studentVerifiedAt = user.StudentVerifiedAt,
@@ -388,6 +396,7 @@ namespace KhduSouvenirShop.API.Controllers
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public string? Phone { get; set; }
+        public string Language { get; set; } = "ua";
     }
 
     // DTO для авторизації
@@ -402,6 +411,7 @@ namespace KhduSouvenirShop.API.Controllers
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string? Phone { get; set; }
+        public string? Language { get; set; }
     }
 
     public class ChangePasswordDto

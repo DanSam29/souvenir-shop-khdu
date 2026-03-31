@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { cartAPI, buildImageUrl } from '../services/api';
 import './CartPage.css';
 
 function CartPage() {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -91,7 +93,7 @@ function CartPage() {
   if (loading) {
     return (
       <div className="cart-page">
-        <div className="loading">Завантаження кошика...</div>
+        <div className="loading">{t('common.loading')}</div>
       </div>
     );
   }
@@ -99,20 +101,22 @@ function CartPage() {
   if (error) {
     return (
       <div className="cart-page">
-        <div className="error-message">{error}</div>
+        <div className="error">
+          <p>{error}</p>
+          <button onClick={loadCart}>Спробувати знову</button>
+        </div>
       </div>
     );
   }
 
-  // Якщо кошик порожній
   if (!cart || cart.items.length === 0) {
     return (
       <div className="cart-page">
         <div className="empty-cart">
           <div className="cart-icon">🛒</div>
-          <h2>Ваш кошик порожній</h2>
-          <p>Додайте товари до кошика, щоб продовжити покупки</p>
-          <Link to="/" className="back-to-catalog-btn">
+          <h2>{t('cart.empty')}</h2>
+          <p>Ваш кошик ще не заповнений сувенірами</p>
+          <Link to="/" className="btn-primary">
             Перейти до каталогу
           </Link>
         </div>
@@ -120,77 +124,65 @@ function CartPage() {
     );
   }
 
-  // Якщо у кошику є товари
   return (
     <div className="cart-page">
-      <div className="cart-container">
+      <div className="container">
         <div className="cart-header">
-          <h1>Кошик</h1>
-          <button onClick={handleClearCart} className="clear-cart-btn">
-            Очистити кошик
+          <h1>{t('cart.title')}</h1>
+          <button className="btn-clear" onClick={handleClearCart}>
+            🗑️ {t('cart.clear')}
           </button>
         </div>
 
-        <div className="cart-items">
-          {cart.items.map((item) => (
-            <div key={item.cartItemId} className="cart-item">
-              <div className="item-image">
-                {item.productImage ? (
-                  <img src={buildImageUrl(item.productImage)} alt={item.productName} />
-                ) : (
-                  <div className="no-image">Без фото</div>
-                )}
-              </div>
-
-              <div className="item-info">
-                <h3>{item.productName}</h3>
-                <p className="item-price">{item.productPrice.toFixed(2)} грн</p>
-              </div>
-
-              <div className="item-quantity">
-                <button
-                  onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity - 1)}
-                  className="quantity-btn"
-                  disabled={item.quantity <= 1}
+        <div className="cart-content">
+          <div className="cart-items">
+            {cart.items.map(item => (
+              <div key={item.cartItemId} className="cart-item">
+                <div className="item-image">
+                  <img 
+                    src={buildImageUrl(item.product.images?.[0]?.url)} 
+                    alt={item.product.name} 
+                  />
+                </div>
+                <div className="item-info">
+                  <Link to={`/product/${item.productId}`}>
+                    <h3>{item.product.name}</h3>
+                  </Link>
+                  <p className="item-price">{item.product.price} грн</p>
+                </div>
+                <div className="item-quantity">
+                  <button onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity - 1)}>-</button>
+                  <span>{item.quantity}</span>
+                  <button onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity + 1)}>+</button>
+                </div>
+                <div className="item-total">
+                  {(item.product.price * item.quantity).toFixed(2)} грн
+                </div>
+                <button 
+                  className="btn-remove" 
+                  onClick={() => handleRemoveItem(item.cartItemId)}
+                  title={t('common.delete')}
                 >
-                  −
-                </button>
-                <span className="quantity-value">{item.quantity}</span>
-                <button
-                  onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity + 1)}
-                  className="quantity-btn"
-                >
-                  +
+                  ✕
                 </button>
               </div>
+            ))}
+          </div>
 
-              <div className="item-subtotal">
-                <p>{item.subtotal.toFixed(2)} грн</p>
-              </div>
-
-              <button
-                onClick={() => handleRemoveItem(item.cartItemId)}
-                className="remove-btn"
-                title="Видалити товар"
-              >
-                ✕
-              </button>
+          <aside className="cart-summary">
+            <h2>{t('cart.total')}</h2>
+            <div className="summary-row">
+              <span>{t('cart.item')}:</span>
+              <span>{cart.itemCount}</span>
             </div>
-          ))}
-        </div>
-
-        <div className="cart-summary">
-          <div className="summary-row">
-            <span>Кількість товарів:</span>
-            <span>{cart.itemCount}</span>
-          </div>
-          <div className="summary-row summary-total">
-            <span>Загальна сума:</span>
-            <span className="total-amount">{cart.totalAmount.toFixed(2)} грн</span>
-          </div>
-          <Link to="/checkout" className="checkout-btn">
-            Оформити замовлення
-          </Link>
+            <div className="summary-row total">
+              <span>{t('cart.total')}:</span>
+              <span>{cart.totalAmount.toFixed(2)} грн</span>
+            </div>
+            <Link to="/checkout" className="btn-checkout">
+              {t('cart.checkout')}
+            </Link>
+          </aside>
         </div>
       </div>
     </div>

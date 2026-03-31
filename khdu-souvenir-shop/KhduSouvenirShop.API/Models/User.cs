@@ -33,6 +33,9 @@ namespace KhduSouvenirShop.API.Models
         [MaxLength(50)]
         public string Role { get; set; } = "Customer"; // Guest, Customer, Manager, Administrator, SuperAdmin
 
+        [MaxLength(5)]
+        public string Language { get; set; } = "ua"; // ua, en
+
         [MaxLength(20)]
         public string StudentStatus { get; set; } = "NONE"; // NONE, REGULAR, SCHOLARSHIP, HIGH_ACHIEVER
 

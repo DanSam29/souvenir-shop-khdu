@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import ProductCard from './ProductCard';
 import { productsAPI, categoriesAPI } from '../services/api';
 import './ProductList.css';
 
 function ProductList() {
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [originalProducts, setOriginalProducts] = useState([]); 
@@ -119,7 +121,7 @@ function ProductList() {
     setAllProducts(originalProducts);
   }
   if (loading && products.length === 0) {
-    return <div className="loading">Завантаження товарів...</div>;
+    return <div className="loading">{t('common.loading')}</div>;
   }
 
   if (error) {
@@ -140,7 +142,7 @@ function ProductList() {
             <div className="search-input-wrapper">
               <input
                 type="text"
-                placeholder="Пошук товарів..."
+                placeholder={t('common.search')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="search-input-sticky"
@@ -155,7 +157,7 @@ function ProductList() {
                 </button>
               )}
             </div>
-            <button type="submit" className="search-btn-sticky">🔍 Шукати</button>
+            <button type="submit" className="search-btn-sticky">🔍 {t('common.search')}</button>
           </form>
         </div>
       </div>
@@ -189,7 +191,7 @@ function ProductList() {
 
           {/* Фільтр за категоріями */}
           <div className="filter-section">
-            <h4>Категорії</h4>
+            <h4>{t('home.categories')}</h4>
             <div className="categories-list">
               {categories.map(category => (
                 <label key={category.categoryId} className="category-checkbox">
@@ -208,7 +210,7 @@ function ProductList() {
         {/* Список товарів */}
         <div className="products-content">
           <div className="products-header">
-            <h2>Каталог товарів</h2>
+            <h2>{t('home.all_products')}</h2>
             <span className="products-count">Знайдено: {products.length}</span>
           </div>
 

@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { cartAPI, ordersAPI, usersAPI, novaPoshtaAPI } from '../services/api';
 
 function CheckoutPage() {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [cart, setCart] = useState(null);

@@ -109,6 +109,22 @@
   border-color: white;
 }
 
+.lang-switcher {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.lang-switcher:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
 .cart-badge {
   background: #dc3545;
   color: white;
