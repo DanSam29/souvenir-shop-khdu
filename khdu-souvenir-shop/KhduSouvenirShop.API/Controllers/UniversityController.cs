@@ -51,7 +51,7 @@ namespace KhduSouvenirShop.API.Controllers
             
             if (result)
             {
-                return Ok(ApiResponse<object>.SuccessResult(null, "Статус студента успішно оновлено"));
+                return Ok(ApiResponse<object?>.SuccessResult(null, "Статус студента успішно оновлено"));
             }
 
             return BadRequest(ApiResponse<object>.FailureResult("Не вдалося верифікувати студента через University API", "VerificationError"));
@@ -70,7 +70,7 @@ namespace KhduSouvenirShop.API.Controllers
             user.StudentExpiresAt = dto.ExpiresAt ?? DateTime.UtcNow.AddMonths(4);
 
             await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResult(null, "Статус оновлено вручну адміністратором"));
+            return Ok(ApiResponse<object?>.SuccessResult(null, "Статус оновлено вручну адміністратором"));
         }
     }
 

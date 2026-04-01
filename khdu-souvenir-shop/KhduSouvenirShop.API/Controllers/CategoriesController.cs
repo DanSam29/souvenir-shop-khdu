@@ -126,7 +126,7 @@ namespace KhduSouvenirShop.API.Controllers
             await _context.SaveChangesAsync();
             
             InvalidateCache();
-            return Ok(ApiResponse<object>.SuccessResult(null, "Категорію видалено"));
+            return Ok(ApiResponse<object?>.SuccessResult(null, "Категорію видалено"));
         }
 
         private void InvalidateCache()

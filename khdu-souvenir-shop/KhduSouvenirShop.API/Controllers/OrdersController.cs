@@ -154,7 +154,7 @@ namespace KhduSouvenirShop.API.Controllers
 
                     if (promo != null)
                     {
-                        var subtotal = orderItems.Sum(oi => oi.OriginalPrice * oi.Quantity);
+                        subtotal = orderItems.Sum(oi => oi.OriginalPrice * oi.Quantity);
                         if (subtotal > 0)
                         {
                             if (promo.Type == "PERCENTAGE")
@@ -569,7 +569,7 @@ namespace KhduSouvenirShop.API.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            return Ok(ApiResponse<object>.SuccessResult(null, "Замовлення скасовано"));
+            return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення скасовано"));
         }
     }
 

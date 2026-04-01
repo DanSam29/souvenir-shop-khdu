@@ -4,6 +4,7 @@ using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.AspNetCore.Authorization;
 
 namespace KhduSouvenirShop.API.Controllers
 {
@@ -269,8 +270,8 @@ namespace KhduSouvenirShop.API.Controllers
         {
             var product = new Product
             {
-                Name = dto.Name,
-                Description = dto.Description,
+                Name = dto.Name!,
+                Description = dto.Description ?? string.Empty,
                 Price = dto.Price,
                 Stock = dto.Stock,
                 CategoryId = dto.CategoryId,
@@ -293,8 +294,8 @@ namespace KhduSouvenirShop.API.Controllers
             var product = await _context.Products.FindAsync(id);
             if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
 
-            product.Name = dto.Name;
-            product.Description = dto.Description;
+            product.Name = dto.Name!;
+            product.Description = dto.Description ?? string.Empty;
             product.Price = dto.Price;
             product.Stock = dto.Stock;
             product.CategoryId = dto.CategoryId;
@@ -327,7 +328,7 @@ namespace KhduSouvenirShop.API.Controllers
             await _context.SaveChangesAsync();
 
             InvalidateCache();
-            return Ok(ApiResponse<object>.SuccessResult(null, "Товар видалено"));
+            return Ok(ApiResponse<object?>.SuccessResult(null, "Товар видалено"));
         }
 
         [HttpPost("{id}/images")]
@@ -362,11 +363,12 @@ namespace KhduSouvenirShop.API.Controllers
                 await _context.SaveChangesAsync();
 
                 InvalidateCache();
-                return Ok(ApiResponse<object>.SuccessResult(productImage, "Зображення завантажено"));
+                return Ok(ApiResponse<object>.SuccessResult(productImage, "Зображення додано"));
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse<object>.FailureResult(ex.Message, "UploadError"));
+                _logger.LogError(ex, "Помилка при завантаженні зображення");
+                return BadRequest(ApiResponse<object>.FailureResult("Помилка при завантаженні зображення", "UploadError"));
             }
         }
 
@@ -382,7 +384,7 @@ namespace KhduSouvenirShop.API.Controllers
             await _context.SaveChangesAsync();
 
             InvalidateCache();
-            return Ok(ApiResponse<object>.SuccessResult(null, "Зображення видалено"));
+            return Ok(ApiResponse<object?>.SuccessResult(null, "Зображення видалено"));
         }
 
         private void InvalidateCache()

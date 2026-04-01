@@ -102,12 +102,12 @@ namespace KhduSouvenirShop.API.Controllers
                 company.IsActive = false;
                 company.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
-                return Ok(ApiResponse<object>.SuccessResult(null, "Компанію деактивовано (має пов'язані документи)"));
+                return Ok(ApiResponse<object?>.SuccessResult(null, "Компанію деактивовано (має пов'язані документи)"));
             }
 
             _context.Companies.Remove(company);
             await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResult(null, "Компанію видалено"));
+            return Ok(ApiResponse<object?>.SuccessResult(null, "Компанію видалено"));
         }
     }
 

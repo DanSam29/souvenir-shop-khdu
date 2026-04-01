@@ -46,6 +46,8 @@ namespace KhduSouvenirShop.API.Models
         public DateTime? StudentExpiresAt { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public bool IsActive { get; set; } = true;
 
         // Навігаційні властивості (зв'язки)
         public virtual Cart? Cart { get; set; }

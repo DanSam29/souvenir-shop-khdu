@@ -75,13 +75,13 @@ namespace KhduSouvenirShop.API.Controllers
             };
 
             // Логіка: Встановлення студентського статусу за доменом email
-            var emailLower = (newUser.Email ?? string.Empty).ToLowerInvariant();
+            var emailLower = newUser.Email.ToLowerInvariant();
             var allowedDomains = _configuration.GetSection("University:AllowedDomains").Get<string[]>() ?? 
                                  new[] { "ksu.edu.ua", "student.ksu.edu.ua" };
 
             if (allowedDomains.Any(domain => emailLower.EndsWith("@" + domain)))
             {
-                var studentInfo = await _universityService.GetStudentInfoAsync(newUser.Email);
+                var studentInfo = await _universityService.GetStudentInfoAsync(newUser.Email!);
                 if (studentInfo != null && studentInfo.IsActive)
                 {
                     newUser.GPA = studentInfo.GPA;
@@ -250,8 +250,7 @@ namespace KhduSouvenirShop.API.Controllers
             user.Role = dto.Role;
             user.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
-
-            return Ok(ApiResponse<object>.SuccessResult(null, "Роль користувача оновлено"));
+            return Ok(ApiResponse<object?>.SuccessResult(null, "Роль користувача оновлено"));
         }
 
         [HttpPost("{id}/toggle-block")]
@@ -317,7 +316,7 @@ namespace KhduSouvenirShop.API.Controllers
             user.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResult(null, "Пароль змінено"));
+            return Ok(ApiResponse<object?>.SuccessResult(null, "Пароль змінено"));
         }
 
         // GET: api/Users/5

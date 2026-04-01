@@ -1,6 +1,6 @@
 namespace KhduSouvenirShop.API.Models.Common
 {
-    public class ApiResponse<T>
+    public class ApiResponse<T> where T : class?
     {
         public bool Success { get; set; }
         public T? Data { get; set; }
@@ -9,14 +9,14 @@ namespace KhduSouvenirShop.API.Models.Common
 
         public ApiResponse() { }
 
-        public ApiResponse(T data, string? message = null)
+        public ApiResponse(T? data, string? message = null)
         {
             Success = true;
             Data = data;
             Message = message;
         }
 
-        public static ApiResponse<T> SuccessResult(T data, string? message = null)
+        public static ApiResponse<T> SuccessResult(T? data, string? message = null)
         {
             return new ApiResponse<T>(data, message);
         }

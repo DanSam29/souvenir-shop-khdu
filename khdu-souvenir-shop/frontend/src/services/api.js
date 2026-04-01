@@ -180,4 +180,21 @@ export const novaPoshtaAPI = {
   calculate: (cityRef, weight, totalAmount) => api.get(`/NovaPoshta/calculate?cityRef=${cityRef}&weight=${weight}&totalAmount=${totalAmount}`),
 };
 
+// API функції для акцій та промокодів
+export const promotionsAPI = {
+  // Отримати доступні акції для користувача
+  getMyPromotions: () => api.get('/Promotions/my'),
+  
+  // Перевірити промокод
+  validatePromoCode: (code, totalAmount) => api.get(`/Promotions/validate?code=${code}&totalAmount=${totalAmount}`),
+  
+  // Адмінські методи
+  getAll: (params) => api.get('/Promotions', { params }),
+  getById: (id) => api.get(`/Promotions/${id}`),
+  create: (data) => api.post('/Promotions', data),
+  update: (id, data) => api.put(`/Promotions/${id}`, data),
+  delete: (id) => api.delete(`/Promotions/${id}`),
+  toggleActive: (id) => api.patch(`/Promotions/${id}/toggle`),
+};
+
 export default api;

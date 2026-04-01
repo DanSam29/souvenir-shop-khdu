@@ -1,4 +1,5 @@
 using KhduSouvenirShop.API.Data;
+using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
