@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: souvenir-shop-api
+    env: docker
+    dockerContext: .
+    dockerfilePath: KhduSouvenirShop.API/Dockerfile
+    plan: free
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: souvenir-shop-db
+          property: connectionString
+      - key: Jwt__Key
+        generateValue: true
+      - key: Stripe__SecretKey
+        sync: false
+      - key: NovaPoshta__ApiKey
+        sync: false
+
+  - type: web
+    name: souvenir-shop-frontend
+    env: docker
+    dockerContext: frontend
+    dockerfilePath: Dockerfile
+    plan: free
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://souvenir-shop-api.onrender.com/api
+    needs:
+      - souvenir-shop-api
+
+databases:
+  - name: souvenir-shop-db
+    databaseName: khdu_souvenir_shop
+    user: shop_user
+    plan: free

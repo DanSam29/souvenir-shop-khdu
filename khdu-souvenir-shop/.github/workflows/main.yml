@@ -1,0 +1,49 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend-build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+        
+    - name: Restore dependencies
+      run: dotnet restore KhduSouvenirShop.API/KhduSouvenirShop.API.csproj
+      
+    - name: Build
+      run: dotnet build KhduSouvenirShop.API/KhduSouvenirShop.API.csproj --no-restore -c Release
+      
+    - name: Test
+      run: dotnet test KhduSouvenirShop.API.Tests/KhduSouvenirShop.API.Tests.csproj --no-build -c Release
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm install --legacy-peer-deps
+      
+    - name: Build
+      working-directory: ./frontend
+      run: npm run build
+      
+    - name: Test
+      working-directory: ./frontend
+      run: npm test -- --watchAll=false
