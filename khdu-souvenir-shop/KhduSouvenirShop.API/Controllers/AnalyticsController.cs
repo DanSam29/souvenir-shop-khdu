@@ -11,14 +11,9 @@ namespace KhduSouvenirShop.API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize(Roles = "Admin")]
-    public class AnalyticsController : ControllerBase
+    public class AnalyticsController(AppDbContext context) : ControllerBase
     {
-        private readonly AppDbContext _context;
-
-        public AnalyticsController(AppDbContext context)
-        {
-            _context = context;
-        }
+        private readonly AppDbContext _context = context;
 
         [HttpGet("summary")]
         public async Task<ActionResult> GetSummary([FromQuery] DateTime? from, [FromQuery] DateTime? to)

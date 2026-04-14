@@ -51,8 +51,8 @@ namespace KhduSouvenirShop.API.Models
 
         // Навігаційні властивості (зв'язки)
         public virtual Cart? Cart { get; set; }
-        public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
-        public virtual ICollection<UserPromotion> UserPromotions { get; set; } = new List<UserPromotion>();
+        public virtual ICollection<Order> Orders { get; set; } = [];
+        public virtual ICollection<UserPromotion> UserPromotions { get; set; } = [];
     }
 }
 

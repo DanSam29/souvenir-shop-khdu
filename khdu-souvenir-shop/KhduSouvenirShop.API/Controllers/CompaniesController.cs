@@ -10,16 +10,10 @@ namespace KhduSouvenirShop.API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize(Roles = "Admin,Manager")]
-    public class CompaniesController : ControllerBase
+    public class CompaniesController(AppDbContext context, ILogger<CompaniesController> logger) : ControllerBase
     {
-        private readonly AppDbContext _context;
-        private readonly ILogger<CompaniesController> _logger;
-
-        public CompaniesController(AppDbContext context, ILogger<CompaniesController> logger)
-        {
-            _context = context;
-            _logger = logger;
-        }
+        private readonly AppDbContext _context = context;
+        private readonly ILogger<CompaniesController> _logger = logger;
 
         [HttpGet]
         public async Task<ActionResult> GetCompanies([FromQuery] bool onlyActive = false)
@@ -96,7 +90,7 @@ namespace KhduSouvenirShop.API.Controllers
 
             if (company == null) return NotFound(ApiResponse<object>.FailureResult("Компанію не знайдено", "NotFound"));
 
-            if (company.IncomingDocuments.Any() || company.OutgoingDocuments.Any())
+            if (company.IncomingDocuments.Count != 0 || company.OutgoingDocuments.Count != 0)
             {
                 // М'яке видалення (деактивація), якщо є пов'язані документи
                 company.IsActive = false;
