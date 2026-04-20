@@ -15,7 +15,9 @@ services:
       - key: Jwt__Key
         generateValue: true
       - key: Stripe__SecretKey
+        sync: false
       - key: NovaPoshta__ApiKey
+        sync: false
 
   - type: web
     name: souvenir-shop-frontend
