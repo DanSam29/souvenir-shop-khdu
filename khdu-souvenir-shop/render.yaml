@@ -2,7 +2,7 @@ services:
   - type: web
     name: souvenir-shop-api
     runtime: docker
-    dockerContext: .
+    dockerContext: khdu-souvenir-shop
     dockerfilePath: KhduSouvenirShop.API/Dockerfile
     plan: free
     envVars:
@@ -22,7 +22,7 @@ services:
   - type: web
     name: souvenir-shop-frontend
     runtime: docker
-    dockerContext: frontend
+    dockerContext: khdu-souvenir-shop/frontend
     dockerfilePath: Dockerfile
     plan: free
     envVars:
