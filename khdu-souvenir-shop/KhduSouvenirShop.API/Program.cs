@@ -52,7 +52,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:3000") // Ваша адреса фронтенду
+        policy.WithOrigins("http://localhost:3000", "https://souvenir-shop-frontend.onrender.com") // Локально + Render
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
@@ -217,8 +217,36 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
+    // Вмикаємо Swagger і в Production для зручності перевірки курсової
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+        options.RoutePrefix = "swagger"; // Swagger буде доступний за /swagger
+    });
+    
     // Налаштування HSTS для продакшн (Stage 12: Security)
     app.UseHsts();
+}
+
+// Автоматичне застосування міграцій при запуску (важливо для Render/Docker)
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        if (context.Database.GetPendingMigrations().Any())
+        {
+            Log.Information("Застосування міграцій бази даних...");
+            context.Database.Migrate();
+            Log.Information("Міграції успішно застосовані.");
+        }
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Помилка при застосуванні міграцій");
+    }
 }
 
 app.UseHttpsRedirection();
