@@ -26,8 +26,7 @@ services:
     dockerfilePath: khdu-souvenir-shop/frontend/Dockerfile
     plan: free
     dockerBuildArgs:
-      - key: REACT_APP_API_URL
-        value: https://souvenir-shop-api.onrender.com/api
+      REACT_APP_API_URL: https://souvenir-shop-api.onrender.com/api
     envVars:
       - key: REACT_APP_API_URL
         value: https://souvenir-shop-api.onrender.com/api
