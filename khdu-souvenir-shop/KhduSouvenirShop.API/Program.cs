@@ -53,10 +53,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "https://souvenir-shop-frontend.onrender.com") // Локально + Render
+        policy.AllowAnyOrigin()
               .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
+              .AllowAnyHeader();
     });
 });
 
@@ -194,24 +193,16 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// Додавання CORS (для frontend)
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("DefaultPolicy", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
-
 var app = builder.Build();
 
 // Налаштування для коректної роботи за проксі-сервером (Render)
-app.UseForwardedHeaders(new ForwardedHeadersOptions
+var forwardedOptions = new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
+};
+forwardedOptions.KnownNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
 
 // Глобальна обробка помилок
 app.UseMiddleware<ExceptionMiddleware>();
