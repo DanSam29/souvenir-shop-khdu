@@ -68,41 +68,53 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // Додавання DbContext з підтримкою MySQL та PostgreSQL (для Render)
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var rawConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+string? finalConnectionString = rawConnectionString;
 
-if (string.IsNullOrEmpty(connectionString))
+if (string.IsNullOrEmpty(rawConnectionString))
 {
     Log.Error("Рядок підключення 'DefaultConnection' не знайдено!");
 }
 else
 {
-    // Логуємо тип підключення (безпечно, без паролів)
-    if (connectionString.Contains("Server=") || connectionString.Contains("Port=3306"))
+    // Якщо рядок у форматі URL (postgres:// або postgresql://), конвертуємо його в формат ADO.NET
+    if (rawConnectionString.StartsWith("postgres"))
+    {
+        Log.Information("Виявлено підключення PostgreSQL (формат URL)");
+        try 
+        {
+            var databaseUri = new Uri(rawConnectionString);
+            var userInfo = databaseUri.UserInfo.Split(':');
+            finalConnectionString = $"Host={databaseUri.Host};Port={databaseUri.Port};Database={databaseUri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Помилка при парсингу URL бази даних");
+        }
+    }
+    else if (rawConnectionString.Contains("Server=") || rawConnectionString.Contains("Port=3306"))
+    {
         Log.Information("Виявлено підключення MySQL");
-    else if (connectionString.StartsWith("postgres://") || connectionString.Contains("Host="))
-        Log.Information("Виявлено підключення PostgreSQL");
+    }
+    else
+    {
+        Log.Information("Виявлено підключення у форматі ADO.NET (PostgreSQL або інше)");
+    }
 }
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    if (string.IsNullOrEmpty(connectionString)) return;
+    if (string.IsNullOrEmpty(finalConnectionString)) return;
 
-    if (connectionString.Contains("Server=") || connectionString.Contains("Port=3306"))
+    if (finalConnectionString.Contains("Server=") || finalConnectionString.Contains("Port=3306"))
     {
         // MySQL (Локально або Docker)
-        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+        options.UseMySql(finalConnectionString, ServerVersion.AutoDetect(finalConnectionString));
     }
     else
     {
         // PostgreSQL (Render)
-        // Якщо рядок у форматі URL (postgres://...), конвертуємо його в формат ADO.NET
-        if (connectionString.StartsWith("postgres://"))
-        {
-            var databaseUri = new Uri(connectionString);
-            var userInfo = databaseUri.UserInfo.Split(':');
-            connectionString = $"Host={databaseUri.Host};Port={databaseUri.Port};Database={databaseUri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
-        }
-        options.UseNpgsql(connectionString);
+        options.UseNpgsql(finalConnectionString);
     }
 });
 
