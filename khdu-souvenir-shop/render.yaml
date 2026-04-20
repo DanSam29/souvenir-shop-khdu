@@ -28,6 +28,8 @@ services:
     envVars:
       - key: REACT_APP_API_URL
         value: https://souvenir-shop-api.onrender.com/api
+      - key: CACHE_BUST
+        generateValue: true
 
 databases:
   - name: souvenir-shop-db
