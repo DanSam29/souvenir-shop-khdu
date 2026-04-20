@@ -15,6 +15,7 @@ import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
+import PoliciesPage from './pages/PoliciesPage';
 import CategoriesAdmin from './pages/admin/CategoriesAdmin';
 import ProductsAdmin from './pages/admin/ProductsAdmin';
 import logo from './assets/khdu-logo.png';
@@ -43,6 +44,7 @@ function App() {
               <Route path="/checkout/cancel" element={<PaymentCancelPage />} />
               <Route path="/admin/categories" element={<CategoriesAdmin />} />
               <Route path="/admin/products" element={<ProductsAdmin />} />
+              <Route path="/policies" element={<PoliciesPage />} />
             </Routes>
           </main>
           <footer className="footer">
@@ -56,9 +58,10 @@ function App() {
               </div>
               <div className="footer-info">
                 <div className="footer-section">
-                  <h4>Контакти</h4>
+                  <h4>Контакти та Допомога</h4>
                   <p>📧 office@ksu.ks.ua</p>
                   <p>📞 +380963102636</p>
+                  <p><a href="/policies">📜 Політики та повернення</a></p>
                   <p>🌐 <a href="https://www.kspu.edu/default.aspx?lang=uk" target="_blank" rel="noopener noreferrer">www.kspu.edu</a></p>
                 </div>
                 <div className="footer-section">

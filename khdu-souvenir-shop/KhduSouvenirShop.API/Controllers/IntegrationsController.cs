@@ -33,7 +33,7 @@ namespace KhduSouvenirShop.API.Controllers
                 },
                 university = new
                 {
-                    enabled = true, // Завжди увімкнено через імітацію
+                    enabled = _configuration.GetValue<bool>("Features:UniversityEnabled"),
                     domainsCount = _configuration.GetSection("University:AllowedDomains").Get<string[]>()?.Length ?? 0
                 }
             };
