@@ -67,10 +67,21 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-// Додавання DbContext з MySQL
+// Додавання DbContext з підтримкою MySQL та PostgreSQL (для Render)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+{
+    if (connectionString!.Contains("Server=") || connectionString!.Contains("Port=3306"))
+    {
+        // MySQL (Локально або Docker)
+        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+    }
+    else
+    {
+        // PostgreSQL (Render)
+        options.UseNpgsql(connectionString);
+    }
+});
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key не налаштовано в appsettings.json");

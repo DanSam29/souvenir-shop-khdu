@@ -1,7 +1,7 @@
 services:
   - type: web
     name: souvenir-shop-api
-    env: docker
+    runtime: docker
     dockerContext: .
     dockerfilePath: KhduSouvenirShop.API/Dockerfile
     plan: free
@@ -15,13 +15,11 @@ services:
       - key: Jwt__Key
         generateValue: true
       - key: Stripe__SecretKey
-        sync: false
       - key: NovaPoshta__ApiKey
-        sync: false
 
   - type: web
     name: souvenir-shop-frontend
-    env: docker
+    runtime: docker
     dockerContext: frontend
     dockerfilePath: Dockerfile
     plan: free
