@@ -7,14 +7,9 @@ namespace KhduSouvenirShop.API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize(Roles = "Admin,Manager")]
-    public class IntegrationsController : ControllerBase
+    public class IntegrationsController(IConfiguration configuration) : ControllerBase
     {
-        private readonly IConfiguration _configuration;
-
-        public IntegrationsController(IConfiguration configuration)
-        {
-            _configuration = configuration;
-        }
+        private readonly IConfiguration _configuration = configuration;
 
         [HttpGet("status")]
         public ActionResult GetStatus()

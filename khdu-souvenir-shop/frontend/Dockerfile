@@ -18,8 +18,8 @@ RUN npm run build
 FROM nginx:stable-alpine
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Копіюємо конфігурацію Nginx (опціонально, але корисно для SPA)
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Копіюємо конфігурацію Nginx для підтримки React Router
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
