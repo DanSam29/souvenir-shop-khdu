@@ -3,7 +3,7 @@ services:
     name: souvenir-shop-api
     runtime: docker
     dockerContext: khdu-souvenir-shop
-    dockerfilePath: KhduSouvenirShop.API/Dockerfile
+    dockerfilePath: khdu-souvenir-shop/KhduSouvenirShop.API/Dockerfile
     plan: free
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
@@ -23,7 +23,7 @@ services:
     name: souvenir-shop-frontend
     runtime: docker
     dockerContext: khdu-souvenir-shop/frontend
-    dockerfilePath: Dockerfile
+    dockerfilePath: khdu-souvenir-shop/frontend/Dockerfile
     plan: free
     envVars:
       - key: REACT_APP_API_URL
