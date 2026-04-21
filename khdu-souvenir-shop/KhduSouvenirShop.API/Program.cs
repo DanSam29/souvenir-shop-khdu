@@ -12,16 +12,16 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // 1. Налаштування Rate Limiting (Обмеження частоти запитів)
 builder.Services.AddRateLimiter(options =>
 {
     // Глобальний лімітер для всіх запитів
-    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(static httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: httpContext.User.Identity?.Name ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            factory: partition => new FixedWindowRateLimiterOptions
+            factory: static partition => new FixedWindowRateLimiterOptions
             {
                 AutoReplenishment = true,
                 PermitLimit = 100, // Максимум 100 запитів
@@ -30,10 +30,10 @@ builder.Services.AddRateLimiter(options =>
             }));
 
     // Спеціальний лімітер для авторизації (захист від brute-force)
-    options.AddPolicy("AuthPolicy", httpContext =>
+    options.AddPolicy("AuthPolicy", static httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            factory: partition => new FixedWindowRateLimiterOptions
+            factory: static partition => new FixedWindowRateLimiterOptions
             {
                 AutoReplenishment = true,
                 PermitLimit = 5, // 5 спроб
@@ -41,7 +41,7 @@ builder.Services.AddRateLimiter(options =>
                 Window = TimeSpan.FromMinutes(5) // на 5 хвилин
             }));
 
-    options.OnRejected = async (context, token) =>
+    options.OnRejected = static async (context, token) =>
     {
         context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
         await context.HttpContext.Response.WriteAsJsonAsync(ApiResponse<object>.FailureResult("Занадто багато запитів. Спробуйте пізніше.", "TooManyRequests"), token);
@@ -68,7 +68,7 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // Додавання DbContext з підтримкою MySQL та PostgreSQL (для Render)
-var rawConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+string? rawConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 string? finalConnectionString = rawConnectionString;
 
 if (string.IsNullOrEmpty(rawConnectionString))
@@ -83,10 +83,11 @@ else
         Log.Information("Виявлено підключення PostgreSQL (формат URL)");
         try 
         {
-            var databaseUri = new Uri(rawConnectionString);
-            var userInfo = databaseUri.UserInfo.Split(':');
-            var port = databaseUri.Port == -1 ? 5432 : databaseUri.Port;
-            finalConnectionString = $"Host={databaseUri.Host};Port={port};Database={databaseUri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+            Uri databaseUri = new(rawConnectionString);
+            string[] userInfo = databaseUri.UserInfo.Split(':');
+            int port = databaseUri.Port == -1 ? 5432 : databaseUri.Port;
+            string dbName = databaseUri.AbsolutePath[1..];
+            finalConnectionString = $"Host={databaseUri.Host};Port={port};Database={dbName};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
         }
         catch (Exception ex)
         {
@@ -119,9 +120,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     }
 });
 
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-var jwtKey = jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key не налаштовано в appsettings.json");
-var key = Encoding.UTF8.GetBytes(jwtKey);
+IConfigurationSection jwtSettings = builder.Configuration.GetSection("Jwt");
+string jwtKey = jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key не налаштовано в appsettings.json");
+byte[] key = Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -130,7 +131,7 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    options.TokenValidationParameters = new TokenValidationParameters
+    options.TokenValidationParameters = new()
     {
         ValidateIssuer = true,
         ValidateAudience = true,
@@ -181,12 +182,12 @@ builder.Services.AddControllers()
     {
         options.InvalidModelStateResponseFactory = context =>
         {
-            var errors = context.ModelState.Values
+            List<string> errors = context.ModelState.Values
                 .SelectMany(v => v.Errors)
                 .Select(e => e.ErrorMessage)
                 .ToList();
 
-            var response = ApiResponse<object>.FailureResult(errors, "Validation Error");
+            ApiResponse<object> response = ApiResponse<object>.FailureResult(errors, "Validation Error");
             return new BadRequestObjectResult(response);
         };
     });
@@ -195,7 +196,7 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    options.SwaggerDoc("v1", new()
     {
         Title = "KhduSouvenirShop API",
         Version = "v1",
@@ -203,7 +204,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 
     // Додавання JWT авторизації в Swagger
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    options.AddSecurityDefinition("Bearer", new()
     {
         Name = "Authorization",
         Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
@@ -213,7 +214,7 @@ builder.Services.AddSwaggerGen(options =>
         Description = "Введіть 'Bearer' [пробіл] і ваш токен у текстове поле нижче.\r\n\r\nПриклад: \"Bearer 12345abcdef\""
     });
 
-    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    options.AddSecurityRequirement(new()
     {
         {
             new Microsoft.OpenApi.Models.OpenApiSecurityScheme
@@ -224,15 +225,15 @@ builder.Services.AddSwaggerGen(options =>
                     Id = "Bearer"
                 }
             },
-            new string[] {}
+            []
         }
     });
 });
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 // Налаштування для коректної роботи за проксі-сервером (Render)
-var forwardedOptions = new ForwardedHeadersOptions
+ForwardedHeadersOptions forwardedOptions = new()
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 };
@@ -264,17 +265,29 @@ else
 }
 
 // Автоматичне застосування міграцій при запуску (важливо для Render/Docker)
-using (var scope = app.Services.CreateScope())
+using (IServiceScope scope = app.Services.CreateScope())
 {
-    var services = scope.ServiceProvider;
+    IServiceProvider services = scope.ServiceProvider;
     try
     {
-        var context = services.GetRequiredService<AppDbContext>();
-        if (context.Database.GetPendingMigrations().Any())
+        AppDbContext context = services.GetRequiredService<AppDbContext>();
+        
+        List<string> pendingMigrations = context.Database.GetPendingMigrations().ToList();
+        List<string> appliedMigrations = context.Database.GetAppliedMigrations().ToList();
+        
+        Log.Information("Статус бази даних: Застосовано: {Applied}, Очікує: {Pending}", 
+            appliedMigrations.Count, pendingMigrations.Count);
+
+        if (pendingMigrations.Any())
         {
-            Log.Information("Застосування міграцій бази даних...");
+            Log.Information("Застосування міграцій ({Count})...", pendingMigrations.Count);
             context.Database.Migrate();
             Log.Information("Міграції успішно застосовані.");
+        }
+        else if (!appliedMigrations.Any())
+        {
+            Log.Warning("Міграцій не знайдено, але база порожня. Спроба EnsureCreated...");
+            context.Database.EnsureCreated();
         }
     }
     catch (Exception ex)
