@@ -272,27 +272,28 @@ using (IServiceScope scope = app.Services.CreateScope())
     {
         AppDbContext context = services.GetRequiredService<AppDbContext>();
         
-        List<string> pendingMigrations = context.Database.GetPendingMigrations().ToList();
-        List<string> appliedMigrations = context.Database.GetAppliedMigrations().ToList();
-        
-        Log.Information("Статус бази даних: Застосовано: {Applied}, Очікує: {Pending}", 
-            appliedMigrations.Count, pendingMigrations.Count);
-
-        if (pendingMigrations.Any())
+        if (finalConnectionString != null && !finalConnectionString.Contains("Server="))
         {
-            Log.Information("Застосування міграцій ({Count})...", pendingMigrations.Count);
-            context.Database.Migrate();
-            Log.Information("Міграції успішно застосовані.");
-        }
-        else if (!appliedMigrations.Any())
-        {
-            Log.Warning("Міграцій не знайдено, але база порожня. Спроба EnsureCreated...");
+            // Ми на PostgreSQL (Render)
+            Log.Information("Налаштування бази даних PostgreSQL...");
+            // Якщо таблиць немає - створюємо їх
             context.Database.EnsureCreated();
+            Log.Information("База даних PostgreSQL готова (EnsureCreated).");
+        }
+        else
+        {
+            // Ми на MySQL (Локально)
+            List<string> pendingMigrations = context.Database.GetPendingMigrations().ToList();
+            if (pendingMigrations.Any())
+            {
+                Log.Information("Застосування міграцій MySQL...");
+                context.Database.Migrate();
+            }
         }
     }
     catch (Exception ex)
     {
-        Log.Error(ex, "Помилка при застосуванні міграцій");
+        Log.Error(ex, "Помилка при ініціалізації бази даних");
     }
 }
 
