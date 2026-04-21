@@ -85,7 +85,8 @@ else
         {
             var databaseUri = new Uri(rawConnectionString);
             var userInfo = databaseUri.UserInfo.Split(':');
-            finalConnectionString = $"Host={databaseUri.Host};Port={databaseUri.Port};Database={databaseUri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+            var port = databaseUri.Port == -1 ? 5432 : databaseUri.Port;
+            finalConnectionString = $"Host={databaseUri.Host};Port={port};Database={databaseUri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
         }
         catch (Exception ex)
         {
