@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { analyticsAPI } from '../services/api';
 
 function AdminAnalyticsPage() {
@@ -6,11 +6,7 @@ function AdminAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('month');
 
-  useEffect(() => {
-    loadAnalytics();
-  }, [period]);
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     try {
       setLoading(true);
       let from = new Date();
@@ -26,7 +22,11 @@ function AdminAnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [period]);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, [loadAnalytics]);
 
   const handleExport = async () => {
     try {

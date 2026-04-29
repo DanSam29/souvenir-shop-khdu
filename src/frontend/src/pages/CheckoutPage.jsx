@@ -1,16 +1,15 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { cartAPI, ordersAPI, usersAPI, novaPoshtaAPI } from '../services/api';
 
 function CheckoutPage() {
-  const { t } = useTranslation();
+  useTranslation();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [orderResult, setOrderResult] = useState(null);
   const [calcPreview, setCalcPreview] = useState(null);
@@ -34,7 +33,6 @@ function CheckoutPage() {
     recipientName: '',
     recipientPhone: '',
   });
-  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -50,9 +48,8 @@ function CheckoutPage() {
       setLoading(true);
       const response = await cartAPI.getCart();
       setCart(response.data);
-      setError(null);
     } catch (err) {
-      setError('Не вдалося завантажити кошик');
+      console.error('Не вдалося завантажити кошик', err);
     } finally {
       setLoading(false);
     }
@@ -61,7 +58,6 @@ function CheckoutPage() {
   const loadUser = async () => {
     try {
       const res = await usersAPI.getCurrentUser();
-      setCurrentUser(res.data);
       setForm(prev => ({
         ...prev,
         recipientName: `${res.data.firstName} ${res.data.lastName}`.trim(),

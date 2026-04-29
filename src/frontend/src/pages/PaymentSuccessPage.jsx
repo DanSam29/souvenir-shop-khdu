@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { ordersAPI } from '../services/api';
 
 function PaymentSuccessPage() {
   const [searchParams] = useSearchParams();
