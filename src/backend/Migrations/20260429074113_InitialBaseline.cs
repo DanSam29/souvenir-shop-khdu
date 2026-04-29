@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace KhduSouvenirShop.API.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreateWithSeedData : Migration
+    public partial class InitialBaseline : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -548,38 +548,10 @@ namespace KhduSouvenirShop.API.Migrations
                 columns: new[] { "CategoryId", "CreatedAt", "Description", "DisplayOrder", "Name", "ParentCategoryId", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { 1, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Брендований одяг ХДУ", 1, "Одяг", null, null },
-                    { 2, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Аксесуари та сувеніри", 2, "Аксесуари", null, null },
-                    { 3, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Канцелярські товари з символікою", 3, "Канцелярія", null, null }
-                });
-
-            migrationBuilder.InsertData(
-                table: "Companies",
-                columns: new[] { "CompanyId", "Address", "ContactPerson", "CreatedAt", "Email", "IsActive", "Name", "Notes", "Phone", "UpdatedAt" },
-                values: new object[] { 1, "м. Київ, вул. Хрещатик, 1", "Іванов Іван Іванович", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "textile@example.com", true, "ТОВ \"Текстиль Плюс\"", null, "+380501234567", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified) });
-
-            migrationBuilder.InsertData(
-                table: "Users",
-                columns: new[] { "UserId", "CreatedAt", "Email", "FirstName", "GPA", "IsActive", "Language", "LastName", "Password", "Phone", "Role", "StudentExpiresAt", "StudentStatus", "StudentVerifiedAt", "UpdatedAt" },
-                values: new object[,]
-                {
-                    { 1, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "admin@university.ks.ua", "Адміністратор", null, true, "ua", "Системи", "$2b$12$FIGyzdX5j3cGSfZQdY5zjeGR40lSqx51Q4G7aUd.KGuwbW6WGXMZC", null, "Administrator", null, "NONE", null, new DateTime(2026, 4, 28, 18, 15, 33, 587, DateTimeKind.Utc).AddTicks(5720) },
-                    { 2, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "manager@university.ks.ua", "Менеджер", null, true, "ua", "Магазину", "$2b$12$eaTf0o/lZJtggqx6TDuNp.ymtaoUgPOGJHjsiAB42tApObYofacze", null, "Manager", null, "NONE", null, new DateTime(2026, 4, 28, 18, 15, 33, 587, DateTimeKind.Utc).AddTicks(5736) },
-                    { 3, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "petrenko@university.ks.ua", "Олександр", 3.50m, true, "ua", "Петренко", "$2b$12$UDinljSJfa4vx5VwAa47U.XU5U2WP1jh9gKc54ekG4lIWNrHLFReO", null, "Customer", new DateTime(2026, 6, 11, 4, 50, 12, 0, DateTimeKind.Unspecified), "REGULAR", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2026, 4, 28, 18, 15, 33, 587, DateTimeKind.Utc).AddTicks(5742) },
-                    { 4, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "kovalenko@university.ks.ua", "Марія", 4.20m, true, "ua", "Коваленко", "$2b$12$UDinljSJfa4vx5VwAa47U.XU5U2WP1jh9gKc54ekG4lIWNrHLFReO", null, "Customer", new DateTime(2026, 6, 11, 4, 50, 12, 0, DateTimeKind.Unspecified), "SCHOLARSHIP", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2026, 4, 28, 18, 15, 33, 587, DateTimeKind.Utc).AddTicks(5762) },
-                    { 5, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "shevchenko@university.ks.ua", "Дмитро", 4.80m, true, "ua", "Шевченко", "$2b$12$UDinljSJfa4vx5VwAa47U.XU5U2WP1jh9gKc54ekG4lIWNrHLFReO", null, "Customer", new DateTime(2026, 6, 11, 4, 50, 12, 0, DateTimeKind.Unspecified), "HIGH_ACHIEVER", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2026, 4, 28, 18, 15, 33, 587, DateTimeKind.Utc).AddTicks(5768) },
-                    { 6, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "melnyk@gmail.com", "Іван", null, true, "ua", "Мельник", "$2b$12$UDinljSJfa4vx5VwAa47U.XU5U2WP1jh9gKc54ekG4lIWNrHLFReO", null, "Customer", null, "NONE", null, new DateTime(2026, 4, 28, 18, 15, 33, 587, DateTimeKind.Utc).AddTicks(5775) },
-                    { 7, new DateTime(2026, 2, 11, 8, 35, 36, 0, DateTimeKind.Unspecified), "autotest@university.ks.ua", "AutoTest", null, true, "ua", "Student", "$2a$12$sVi3uWM4IGApkUS/d9nmEe4dzNWb8oR3eBRJmgIskyFzr5yjoW8Xu", "000", "Customer", new DateTime(2027, 2, 11, 8, 35, 36, 0, DateTimeKind.Unspecified), "REGULAR", new DateTime(2026, 2, 11, 8, 35, 36, 0, DateTimeKind.Unspecified), new DateTime(2026, 4, 28, 18, 15, 33, 587, DateTimeKind.Utc).AddTicks(5779) }
-                });
-
-            migrationBuilder.InsertData(
-                table: "Categories",
-                columns: new[] { "CategoryId", "CreatedAt", "Description", "DisplayOrder", "Name", "ParentCategoryId", "UpdatedAt" },
-                values: new object[,]
-                {
-                    { 4, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Футболки з логотипом ХДУ", 1, "Футболки", 1, null },
-                    { 5, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Толстовки та худі", 2, "Худі", 1, null },
-                    { 6, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Кружки з символікою", 1, "Кружки", 2, null }
+                    { 1, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, 1, "Футболки", null, null },
+                    { 2, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, 2, "Худі", null, null },
+                    { 3, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, 3, "Гуртки", null, null },
+                    { 4, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, 4, "Канцелярія", null, null }
                 });
 
             migrationBuilder.InsertData(
@@ -587,41 +559,14 @@ namespace KhduSouvenirShop.API.Migrations
                 columns: new[] { "ProductId", "CategoryId", "CreatedAt", "Description", "Name", "Price", "Stock", "UpdatedAt", "Weight" },
                 values: new object[,]
                 {
-                    { 7, 3, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Блокнот формату А5 на 96 аркушів в клітинку. Тверда обкладинка з тисненням логотипу. Зручна закладка-ляссе. Папір 80 г/м². Ідеальний для конспектів.", "Блокнот ХДУ А5 в клітинку", 95.00m, 3, null, 0.250m },
-                    { 8, 3, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Преміальна металева ручка з гравіруванням \"KHERSON STATE UNIVERSITY\". Поставляється в подарунковому футлярі. Синє чорнило, змінний стрижень. Відмінний подарунок.", "Ручка ХДУ металева в футлярі", 30.00m, 0, null, 0.080m }
-                });
-
-            migrationBuilder.InsertData(
-                table: "Promotions",
-                columns: new[] { "PromotionId", "AudienceType", "CreatedAt", "CreatedBy", "CurrentUsage", "Description", "EndDate", "IsActive", "MinOrderAmount", "MinQuantity", "Name", "Priority", "PromoCode", "StartDate", "TargetId", "TargetType", "Type", "UpdatedAt", "UsageLimit", "Value" },
-                values: new object[,]
-                {
-                    { 2, "REGULAR", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), 1, 0, "Постійна знижка 5% для студентів зі статусом REGULAR на весь асортимент", null, true, null, null, "Знижка для студентів REGULAR", 2, null, null, null, "CART", "PERCENTAGE", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, 5.00m },
-                    { 3, "SCHOLARSHIP", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), 1, 0, "Постійна знижка 10% для студентів зі статусом SCHOLARSHIP на весь асортимент", null, true, null, null, "Знижка для студентів SCHOLARSHIP", 2, null, null, null, "CART", "PERCENTAGE", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, 10.00m },
-                    { 4, "HIGH_ACHIEVER", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), 1, 0, "Постійна знижка 15% для студентів зі статусом HIGH_ACHIEVER на весь асортимент", null, true, null, null, "Знижка для студентів HIGH_ACHIEVER", 2, null, null, null, "CART", "PERCENTAGE", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, 15.00m },
-                    { 5, "ALL", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), 1, 0, "Спеціальна знижка 5% за промокодом KSU2026 на весь асортимент", null, true, null, null, "Промокод KSU2026", 2, "KSU2026", null, null, "CART", "PERCENTAGE", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, 5.00m }
-                });
-
-            migrationBuilder.InsertData(
-                table: "ProductImages",
-                columns: new[] { "ImageId", "DisplayOrder", "ImageURL", "IsPrimary", "ProductId" },
-                values: new object[,]
-                {
-                    { 11, 1, "/images/products/notebook-a5.jpg", true, 7 },
-                    { 12, 1, "/images/products/pen-metal.jpg", true, 8 }
-                });
-
-            migrationBuilder.InsertData(
-                table: "Products",
-                columns: new[] { "ProductId", "CategoryId", "CreatedAt", "Description", "Name", "Price", "Stock", "UpdatedAt", "Weight" },
-                values: new object[,]
-                {
-                    { 1, 4, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Класична біла футболка з логотипом Херсонського державного університету. Матеріал: 100% бавовна. Розміри: S, M, L, XL, XXL. Висока якість друку, стійкий до прання.", "Футболка ХДУ класична біла", 450.00m, 15, null, 0.200m },
-                    { 2, 4, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Синя футболка преміум-якості з великим гербом університету на грудях. Матеріал: бавовна з еластаном для зручної посадки. Ідеальна для студентських заходів.", "Футболка ХДУ синя з гербом", 450.00m, 11, null, 0.220m },
-                    { 3, 5, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Тепле чорне худі з капюшоном та кишенею-кенгуру. Логотип університету вишитий на грудях. Матеріал: 80% бавовна, 20% поліестер. Утеплений флісом всередині.", "Худі ХДУ чорне унісекс", 800.00m, 0, null, 0.650m },
-                    { 4, 5, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Стильне сіре худі oversize з великим принтом \"KHERSON STATE UNIVERSITY\" на спині. Комфортний крій, м'яка тканина. Ідеальне для прохолодної погоди.", "Худі ХДУ сіре з великим принтом", 800.00m, 8, null, 0.700m },
-                    { 5, 6, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Біла керамічна кружка об'ємом 350 мл з логотипом ХДУ. Можна мити в посудомийній машині та використовувати в мікрохвильовці. Якісний друк не стирається.", "Кружка ХДУ керамічна класична", 200.00m, 22, null, 0.350m },
-                    { 6, 6, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Термокружка з нержавіючої сталі об'ємом 450 мл. Зберігає температуру до 6 годин. Герметична кришка, зручна для подорожей. Лазерне гравірування логотипу.", "Термокружка ХДУ з кришкою", 450.00m, 12, null, 0.280m }
+                    { 1, 1, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Біла футболка з логотипом ХДУ", "Футболка біла", 399.00m, 100, null, 0.200m },
+                    { 2, 1, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Синя футболка з логотипом ХДУ", "Футболка синя", 399.00m, 100, null, 0.200m },
+                    { 3, 2, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Чорне худі з емблемою ХДУ", "Худі чорний", 899.00m, 50, null, 0.800m },
+                    { 4, 2, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Сіре худі з емблемою ХДУ", "Худі сірий", 899.00m, 50, null, 0.800m },
+                    { 5, 3, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Біла керамічна гуртка з логотипом ХДУ", "Гуртка керамічна", 199.00m, 200, null, 0.350m },
+                    { 6, 3, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Термогорнятко зі сталі з логотипом ХДУ", "Термогорнятко сталь", 499.00m, 120, null, 0.450m },
+                    { 7, 4, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Металева ручка з гравіюванням ХДУ", "Ручка металева", 129.00m, 300, null, 0.050m },
+                    { 8, 4, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Блокнот формату A5 з логотипом ХДУ", "Блокнот A5", 149.00m, 180, null, 0.250m }
                 });
 
             migrationBuilder.InsertData(
@@ -638,7 +583,9 @@ namespace KhduSouvenirShop.API.Migrations
                     { 7, 1, "/images/products/hoodie-grey-front.jpg", true, 4 },
                     { 8, 2, "/images/products/hoodie-grey-back.jpg", false, 4 },
                     { 9, 1, "/images/products/mug-ceramic-white.jpg", true, 5 },
-                    { 10, 1, "/images/products/mug-thermo-steel.jpg", true, 6 }
+                    { 10, 1, "/images/products/mug-thermo-steel.jpg", true, 6 },
+                    { 11, 1, "/images/products/pen-metal.jpg", true, 7 },
+                    { 12, 1, "/images/products/notebook-a5.jpg", true, 8 }
                 });
 
             migrationBuilder.CreateIndex(

@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace KhduSouvenirShop.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260401054123_AddLanguageToUser")]
-    partial class AddLanguageToUser
+    [Migration("20260429074113_InitialBaseline")]
+    partial class InitialBaseline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
