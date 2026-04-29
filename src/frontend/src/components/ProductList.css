@@ -196,6 +196,16 @@
   font-size: 0.95rem;
 }
 
+.parent-category {
+  font-weight: 700;
+  color: #1a1a1a !important;
+}
+
+.child-category {
+  font-weight: 400;
+  color: #6c757d !important;
+}
+
 /* Контент товарів */
 .products-content {
   min-height: 400px;

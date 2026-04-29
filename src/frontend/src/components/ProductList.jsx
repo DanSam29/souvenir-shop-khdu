@@ -19,6 +19,35 @@ function ProductList() {
   const [maxPrice, setMaxPrice] = useState(10000);
   const [selectedCategories, setSelectedCategories] = useState([]);
   
+  // Функція для отримання всіх ID дочірніх категорій
+  const getAllCategoryIds = useCallback((categoryIds) => {
+    const allIds = new Set();
+    
+    const addIds = (id) => {
+      if (allIds.has(id)) return;
+      allIds.add(id);
+      
+      // Знаходимо категорію в дереві (рекурсивно)
+      const findAndAddSub = (list) => {
+        for (const cat of list) {
+          if (cat.categoryId === id) {
+            cat.subCategories?.forEach(sub => addIds(sub.categoryId));
+            return true;
+          }
+          if (cat.subCategories?.length > 0) {
+            if (findAndAddSub(cat.subCategories)) return true;
+          }
+        }
+        return false;
+      };
+      
+      findAndAddSub(categories);
+    };
+    
+    categoryIds.forEach(id => addIds(id));
+    return Array.from(allIds);
+  }, [categories]);
+
   // Застосування фільтрів
   const applyFilters = useCallback(() => {
     let filtered = [...allProducts];
@@ -30,13 +59,14 @@ function ProductList() {
     
     // Фільтр за категоріями
     if (selectedCategories.length > 0) {
+      const targetCategoryIds = getAllCategoryIds(selectedCategories);
       filtered = filtered.filter(p => 
-        selectedCategories.includes(p.categoryId)
+        targetCategoryIds.includes(p.categoryId)
       );
     }
     
     setProducts(filtered);
-  }, [allProducts, priceRange, selectedCategories]);
+  }, [allProducts, priceRange, selectedCategories, getAllCategoryIds]);
 
   // Завантаження товарів та категорій при монтуванні
   useEffect(() => {
@@ -120,6 +150,30 @@ function ProductList() {
     setSearchQuery('');
     setAllProducts(originalProducts);
   }
+  // Рекурсивне рендеринг дерева категорій
+  const renderCategoryTree = (nodes, level = 0) => {
+    return nodes.map(category => (
+      <React.Fragment key={category.categoryId}>
+        <label 
+          className="category-checkbox" 
+          style={{ marginLeft: `${level * 20}px` }}
+        >
+          <input
+            type="checkbox"
+            checked={selectedCategories.includes(category.categoryId)}
+            onChange={() => toggleCategory(category.categoryId)}
+          />
+          <span className={level === 0 ? 'parent-category' : 'child-category'}>
+            {category.name}
+          </span>
+        </label>
+        {category.subCategories && category.subCategories.length > 0 && 
+          renderCategoryTree(category.subCategories, level + 1)
+        }
+      </React.Fragment>
+    ));
+  };
+
   if (loading && products.length === 0) {
     return <div className="loading">{t('common.loading')}</div>;
   }
@@ -193,16 +247,7 @@ function ProductList() {
           <div className="filter-section">
             <h4>{t('home.categories')}</h4>
             <div className="categories-list">
-              {categories.map(category => (
-                <label key={category.categoryId} className="category-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={selectedCategories.includes(category.categoryId)}
-                    onChange={() => toggleCategory(category.categoryId)}
-                  />
-                  <span>{category.name}</span>
-                </label>
-              ))}
+              {renderCategoryTree(categories)}
             </div>
           </div>
         </aside>

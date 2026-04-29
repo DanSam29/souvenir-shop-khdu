@@ -92,9 +92,12 @@ namespace KhduSouvenirShop.API.Controllers
                     name = p.Name,
                     description = p.Description,
                     category = p.Category != null ? new { categoryId = p.Category.CategoryId, name = p.Category.Name } : null,
+                    categoryId = p.CategoryId,
                     images = p.Images.Select(i => new { imageId = i.ImageId, imageURL = i.ImageURL, isPrimary = i.IsPrimary }).ToList(),
                     price = _promotionService.GetPriceAfterPromotions(p, promos),
                     originalPrice = p.Price,
+                    weight = p.Weight,
+                    createdAt = p.CreatedAt,
                     stock = p.Stock
                 }).ToList<object>();
 
@@ -145,9 +148,12 @@ namespace KhduSouvenirShop.API.Controllers
                     name = product.Name,
                     description = product.Description,
                     category = product.Category != null ? new { categoryId = product.Category.CategoryId, name = product.Category.Name } : null,
+                    categoryId = product.CategoryId,
                     images = product.Images.Select(i => new { imageId = i.ImageId, imageURL = i.ImageURL, isPrimary = i.IsPrimary }).ToList(),
                     price = _promotionService.GetPriceAfterPromotions(product, promos),
                     originalPrice = product.Price,
+                    weight = product.Weight,
+                    createdAt = product.CreatedAt,
                     stock = product.Stock
                 };
 
@@ -204,9 +210,12 @@ namespace KhduSouvenirShop.API.Controllers
                     name = p.Name,
                     description = p.Description,
                     category = p.Category != null ? new { categoryId = p.Category.CategoryId, name = p.Category.Name } : null,
+                    categoryId = p.CategoryId,
                     images = p.Images.Select(i => new { imageId = i.ImageId, imageURL = i.ImageURL, isPrimary = i.IsPrimary }).ToList(),
                     price = _promotionService.GetPriceAfterPromotions(p, promos),
                     originalPrice = p.Price,
+                    weight = p.Weight,
+                    createdAt = p.CreatedAt,
                     stock = p.Stock
                 }).ToList<object>();
 
