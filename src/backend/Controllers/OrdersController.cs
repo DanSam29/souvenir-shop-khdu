@@ -488,13 +488,11 @@ namespace KhduSouvenirShop.API.Controllers
 
             var oldStatus = order.Status;
             order.Status = dto.Status;
-            order.UpdatedAt = DateTime.UtcNow;
 
             // Логіка для COD (Накладений платіж)
             if (order.Status == "Delivered" && order.Payment != null && order.Payment.Method == "CashOnDelivery")
             {
                 order.Payment.Status = "Completed";
-                order.Payment.UpdatedAt = DateTime.UtcNow;
             }
 
             if (dto.Status == "Shipped" && !string.IsNullOrEmpty(dto.TrackingNumber))
@@ -551,7 +549,6 @@ namespace KhduSouvenirShop.API.Controllers
                 _context.OutgoingDocuments.RemoveRange(docs);
 
                 order.Status = "Cancelled";
-                order.UpdatedAt = DateTime.UtcNow;
                 if (order.Payment != null && order.Payment.Status != "Completed")
                 {
                     order.Payment.Status = "Failed";

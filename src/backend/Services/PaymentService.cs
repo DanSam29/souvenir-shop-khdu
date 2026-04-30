@@ -136,10 +136,8 @@ namespace KhduSouvenirShop.API.Services
             order.Payment.Status = "Completed";
             order.Payment.TransactionId = session.PaymentIntentId;
             order.Payment.StripePaymentIntentId = session.PaymentIntentId;
-            order.Payment.UpdatedAt = DateTime.UtcNow;
 
             order.Status = "Paid";
-            order.UpdatedAt = DateTime.UtcNow;
 
             _context.OrderHistories.Add(new OrderHistory
             {
@@ -209,11 +207,9 @@ namespace KhduSouvenirShop.API.Services
                 if (order.Payment != null)
                 {
                     order.Payment.Status = "Failed";
-                    order.Payment.UpdatedAt = DateTime.UtcNow;
                 }
 
                 order.Status = "Cancelled";
-                order.UpdatedAt = DateTime.UtcNow;
 
                 _context.OrderHistories.Add(new OrderHistory
                 {
@@ -280,10 +276,11 @@ namespace KhduSouvenirShop.API.Services
                 var docs = await _context.OutgoingDocuments.Where(d => d.OrderId == orderId && d.Reason == "ORDER").ToListAsync();
                 _context.OutgoingDocuments.RemoveRange(docs);
 
-                order.Payment.Status = "Refunded";
-                order.Payment.UpdatedAt = DateTime.UtcNow;
                 order.Status = "Cancelled";
-                order.UpdatedAt = DateTime.UtcNow;
+                if (order.Payment != null)
+                {
+                    order.Payment.Status = "Refunded";
+                }
 
                 _context.OrderHistories.Add(new OrderHistory
                 {

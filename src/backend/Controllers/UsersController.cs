@@ -5,38 +5,27 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
 using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
-using BCrypt.Net;
 
 namespace KhduSouvenirShop.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UsersController : ControllerBase
+    public class UsersController(
+        AppDbContext context,
+        ILogger<UsersController> logger,
+        IConfiguration configuration,
+        KhduSouvenirShop.API.Services.IUniversityService universityService,
+        KhduSouvenirShop.API.Services.IEmailService emailService) : ControllerBase
     {
-        private readonly AppDbContext _context;
-        private readonly ILogger<UsersController> _logger;
-        private readonly IConfiguration _configuration;
-        private readonly Services.IUniversityService _universityService;
-        private readonly Services.IEmailService _emailService;
-
-        public UsersController(
-            AppDbContext context, 
-            ILogger<UsersController> logger, 
-            IConfiguration configuration,
-            Services.IUniversityService universityService,
-            Services.IEmailService emailService)
-        {
-            _context = context;
-            _logger = logger;
-            _configuration = configuration;
-            _universityService = universityService;
-            _emailService = emailService;
-        }
+        private readonly AppDbContext _context = context;
+        private readonly ILogger<UsersController> _logger = logger;
+        private readonly IConfiguration _configuration = configuration;
+        private readonly KhduSouvenirShop.API.Services.IUniversityService _universityService = universityService;
+        private readonly KhduSouvenirShop.API.Services.IEmailService _emailService = emailService;
 
         // POST: api/Users/register
         [HttpPost("register")]
@@ -69,7 +58,6 @@ namespace KhduSouvenirShop.API.Controllers
                 Email = registerDto.Email,
                 Password = passwordHash,
                 Phone = registerDto.Phone,
-                Language = registerDto.Language ?? "ua",
                 Role = "Customer",
                 CreatedAt = DateTime.UtcNow
             };
@@ -77,7 +65,7 @@ namespace KhduSouvenirShop.API.Controllers
             // Логіка: Встановлення студентського статусу за доменом email
             var emailLower = newUser.Email.ToLowerInvariant();
             var allowedDomains = _configuration.GetSection("University:AllowedDomains").Get<string[]>() ?? 
-                                 new[] { "ksu.edu.ua", "student.ksu.edu.ua" };
+                                 ["ksu.edu.ua", "student.ksu.edu.ua"];
 
             if (allowedDomains.Any(domain => emailLower.EndsWith("@" + domain)))
             {
@@ -200,7 +188,6 @@ namespace KhduSouvenirShop.API.Controllers
                 email = user.Email,
                 phone = user.Phone,
                 role = user.Role,
-                language = user.Language,
                 createdAt = user.CreatedAt,
                 studentStatus = user.StudentStatus,
                 studentVerifiedAt = user.StudentVerifiedAt,
@@ -232,7 +219,6 @@ namespace KhduSouvenirShop.API.Controllers
                 u.FirstName,
                 u.LastName,
                 u.Role,
-                u.IsActive,
                 u.StudentStatus,
                 u.CreatedAt
             });
@@ -248,23 +234,15 @@ namespace KhduSouvenirShop.API.Controllers
             if (user == null) return NotFound();
 
             user.Role = dto.Role;
-            user.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Роль користувача оновлено"));
         }
 
         [HttpPost("{id}/toggle-block")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult> ToggleBlockUser(int id)
+        public ActionResult ToggleBlockUser(int id)
         {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound();
-
-            user.IsActive = !user.IsActive;
-            user.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
-            return Ok(ApiResponse<object>.SuccessResult(new { isActive = user.IsActive }, user.IsActive ? "Користувача розблоковано" : "Користувача заблоковано"));
+            return Ok(ApiResponse<object>.FailureResult("Блокування користувачів не підтримується", "NotImplemented"));
         }
 
         // PUT: api/Users/me
@@ -281,18 +259,12 @@ namespace KhduSouvenirShop.API.Controllers
             user.FirstName = dto.FirstName;
             user.LastName = dto.LastName;
             user.Phone = dto.Phone;
-            if (!string.IsNullOrEmpty(dto.Language))
-            {
-                user.Language = dto.Language;
-            }
-            user.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResult(new {
                 user.FirstName,
                 user.LastName,
-                user.Phone,
-                user.Language
+                user.Phone
             }, "Профіль оновлено"));
         }
 
@@ -313,7 +285,6 @@ namespace KhduSouvenirShop.API.Controllers
             }
 
             user.Password = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
-            user.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Пароль змінено"));
@@ -340,7 +311,6 @@ namespace KhduSouvenirShop.API.Controllers
                 email = user.Email,
                 phone = user.Phone,
                 role = user.Role,
-                language = user.Language,
                 createdAt = user.CreatedAt,
                 studentStatus = user.StudentStatus,
                 studentVerifiedAt = user.StudentVerifiedAt,
@@ -384,7 +354,7 @@ namespace KhduSouvenirShop.API.Controllers
 
         // Хешування через BCrypt (workFactor=12)
         // Збережено для можливих міграцій або альтернативних сценаріїв
-        private string HashPassword(string password) => BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
+        private static string HashPassword(string password) => BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
     }
 
     // DTO для реєстрації

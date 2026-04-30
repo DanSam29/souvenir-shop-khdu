@@ -28,14 +28,13 @@ namespace KhduSouvenirShop.API.Models
         public decimal ShippingCost { get; set; } = 0;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
 
         // Навігаційні властивості
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;
 
-        public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
-        public virtual ICollection<OrderHistory> OrderHistories { get; set; } = new List<OrderHistory>();
+        public virtual ICollection<OrderItem> OrderItems { get; set; } = [];
+        public virtual ICollection<OrderHistory> OrderHistories { get; set; } = [];
         public virtual Shipping? Shipping { get; set; }
         public virtual Payment? Payment { get; set; }
     }

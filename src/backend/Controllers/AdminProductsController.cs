@@ -108,7 +108,6 @@ namespace KhduSouvenirShop.API.Controllers
             product.Weight = dto.Weight > 0 ? dto.Weight : product.Weight;
             product.CategoryId = dto.CategoryId;
             product.Stock = dto.Stock >= 0 ? dto.Stock : product.Stock;
-            product.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 

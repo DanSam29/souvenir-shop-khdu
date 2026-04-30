@@ -116,7 +116,6 @@ namespace KhduSouvenirShop.API.Controllers
             category.ParentCategoryId = dto.ParentCategoryId;
             category.Description = dto.Description;
             category.DisplayOrder = dto.DisplayOrder;
-            category.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 

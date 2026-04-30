@@ -22,18 +22,18 @@ function ProfilePage() {
       const [uRes, oRes, pRes] = await Promise.all([
         usersAPI.getCurrentUser(),
         ordersAPI.getOrders(),
-        promotionsAPI.getMy()
+        promotionsAPI.getMyPromotions()
       ]);
       setUser(uRes.data);
       setOrders(oRes.data);
-      setPromos(pRes.data);
+      setPromos(pRes.data || []);
       setForm({
         firstName: uRes.data.firstName,
         lastName: uRes.data.lastName,
         phone: uRes.data.phone || ''
       });
     } catch (err) {
-      console.error(err);
+      console.error('Помилка завантаження даних:', err);
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ function ProfilePage() {
     }
   };
 
-  if (loading) return <div className="loading">Завантаження...</div>;
+  if (loading || !user) return <div className="loading">Завантаження...</div>;
 
   return (
     <div className="profile-page" style={{ maxWidth: 1000, margin: '40px auto', padding: '0 20px' }}>
