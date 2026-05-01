@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { productsAPI, buildImageUrl } from '../services/api';
 import './ProductPage.css';
 
 function ProductPage() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const from = searchParams.get('from');
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,7 +37,9 @@ function ProductPage() {
     return (
       <div className="error">
         <p>{error}</p>
-        <Link to="/">Повернутися до каталогу</Link>
+        <Link to={from === 'cart' ? '/cart' : '/'}>
+          {from === 'cart' ? 'Повернутися до кошика' : 'Повернутися до каталогу'}
+        </Link>
       </div>
     );
   }
@@ -46,7 +50,9 @@ function ProductPage() {
 
   return (
     <div className="product-page">
-      <Link to="/" className="back-link">← Назад до каталогу</Link>
+      <Link to={from === 'cart' ? '/cart' : '/'} className="back-link">
+        ← {from === 'cart' ? 'Назад до кошика' : 'Назад до каталогу'}
+      </Link>
       
       <div className="product-details">
         <div className="product-images">

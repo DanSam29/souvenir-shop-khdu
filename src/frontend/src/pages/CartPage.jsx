@@ -143,7 +143,7 @@ function CartPage() {
                   />
                 </div>
                 <div className="item-info">
-                  <Link to={`/product/${item.productId}`}>
+                  <Link to={`/product/${item.productId}?from=cart`}>
                     <h3>{item.productName}</h3>
                   </Link>
                   <p className="item-price">{item.productPrice} грн</p>
