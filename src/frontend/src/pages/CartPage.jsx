@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { cartAPI, buildImageUrl } from '../services/api';
 import './CartPage.css';
 
 function CartPage() {
-  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -93,7 +91,7 @@ function CartPage() {
   if (loading) {
     return (
       <div className="cart-page">
-        <div className="loading">{t('common.loading')}</div>
+        <div className="loading">Завантаження...</div>
       </div>
     );
   }
@@ -114,7 +112,7 @@ function CartPage() {
       <div className="cart-page">
         <div className="empty-cart">
           <div className="cart-icon">🛒</div>
-          <h2>{t('cart.empty')}</h2>
+          <h2>Кошик порожній</h2>
           <p>Ваш кошик ще не заповнений сувенірами</p>
           <Link to="/" className="btn-primary">
             Перейти до каталогу
@@ -126,11 +124,11 @@ function CartPage() {
 
   return (
     <div className="cart-page">
-      <div className="container">
+      <div className="cart-container">
         <div className="cart-header">
-          <h1>{t('cart.title')}</h1>
-          <button className="btn-clear" onClick={handleClearCart}>
-            🗑️ {t('cart.clear')}
+          <h1>Кошик</h1>
+          <button className="clear-cart-btn" onClick={handleClearCart}>
+            🗑️ Очистити кошик
           </button>
         </div>
 
@@ -140,28 +138,28 @@ function CartPage() {
               <div key={item.cartItemId} className="cart-item">
                 <div className="item-image">
                   <img 
-                    src={buildImageUrl(item.product.images?.[0]?.url)} 
-                    alt={item.product.name} 
+                    src={buildImageUrl(item.productImage)} 
+                    alt={item.productName} 
                   />
                 </div>
                 <div className="item-info">
                   <Link to={`/product/${item.productId}`}>
-                    <h3>{item.product.name}</h3>
+                    <h3>{item.productName}</h3>
                   </Link>
-                  <p className="item-price">{item.product.price} грн</p>
+                  <p className="item-price">{item.productPrice} грн</p>
                 </div>
                 <div className="item-quantity">
-                  <button onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity - 1)}>-</button>
-                  <span>{item.quantity}</span>
-                  <button onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity + 1)}>+</button>
+                  <button className="quantity-btn" onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity - 1)}>-</button>
+                  <span className="quantity-value">{item.quantity}</span>
+                  <button className="quantity-btn" onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity + 1)}>+</button>
                 </div>
-                <div className="item-total">
-                  {(item.product.price * item.quantity).toFixed(2)} грн
+                <div className="item-subtotal">
+                  {(item.subtotal).toFixed(2)} грн
                 </div>
                 <button 
-                  className="btn-remove" 
+                  className="remove-btn" 
                   onClick={() => handleRemoveItem(item.cartItemId)}
-                  title={t('common.delete')}
+                  title="Видалити"
                 >
                   ✕
                 </button>
@@ -170,17 +168,17 @@ function CartPage() {
           </div>
 
           <aside className="cart-summary">
-            <h2>{t('cart.total')}</h2>
+            <h2>Підсумок</h2>
             <div className="summary-row">
-              <span>{t('cart.item')}:</span>
+              <span>Товарів:</span>
               <span>{cart.itemCount}</span>
             </div>
-            <div className="summary-row total">
-              <span>{t('cart.total')}:</span>
-              <span>{cart.totalAmount.toFixed(2)} грн</span>
+            <div className="summary-row summary-total">
+              <span>Разом:</span>
+              <span className="total-amount">{cart.totalAmount.toFixed(2)} грн</span>
             </div>
-            <Link to="/checkout" className="btn-checkout">
-              {t('cart.checkout')}
+            <Link to="/checkout" className="checkout-btn">
+              Оформити замовлення
             </Link>
           </aside>
         </div>

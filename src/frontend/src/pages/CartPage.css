@@ -123,11 +123,18 @@
 }
 
 /* Товари в кошику */
+.cart-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+}
+
 .cart-items {
   margin-bottom: 2rem;
 }
 
 .cart-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 1.5rem;
