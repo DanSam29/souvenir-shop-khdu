@@ -160,6 +160,11 @@ export const integrationsAPI = {
   testNovaPoshta: () => api.get('/Integrations/test/novaposhta'),
 };
 
+// Публічні API функції для фічефлагів
+export const featuresAPI = {
+  getStatus: () => api.get('/Features/status'),
+};
+
 // API функції для аналітики
 export const analyticsAPI = {
   getSummary: (params) => api.get('/Analytics/summary', { params }),

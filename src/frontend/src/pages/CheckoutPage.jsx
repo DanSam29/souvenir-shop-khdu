@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
-import { cartAPI, ordersAPI, usersAPI, novaPoshtaAPI } from '../services/api';
+import { cartAPI, ordersAPI, usersAPI, novaPoshtaAPI, featuresAPI } from '../services/api';
 
 function CheckoutPage() {
   useTranslation();
@@ -13,6 +13,7 @@ function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [orderResult, setOrderResult] = useState(null);
   const [calcPreview, setCalcPreview] = useState(null);
+  const [features, setFeatures] = useState(null);
 
   // Nova Poshta states
   const [cities, setCities] = useState([]);
@@ -41,7 +42,17 @@ function CheckoutPage() {
     }
     loadCart();
     loadUser();
+    loadFeatures();
   }, [isAuthenticated, navigate]);
+
+  const loadFeatures = async () => {
+    try {
+      const res = await featuresAPI.getStatus();
+      setFeatures(res.data);
+    } catch (err) {
+      console.error('Не вдалося завантажити статуси фічефлагів', err);
+    }
+  };
 
   const loadCart = async () => {
     try {
@@ -229,61 +240,92 @@ function CheckoutPage() {
         <form onSubmit={handleSubmit} style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
           <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>Дані доставки</h2>
 
-          <div style={{ position: 'relative', marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Місто (Нова Пошта)</label>
-            <input
-              type="text"
-              value={citySearch}
-              onChange={(e) => {
-                setCitySearch(e.target.value);
-                if (form.cityRef) setForm(p => ({ ...p, cityRef: '', warehouseRef: '' }));
-              }}
-              placeholder="Почніть вводити назву міста..."
-              style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
-            />
-            {showCityDropdown && cities.length > 0 && (
-              <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderRadius: '0 0 8px 8px', listStyle: 'none', padding: 0, margin: 0, zIndex: 10, maxHeight: 200, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                {cities.map(city => (
-                  <li 
-                    key={city.ref} 
-                    onClick={() => handleCitySelect(city)}
-                    style={{ padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
-                    onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
-                    onMouseLeave={(e) => e.target.style.background = '#fff'}
-                  >
-                    {city.description} <small style={{ color: '#888' }}>({city.areaDescription})</small>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          {features?.novaPoshtaEnabled ? (
+            <>
+              <div style={{ position: 'relative', marginBottom: 20 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Місто (Нова Пошта)</label>
+                <input
+                  type="text"
+                  value={citySearch}
+                  onChange={(e) => {
+                    setCitySearch(e.target.value);
+                    if (form.cityRef) setForm(p => ({ ...p, cityRef: '', warehouseRef: '' }));
+                  }}
+                  placeholder="Почніть вводити назву міста..."
+                  style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
+                />
+                {showCityDropdown && cities.length > 0 && (
+                  <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderRadius: '0 0 8px 8px', listStyle: 'none', padding: 0, margin: 0, zIndex: 10, maxHeight: 200, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                    {cities.map(city => (
+                      <li 
+                        key={city.ref} 
+                        onClick={() => handleCitySelect(city)}
+                        style={{ padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
+                        onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
+                        onMouseLeave={(e) => e.target.style.background = '#fff'}
+                      >
+                        {city.description} <small style={{ color: '#888' }}>({city.areaDescription})</small>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
 
-          <div style={{ position: 'relative', marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Відділення</label>
-            <input
-              type="text"
-              value={warehouseSearch}
-              onChange={(e) => setWarehouseSearch(e.target.value)}
-              disabled={!form.cityRef}
-              placeholder={form.cityRef ? "Виберіть відділення..." : "Спочатку виберіть місто"}
-              style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box', background: form.cityRef ? '#fff' : '#f9f9f9' }}
-            />
-            {showWarehouseDropdown && warehouses.length > 0 && (
-              <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderRadius: '0 0 8px 8px', listStyle: 'none', padding: 0, margin: 0, zIndex: 10, maxHeight: 200, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                {warehouses.map(wh => (
-                  <li 
-                    key={wh.ref} 
-                    onClick={() => handleWarehouseSelect(wh)}
-                    style={{ padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
-                    onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
-                    onMouseLeave={(e) => e.target.style.background = '#fff'}
-                  >
-                    {wh.description}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+              <div style={{ position: 'relative', marginBottom: 20 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Відділення</label>
+                <input
+                  type="text"
+                  value={warehouseSearch}
+                  onChange={(e) => setWarehouseSearch(e.target.value)}
+                  disabled={!form.cityRef}
+                  placeholder={form.cityRef ? "Виберіть відділення..." : "Спочатку виберіть місто"}
+                  style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box', background: form.cityRef ? '#fff' : '#f9f9f9' }}
+                />
+                {showWarehouseDropdown && warehouses.length > 0 && (
+                  <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderRadius: '0 0 8px 8px', listStyle: 'none', padding: 0, margin: 0, zIndex: 10, maxHeight: 200, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                    {warehouses.map(wh => (
+                      <li 
+                        key={wh.ref} 
+                        onClick={() => handleWarehouseSelect(wh)}
+                        style={{ padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
+                        onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
+                        onMouseLeave={(e) => e.target.style.background = '#fff'}
+                      >
+                        {wh.description}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Місто</label>
+                <input
+                  type="text"
+                  name="city"
+                  value={form.city}
+                  onChange={handleChange}
+                  placeholder="Введіть назву міста"
+                  style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
+                  required
+                />
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Відділення</label>
+                <input
+                  type="text"
+                  name="warehouseNumber"
+                  value={form.warehouseNumber}
+                  onChange={handleChange}
+                  placeholder="Введіть відділення"
+                  style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
+                  required
+                />
+              </div>
+            </>
+          )}
 
           <h2 style={{ fontSize: '1.2rem', margin: '30px 0 20px', borderBottom: '1px solid #eee', paddingBottom: 10 }}>Оплата та промокод</h2>
 
@@ -295,7 +337,7 @@ function CheckoutPage() {
               onChange={handleChange}
               style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', cursor: 'pointer' }}
             >
-              <option value="Card">💳 Оплата карткою (Stripe)</option>
+              {features?.stripeEnabled && <option value="Card">💳 Оплата карткою (Stripe)</option>}
               <option value="CashOnDelivery">📦 Накладений платіж</option>
             </select>
           </div>
@@ -314,14 +356,23 @@ function CheckoutPage() {
 
           <button
             type="submit"
-            disabled={submitting || !form.cityRef || !form.warehouseRef}
+            disabled={
+              submitting || 
+              (features?.novaPoshtaEnabled && (!form.cityRef || !form.warehouseRef)) ||
+              (!features?.novaPoshtaEnabled && (!form.city || !form.warehouseNumber))
+            }
             style={{ 
               width: '100%', 
               marginTop: 10, 
               padding: '14px', 
               borderRadius: 8, 
               border: 'none', 
-              background: (submitting || !form.cityRef || !form.warehouseRef) ? '#ccc' : '#007bff', 
+              background: 
+                (submitting || 
+                (features?.novaPoshtaEnabled && (!form.cityRef || !form.warehouseRef)) ||
+                (!features?.novaPoshtaEnabled && (!form.city || !form.warehouseNumber))) 
+                  ? '#ccc' 
+                  : '#007bff', 
               color: '#fff', 
               fontSize: '1.1rem', 
               fontWeight: 600, 
