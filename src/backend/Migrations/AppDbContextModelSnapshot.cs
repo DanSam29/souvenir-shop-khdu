@@ -36,7 +36,7 @@ namespace KhduSouvenirShop.API.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Cart");
+                    b.ToTable("Cart", (string)null);
                 });
 
             modelBuilder.Entity("KhduSouvenirShop.API.Models.CartItem", b =>
@@ -64,7 +64,7 @@ namespace KhduSouvenirShop.API.Migrations
                     b.HasIndex("CartId", "ProductId")
                         .IsUnique();
 
-                    b.ToTable("CartItems");
+                    b.ToTable("CartItems", (string)null);
                 });
 
             modelBuilder.Entity("KhduSouvenirShop.API.Models.Category", b =>
@@ -98,7 +98,7 @@ namespace KhduSouvenirShop.API.Migrations
 
                     b.HasIndex("ParentCategoryId");
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", (string)null);
 
                     b.HasData(
                         new
@@ -179,7 +179,7 @@ namespace KhduSouvenirShop.API.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Companies");
+                    b.ToTable("Companies", (string)null);
                 });
 
             modelBuilder.Entity("KhduSouvenirShop.API.Models.IncomingDocument", b =>
@@ -221,7 +221,7 @@ namespace KhduSouvenirShop.API.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("IncomingDocuments");
+                    b.ToTable("IncomingDocuments", (string)null);
                 });
 
             modelBuilder.Entity("KhduSouvenirShop.API.Models.Order", b =>
@@ -262,7 +262,7 @@ namespace KhduSouvenirShop.API.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", (string)null);
                 });
 
             modelBuilder.Entity("KhduSouvenirShop.API.Models.OrderHistory", b =>
@@ -299,7 +299,7 @@ namespace KhduSouvenirShop.API.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.ToTable("OrderHistories");
+                    b.ToTable("OrderHistories", (string)null);
                 });
 
             modelBuilder.Entity("KhduSouvenirShop.API.Models.OrderItem", b =>
@@ -335,7 +335,7 @@ namespace KhduSouvenirShop.API.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderItems");
+                    b.ToTable("OrderItems", (string)null);
                 });
 
             modelBuilder.Entity("KhduSouvenirShop.API.Models.OutgoingDocument", b =>
@@ -398,7 +398,7 @@ namespace KhduSouvenirShop.API.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OutgoingDocuments");
+                    b.ToTable("OutgoingDocuments", (string)null);
                 });
 
             modelBuilder.Entity("KhduSouvenirShop.API.Models.Payment", b =>
@@ -450,7 +450,7 @@ namespace KhduSouvenirShop.API.Migrations
                     b.HasIndex("OrderId")
                         .IsUnique();
 
-                    b.ToTable("Payments");
+                    b.ToTable("Payments", (string)null);
                 });
 
             modelBuilder.Entity("KhduSouvenirShop.API.Models.Product", b =>
@@ -490,7 +490,7 @@ namespace KhduSouvenirShop.API.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
 
                     b.HasData(
                         new
@@ -607,7 +607,7 @@ namespace KhduSouvenirShop.API.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductImages");
+                    b.ToTable("ProductImages", (string)null);
 
                     b.HasData(
                         new
@@ -789,7 +789,7 @@ namespace KhduSouvenirShop.API.Migrations
                     b.HasIndex("PromoCode")
                         .IsUnique();
 
-                    b.ToTable("Promotions");
+                    b.ToTable("Promotions", (string)null);
                 });
 
             modelBuilder.Entity("KhduSouvenirShop.API.Models.Shipping", b =>
@@ -838,7 +838,7 @@ namespace KhduSouvenirShop.API.Migrations
                     b.HasIndex("OrderId")
                         .IsUnique();
 
-                    b.ToTable("Shipping");
+                    b.ToTable("Shipping", (string)null);
                 });
 
             modelBuilder.Entity("KhduSouvenirShop.API.Models.User", b =>
@@ -910,7 +910,7 @@ namespace KhduSouvenirShop.API.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("KhduSouvenirShop.API.Models.UserPromotion", b =>
@@ -938,7 +938,7 @@ namespace KhduSouvenirShop.API.Migrations
                     b.HasIndex("UserId", "PromotionId")
                         .IsUnique();
 
-                    b.ToTable("UserPromotions");
+                    b.ToTable("UserPromotions", (string)null);
                 });
 
             modelBuilder.Entity("KhduSouvenirShop.API.Models.Cart", b =>

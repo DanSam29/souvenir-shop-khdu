@@ -26,6 +26,14 @@ namespace KhduSouvenirShop.API.Services
 
         public async Task<Session> CreateCheckoutSessionAsync(Order order, string successUrl, string cancelUrl)
         {
+            var orderWithItems = await _context.Orders
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .FirstOrDefaultAsync(o => o.OrderId == order.OrderId);
+
+            if (orderWithItems == null)
+                throw new Exception("Замовлення не знайдено");
+
             var payment = await _context.Payments.FirstOrDefaultAsync(p => p.OrderId == order.OrderId);
             var idempotencyKey = payment?.IdempotencyKey ?? Guid.NewGuid().ToString();
 
@@ -38,7 +46,7 @@ namespace KhduSouvenirShop.API.Services
             var options = new SessionCreateOptions
             {
                 PaymentMethodTypes = new List<string> { "card" },
-                LineItems = order.OrderItems.Select(item => new SessionLineItemOptions
+                LineItems = orderWithItems.OrderItems.Select(item => new SessionLineItemOptions
                 {
                     PriceData = new SessionLineItemPriceDataOptions
                     {

@@ -17,7 +17,7 @@ namespace KhduSouvenirShop.API.Models
         public string City { get; set; } = string.Empty;
 
         [Required]
-        [MaxLength(50)]
+        [MaxLength(500)]
         public string WarehouseNumber { get; set; } = string.Empty;
 
         [MaxLength(100)]
