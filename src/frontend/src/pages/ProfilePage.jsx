@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { usersAPI, ordersAPI, promotionsAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 function ProfilePage() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
   const [promos, setPromos] = useState([]);
@@ -11,6 +14,11 @@ function ProfilePage() {
   const [formData, setForm] = useState({ firstName: '', lastName: '', phone: '' });
   const [passData, setPass] = useState({ oldPassword: '', newPassword: '' });
   const [msg, setMsg] = useState({ type: '', text: '' });
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   useEffect(() => {
     loadData();
@@ -111,7 +119,7 @@ function ProfilePage() {
             </form>
           </div>
 
-          <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+          <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginBottom: 20 }}>
             <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>Мої знижки</h2>
             {promos.length === 0 ? <p style={{ color: '#888' }}>Активних знижок немає</p> : (
               <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -124,6 +132,10 @@ function ProfilePage() {
                 ))}
               </ul>
             )}
+          </div>
+
+          <div>
+            <button onClick={handleLogout} style={{ width: '100%', padding: 12, borderRadius: 6, border: 'none', background: '#dc3545', color: '#fff', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' }}>Вийти</button>
           </div>
         </aside>
 
