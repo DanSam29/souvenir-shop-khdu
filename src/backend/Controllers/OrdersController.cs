@@ -68,20 +68,23 @@ namespace KhduSouvenirShop.API.Controllers
                 }
             }
 
+            var user = await _context.Users.FindAsync(userId);
+            string studentStatus = user?.StudentStatus ?? "NONE";
+            var userPromotions = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
+
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
-                var subtotal = cart.CartItems.Sum(ci => ci.Product.Price * ci.Quantity);
+                var originalSubtotal = cart.CartItems.Sum(ci => ci.Product.Price * ci.Quantity);
                 var totalWeight = cart.CartItems.Sum(ci => ci.Product.Weight * ci.Quantity);
                 
                 decimal shippingCost = 0;
                 if (!string.IsNullOrEmpty(dto.CityRef) && _configuration.GetValue<bool>("Features:NovaPoshtaEnabled"))
                 {
-                    shippingCost = await _novaPoshtaService.CalculateDeliveryCostAsync(dto.CityRef, totalWeight, subtotal);
+                    shippingCost = await _novaPoshtaService.CalculateDeliveryCostAsync(dto.CityRef, totalWeight, originalSubtotal);
                 }
 
-                var totalAmount = subtotal + shippingCost;
                 var orderNumber = $"ORD-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..6]}";
 
                 var order = new Order
@@ -89,7 +92,7 @@ namespace KhduSouvenirShop.API.Controllers
                     UserId = userId,
                     OrderNumber = orderNumber,
                     Status = "Processing",
-                    TotalAmount = totalAmount,
+                    TotalAmount = 0,
                     ShippingCost = shippingCost,
                     CreatedAt = DateTime.UtcNow
                 };
@@ -114,7 +117,7 @@ namespace KhduSouvenirShop.API.Controllers
                 var payment = new Payment
                 {
                     OrderId = order.OrderId,
-                    Amount = totalAmount,
+                    Amount = 0,
                     Method = dto.PaymentMethod ?? "CashOnDelivery",
                     Status = "Pending",
                     CreatedAt = DateTime.UtcNow
@@ -123,9 +126,13 @@ namespace KhduSouvenirShop.API.Controllers
                 _context.Payments.Add(payment);
 
                 var orderItems = new List<OrderItem>();
+                decimal totalAfterUserPromos = 0;
                 foreach (var item in cart.CartItems)
                 {
                     item.Product.Stock -= item.Quantity;
+
+                    var priceAfterUserPromos = _promotionService.GetPriceAfterPromotions(item.Product, userPromotions);
+                    var userDiscountPerUnit = item.Product.Price - priceAfterUserPromos;
 
                     var orderItem = new OrderItem
                     {
@@ -133,14 +140,17 @@ namespace KhduSouvenirShop.API.Controllers
                         ProductId = item.ProductId,
                         Quantity = item.Quantity,
                         OriginalPrice = item.Product.Price,
-                        DiscountAmount = 0,
-                        FinalPrice = item.Product.Price
+                        DiscountAmount = userDiscountPerUnit * item.Quantity,
+                        FinalPrice = priceAfterUserPromos
                     };
 
                     orderItems.Add(orderItem);
+                    totalAfterUserPromos += priceAfterUserPromos * item.Quantity;
                 }
 
-                decimal totalDiscount = 0;
+                decimal totalDiscount = originalSubtotal - totalAfterUserPromos;
+                decimal finalTotal = totalAfterUserPromos;
+
                 if (!string.IsNullOrWhiteSpace(dto.PromoCode))
                 {
                     var now = DateTime.UtcNow;
@@ -154,52 +164,49 @@ namespace KhduSouvenirShop.API.Controllers
 
                     if (promo != null)
                     {
-                        subtotal = orderItems.Sum(oi => oi.OriginalPrice * oi.Quantity);
-                        if (subtotal > 0)
+                        if (promo.Type == "PERCENTAGE")
                         {
-                            if (promo.Type == "PERCENTAGE")
+                            var percent = Math.Clamp((double)promo.Value, 0, 100);
+                            foreach (var oi in orderItems)
                             {
-                                var percent = Math.Clamp((double)promo.Value, 0, 100);
-                                foreach (var oi in orderItems)
-                                {
-                                    var perUnitDiscount = Math.Round(oi.OriginalPrice * (decimal)(percent / 100.0), 2);
-                                    var totalItemDiscount = perUnitDiscount * oi.Quantity;
-                                    oi.DiscountAmount = totalItemDiscount;
-                                    oi.FinalPrice = Math.Max(0, oi.OriginalPrice - perUnitDiscount);
-                                    oi.AppliedPromotionId = promo.PromotionId;
-                                    totalDiscount += totalItemDiscount;
-                                }
+                                var perUnitDiscount = Math.Round(oi.FinalPrice * (decimal)(percent / 100.0), 2);
+                                var totalItemDiscount = perUnitDiscount * oi.Quantity;
+                                oi.DiscountAmount += totalItemDiscount;
+                                oi.FinalPrice = Math.Max(0, oi.FinalPrice - perUnitDiscount);
+                                oi.AppliedPromotionId = promo.PromotionId;
+                                totalDiscount += totalItemDiscount;
                             }
-                            else if (promo.Type == "FIXED_AMOUNT")
-                            {
-                                var fixedAmount = Math.Max(0, promo.Value);
-                                var appliedTotal = Math.Min(fixedAmount, subtotal);
-                                foreach (var oi in orderItems)
-                                {
-                                    var itemSubtotal = oi.OriginalPrice * oi.Quantity;
-                                    var share = itemSubtotal / subtotal;
-                                    var itemDiscountTotal = Math.Round(appliedTotal * share, 2);
-                                    var perUnitDiscount = Math.Round(itemDiscountTotal / oi.Quantity, 2);
-                                    oi.DiscountAmount = itemDiscountTotal;
-                                    oi.FinalPrice = Math.Max(0, oi.OriginalPrice - perUnitDiscount);
-                                    oi.AppliedPromotionId = promo.PromotionId;
-                                    totalDiscount += itemDiscountTotal;
-                                }
-                            }
-
-                            totalAmount = Math.Max(0, subtotal - totalDiscount);
-                            payment.Amount = totalAmount;
-
-                            promo.CurrentUsage += 1;
                         }
+                        else if (promo.Type == "FIXED_AMOUNT")
+                        {
+                            var fixedAmount = Math.Max(0, promo.Value);
+                            var appliedTotal = Math.Min(fixedAmount, finalTotal);
+                            foreach (var oi in orderItems)
+                            {
+                                var itemSubtotal = oi.FinalPrice * oi.Quantity;
+                                var share = itemSubtotal / finalTotal;
+                                var itemDiscountTotal = Math.Round(appliedTotal * share, 2);
+                                var perUnitDiscount = Math.Round(itemDiscountTotal / oi.Quantity, 2);
+                                oi.DiscountAmount += itemDiscountTotal;
+                                oi.FinalPrice = Math.Max(0, oi.FinalPrice - perUnitDiscount);
+                                oi.AppliedPromotionId = promo.PromotionId;
+                                totalDiscount += itemDiscountTotal;
+                            }
+                        }
+
+                        finalTotal = Math.Max(0, finalTotal - (totalDiscount - (originalSubtotal - totalAfterUserPromos)));
+                        promo.CurrentUsage += 1;
                     }
                 }
+
+                finalTotal = Math.Max(0, orderItems.Sum(oi => oi.FinalPrice * oi.Quantity));
+                order.TotalAmount = finalTotal + shippingCost;
+                payment.Amount = order.TotalAmount;
 
                 foreach (var oi in orderItems)
                 {
                     _context.OrderItems.Add(oi);
 
-                    // Створення видаткової накладної (OutgoingDocument) для складського обліку
                     var outgoingDoc = new OutgoingDocument
                     {
                         ProductId = oi.ProductId,
@@ -224,8 +231,6 @@ namespace KhduSouvenirShop.API.Controllers
 
                 _logger.LogInformation("Замовлення {OrderNumber} створено користувачем {UserId}", order.OrderNumber, userId);
 
-                // Відправка листа-підтвердження
-                var user = await _context.Users.FindAsync(userId);
                 if (user != null)
                 {
                     await _emailService.SendOrderConfirmationAsync(order, user);

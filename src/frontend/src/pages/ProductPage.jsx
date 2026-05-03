@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useSearchParams } from 'react-router-dom';
-import { productsAPI, buildImageUrl } from '../services/api';
+import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { productsAPI, buildImageUrl, cartAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import './ProductPage.css';
 
 function ProductPage() {
@@ -10,6 +11,9 @@ function ProductPage() {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [adding, setAdding] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   const loadProduct = useCallback(async () => {
     try {
@@ -24,6 +28,31 @@ function ProductPage() {
       setLoading(false);
     }
   }, [id]); // Залежність: id, оскільки API-запит залежить від нього.
+
+  const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      alert('Для додавання товарів до кошика потрібно авторизуватися');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setAdding(true);
+      await cartAPI.addToCart(product.productId, 1);
+      alert('Товар додано до кошика!');
+      window.location.reload();
+    } catch (err) {
+      console.error('Помилка додавання до кошика:', err);
+      if (err.response?.status === 401) {
+        alert('Сесія закінчилася. Будь ласка, увійдіть знову');
+        navigate('/login');
+      } else {
+        alert(err.response?.data?.error || 'Помилка додавання до кошика');
+      }
+    } finally {
+      setAdding(false);
+    }
+  };
 
   useEffect(() => {
     loadProduct();
@@ -64,7 +93,14 @@ function ProductPage() {
           <p className="category-badge">{product.category?.name}</p>
           
           <div className="price-section">
-            <span className="price">{product.price} грн</span>
+            {product.originalPrice && product.originalPrice !== product.price ? (
+              <>
+                <span className="price-original">{product.originalPrice.toFixed(2)} грн</span>
+                <span className="price">{product.price.toFixed(2)} грн</span>
+              </>
+            ) : (
+              <span className="price">{product.price.toFixed(2)} грн</span>
+            )}
             <span className={`stock-badge ${product.stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
               {product.stock > 0 ? `✓ В наявності (${product.stock} шт)` : '✗ Немає в наявності'}
             </span>
@@ -93,9 +129,10 @@ function ProductPage() {
 
           <button 
             className="add-to-cart-btn" 
-            disabled={product.stock === 0}
+            disabled={product.stock === 0 || adding}
+            onClick={handleAddToCart}
           >
-            {product.stock > 0 ? 'Додати до кошика' : 'Немає в наявності'}
+            {adding ? 'Додавання...' : product.stock > 0 ? 'Додати до кошика' : 'Немає в наявності'}
           </button>
         </div>
       </div>

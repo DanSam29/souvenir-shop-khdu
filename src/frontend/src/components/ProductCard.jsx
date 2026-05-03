@@ -57,7 +57,16 @@ function ProductCard({ product }) {
           {product.category && (
             <p className="product-category">{product.category.name}</p>
           )}
-          <p className="product-price">{product.price.toFixed(2)} грн</p>
+          <div className="product-price-container">
+            {product.originalPrice && product.originalPrice !== product.price ? (
+              <>
+                <span className="product-price-original">{product.originalPrice.toFixed(2)} грн</span>
+                <span className="product-price">{product.price.toFixed(2)} грн</span>
+              </>
+            ) : (
+              <span className="product-price">{product.price.toFixed(2)} грн</span>
+            )}
+          </div>
         </div>
       </Link>
       

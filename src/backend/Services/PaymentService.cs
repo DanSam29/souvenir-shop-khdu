@@ -29,6 +29,7 @@ namespace KhduSouvenirShop.API.Services
             var orderWithItems = await _context.Orders
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
+                .Include(o => o.Shipping)
                 .FirstOrDefaultAsync(o => o.OrderId == order.OrderId);
 
             if (orderWithItems == null)
@@ -43,23 +44,44 @@ namespace KhduSouvenirShop.API.Services
                 await _context.SaveChangesAsync();
             }
 
-            var options = new SessionCreateOptions
+            var lineItems = orderWithItems.OrderItems.Select(item => new SessionLineItemOptions
             {
-                PaymentMethodTypes = new List<string> { "card" },
-                LineItems = orderWithItems.OrderItems.Select(item => new SessionLineItemOptions
+                PriceData = new SessionLineItemPriceDataOptions
+                {
+                    UnitAmountDecimal = item.FinalPrice * 100, // Stripe expects amounts in cents
+                    Currency = "uah",
+                    ProductData = new SessionLineItemPriceDataProductDataOptions
+                    {
+                        Name = item.Product.Name,
+                        Description = item.Product.Description,
+                    },
+                },
+                Quantity = item.Quantity,
+            }).ToList();
+
+            // Додаємо вартість доставки як окремий line item
+            if (orderWithItems.ShippingCost > 0)
+            {
+                lineItems.Add(new SessionLineItemOptions
                 {
                     PriceData = new SessionLineItemPriceDataOptions
                     {
-                        UnitAmountDecimal = item.FinalPrice * 100, // Stripe expects amounts in cents
+                        UnitAmountDecimal = orderWithItems.ShippingCost * 100,
                         Currency = "uah",
                         ProductData = new SessionLineItemPriceDataProductDataOptions
                         {
-                            Name = item.Product.Name,
-                            Description = item.Product.Description,
+                            Name = "Доставка Nova Poshta",
+                            Description = "Вартість доставки за замовлення",
                         },
                     },
-                    Quantity = item.Quantity,
-                }).ToList(),
+                    Quantity = 1,
+                });
+            }
+
+            var options = new SessionCreateOptions
+            {
+                PaymentMethodTypes = new List<string> { "card" },
+                LineItems = lineItems,
                 Mode = "payment",
                 SuccessUrl = successUrl + "?session_id={CHECKOUT_SESSION_ID}",
                 CancelUrl = cancelUrl,
