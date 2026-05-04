@@ -9,7 +9,7 @@ namespace KhduSouvenirShop.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Administrator,Manager")]
     public class CompaniesController(AppDbContext context, ILogger<CompaniesController> logger) : ControllerBase
     {
         private readonly AppDbContext _context = context;

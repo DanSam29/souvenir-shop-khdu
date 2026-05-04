@@ -147,10 +147,15 @@ export const warehouseAPI = {
   getStock: () => api.get('/WarehouseDocuments/stock'),
   createIncoming: (data) => api.post('/WarehouseDocuments/incoming', data),
   createOutgoing: (data) => api.post('/WarehouseDocuments/outgoing', data),
-  getCompanies: (onlyActive) => api.get('/Companies', { params: { onlyActive } }),
-  createCompany: (data) => api.post('/Companies', data),
-  updateCompany: (id, data) => api.put(`/Companies/${id}`, data),
-  deleteCompany: (id) => api.delete(`/Companies/${id}`),
+};
+
+// API функції для компаній
+export const companiesAPI = {
+  getAll: (onlyActive) => api.get('/Companies', { params: { onlyActive } }),
+  getById: (id) => api.get(`/Companies/${id}`),
+  create: (data) => api.post('/Companies', data),
+  update: (id, data) => api.put(`/Companies/${id}`, data),
+  delete: (id) => api.delete(`/Companies/${id}`),
 };
 
 // API функції для інтеграцій

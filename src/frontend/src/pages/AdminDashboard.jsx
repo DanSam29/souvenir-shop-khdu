@@ -54,6 +54,11 @@ function AdminDashboard() {
           <Link to="/admin/warehouse">Склад →</Link>
         </div>
         <div style={statCardStyle}>
+          <h3>Компанії</h3>
+          <p style={{ fontSize: '2rem', fontWeight: 700 }}>🏢</p>
+          <Link to="/admin/companies">Постачальники →</Link>
+        </div>
+        <div style={statCardStyle}>
           <h3>Аналітика</h3>
           <p style={{ fontSize: '2rem', fontWeight: 700 }}>📊</p>
           <Link to="/admin/analytics">Звіти →</Link>

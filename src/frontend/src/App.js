@@ -17,6 +17,7 @@ import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
 import CategoriesAdmin from './pages/admin/CategoriesAdmin';
 import ProductsAdmin from './pages/admin/ProductsAdmin';
+import CompaniesAdmin from './pages/admin/CompaniesAdmin';
 import logo from './assets/khdu-logo.png';
 import './App.css';
 
@@ -43,6 +44,7 @@ function App() {
               <Route path="/checkout/cancel" element={<PaymentCancelPage />} />
               <Route path="/admin/categories" element={<CategoriesAdmin />} />
               <Route path="/admin/products" element={<ProductsAdmin />} />
+              <Route path="/admin/companies" element={<CompaniesAdmin />} />
             </Routes>
           </main>
           <footer className="footer">
