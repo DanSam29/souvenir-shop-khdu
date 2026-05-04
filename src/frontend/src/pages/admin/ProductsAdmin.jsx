@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { productsAPI, categoriesAPI, adminProductsAPI } from '../../services/api';
 
@@ -120,7 +120,12 @@ function ProductsAdmin() {
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: 20 }}>
-      <h2>Адмін: Товари</h2>
+      <div style={{ marginBottom: 20 }}>
+        <Link to="/admin" className="back-link">
+          ← Назад до дашборду
+        </Link>
+        <h2>Адмін: Товари</h2>
+      </div>
 
       <form onSubmit={handleSubmit} style={{ marginBottom: 20, display: 'grid', gap: 12 }}>
         <input

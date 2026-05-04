@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ordersAPI } from '../services/api';
 
 function AdminOrdersPage() {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -38,11 +40,16 @@ function AdminOrdersPage() {
     }
   };
 
-  if (loading) return <div>Завантаження...</div>;
+  if (loading) return <div className="loading">Завантаження...</div>;
 
   return (
-    <div className="admin-orders" style={{ padding: 20 }}>
-      <h1>Керування замовленнями</h1>
+    <div className="admin-orders" style={{ padding: 20, maxWidth: 1400, margin: '0 auto' }}>
+      <div style={{ marginBottom: 20 }}>
+        <Link to="/admin" className="back-link">
+          ← Назад до дашборду
+        </Link>
+        <h1>Керування замовленнями</h1>
+      </div>
       <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 20, background: '#fff', borderRadius: 8, overflow: 'hidden' }}>
         <thead style={{ background: '#f8f9fa' }}>
           <tr>
@@ -65,18 +72,26 @@ function AdminOrdersPage() {
                 <span style={statusBadgeStyle(o.status)}>{o.status}</span>
               </td>
               <td style={tdStyle}>
-                <select 
-                  value={o.status} 
-                  onChange={(e) => handleStatusChange(o.orderId, e.target.value)}
-                  disabled={updating || o.status === 'Cancelled' || o.status === 'Delivered'}
-                  style={{ padding: '5px', borderRadius: 4 }}
-                >
-                  <option value="Processing">Processing</option>
-                  <option value="Paid">Paid</option>
-                  <option value="Shipped">Shipped</option>
-                  <option value="Delivered">Delivered</option>
-                  <option value="Cancelled">Cancelled</option>
-                </select>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button 
+                    onClick={() => navigate(`/order/${o.orderId}`)}
+                    style={{ padding: '5px 10px', background: '#007bff', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+                  >
+                    Деталі
+                  </button>
+                  <select 
+                    value={o.status} 
+                    onChange={(e) => handleStatusChange(o.orderId, e.target.value)}
+                    disabled={updating || o.status === 'Cancelled' || o.status === 'Delivered'}
+                    style={{ padding: '5px', borderRadius: 4 }}
+                  >
+                    <option value="Processing">Processing</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
               </td>
             </tr>
           ))}

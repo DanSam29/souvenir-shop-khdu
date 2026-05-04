@@ -11,6 +11,8 @@ import OrderDetailsPage from './pages/OrderDetailsPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminOrdersPage from './pages/AdminOrdersPage';
 import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
+import AdminUsersPage from './pages/AdminUsersPage';
+import AdminWarehousePage from './pages/AdminWarehousePage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
@@ -40,6 +42,8 @@ function App() {
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/orders" element={<AdminOrdersPage />} />
               <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+              <Route path="/admin/users" element={<AdminUsersPage />} />
+              <Route path="/admin/warehouse" element={<AdminWarehousePage />} />
               <Route path="/checkout/success" element={<PaymentSuccessPage />} />
               <Route path="/checkout/cancel" element={<PaymentCancelPage />} />
               <Route path="/admin/categories" element={<CategoriesAdmin />} />

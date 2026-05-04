@@ -247,3 +247,14 @@ main {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 86, 179, 0.3);
 }
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  color: #007bff;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}

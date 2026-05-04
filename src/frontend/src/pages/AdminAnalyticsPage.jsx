@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { analyticsAPI } from '../services/api';
 
 function AdminAnalyticsPage() {
@@ -42,13 +43,18 @@ function AdminAnalyticsPage() {
     }
   };
 
-  if (loading) return <div style={{ padding: 20 }}>Завантаження аналітики...</div>;
+  if (loading) return <div className="loading">Завантаження аналітики...</div>;
 
   return (
-    <div className="admin-analytics" style={{ padding: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 }}>
-        <h1>Аналітика та звіти</h1>
-        <div style={{ display: 'flex', gap: 15 }}>
+    <div className="admin-analytics" style={{ padding: 20, maxWidth: 1400, margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 30 }}>
+        <div>
+          <Link to="/admin" className="back-link">
+            ← Назад до дашборду
+          </Link>
+          <h1>Аналітика та звіти</h1>
+        </div>
+        <div style={{ display: 'flex', gap: 15, marginTop: '2.5rem' }}>
           <select 
             value={period} 
             onChange={(e) => setPeriod(e.target.value)}

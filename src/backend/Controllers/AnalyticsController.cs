@@ -26,7 +26,7 @@ namespace KhduSouvenirShop.API.Controllers
                 .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate)
                 .ToListAsync();
 
-            var totalIncome = paidOrders.Sum(o => o.TotalAmount);
+            var totalIncome = paidOrders.Sum(o => o.TotalAmount - o.ShippingCost);
             var ordersCount = paidOrders.Count;
             var avgCheck = ordersCount > 0 ? totalIncome / ordersCount : 0;
 
@@ -56,7 +56,7 @@ namespace KhduSouvenirShop.API.Controllers
                 .Select(g => new
                 {
                     date = g.Key.ToString("yyyy-MM-dd"),
-                    amount = g.Sum(o => o.TotalAmount),
+                    amount = g.Sum(o => o.TotalAmount - o.ShippingCost),
                     count = g.Count()
                 })
                 .OrderBy(x => x.date)
