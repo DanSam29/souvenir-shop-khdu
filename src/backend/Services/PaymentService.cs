@@ -206,7 +206,7 @@ namespace KhduSouvenirShop.API.Services
             return await CancelOrderAndRestoreStock(orderId, "Сесія оплати Stripe вичерпана (Expired)");
         }
 
-        private async Task<bool> CancelOrderAndRestoreStock(int orderId, string comment)
+        public async Task<bool> CancelOrderAndRestoreStock(int orderId, string comment)
         {
             var order = await _context.Orders
                 .Include(o => o.Payment)

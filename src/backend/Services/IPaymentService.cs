@@ -8,5 +8,6 @@ namespace KhduSouvenirShop.API.Services
         Task<Session> CreateCheckoutSessionAsync(Order order, string successUrl, string cancelUrl);
         Task<bool> HandleWebhookAsync(string json, string stripeSignature);
         Task<bool> RefundPaymentAsync(int orderId, string? reason = null);
+        Task<bool> CancelOrderAndRestoreStock(int orderId, string comment);
     }
 }

@@ -488,6 +488,21 @@ namespace KhduSouvenirShop.API.Controllers
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
 
+            // Якщо змінюємо статус на Cancelled — використовуємо спеціальну логіку з поверненням товару
+            if (dto.Status == "Cancelled")
+            {
+                var cancelResult = await _paymentService.RefundPaymentAsync(id, dto.Comment);
+                if (!cancelResult)
+                {
+                    cancelResult = await _paymentService.CancelOrderAndRestoreStock(id, dto.Comment ?? "Скасовано адміністратором");
+                }
+                if (!cancelResult)
+                {
+                    return StatusCode(500, ApiResponse<object>.FailureResult("Не вдалося скасувати замовлення", "InternalServerError"));
+                }
+                return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення скасовано"));
+            }
+
             var order = await _context.Orders
                 .Include(o => o.Payment)
                 .FirstOrDefaultAsync(o => o.OrderId == id);
@@ -534,48 +549,23 @@ namespace KhduSouvenirShop.API.Controllers
         [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> CancelOrder(int id, [FromBody] string? reason)
         {
-            var result = await _paymentService.RefundPaymentAsync(id, reason);
+            // Спочатку перевіримо, чи замовлення взагалі існує
+            var order = await _context.Orders.FindAsync(id);
+            if (order == null) return NotFound(ApiResponse<object>.FailureResult("Замовлення не знайдено", "NotFound"));
+            if (order.Status == "Cancelled") return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення вже скасоване"));
+
+            // Спочатку спробуємо зробити refund через Stripe, якщо оплата Completed
+            var refundResult = await _paymentService.RefundPaymentAsync(id, reason);
+            if (refundResult)
+            {
+                return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення скасовано, кошти повернуто"));
+            }
             
-            // Якщо це не Stripe платіж, або Stripe повернув false, пробуємо просто скасувати (наприклад для COD)
+            // Інакше — просто скасовуємо замовлення та повертаємо товар (використовуємо готовий метод з PaymentService)
+            var result = await _paymentService.CancelOrderAndRestoreStock(id, reason ?? "Скасовано адміністратором");
             if (!result)
             {
-                var order = await _context.Orders
-                    .Include(o => o.OrderItems)
-                        .ThenInclude(oi => oi.Product)
-                    .Include(o => o.Payment)
-                    .FirstOrDefaultAsync(o => o.OrderId == id);
-
-                if (order == null) return NotFound(ApiResponse<object>.FailureResult("Замовлення не знайдено", "NotFound"));
-                if (order.Status == "Cancelled") return BadRequest(ApiResponse<object>.FailureResult("Замовлення вже скасоване", "BadRequest"));
-
-                var oldStatus = order.Status;
-                
-                // Повернення на склад
-                foreach (var item in order.OrderItems)
-                {
-                    item.Product.Stock += item.Quantity;
-                }
-
-                // Видалення видаткових накладних (OutgoingDocument), пов'язаних з цим замовленням
-                var docs = await _context.OutgoingDocuments.Where(d => d.OrderId == id && d.Reason == "ORDER").ToListAsync();
-                _context.OutgoingDocuments.RemoveRange(docs);
-
-                order.Status = "Cancelled";
-                if (order.Payment != null && order.Payment.Status != "Completed")
-                {
-                    order.Payment.Status = "Failed";
-                }
-
-                _context.OrderHistories.Add(new OrderHistory
-                {
-                    OrderId = order.OrderId,
-                    OldStatus = oldStatus,
-                    NewStatus = "Cancelled",
-                    Comment = reason ?? "Скасовано адміністратором",
-                    Timestamp = DateTime.UtcNow
-                });
-
-                await _context.SaveChangesAsync();
+                return StatusCode(500, ApiResponse<object>.FailureResult("Не вдалося скасувати замовлення", "InternalServerError"));
             }
 
             return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення скасовано"));
