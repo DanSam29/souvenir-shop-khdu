@@ -90,8 +90,9 @@ function CheckoutPage() {
 
   // Nova Poshta: City Search
   useEffect(() => {
-    if (citySearch.length < 2) {
+    if (form.cityRef || citySearch.length < 2) {
       setCities([]);
+      setShowCityDropdown(false);
       return;
     }
     const timer = setTimeout(async () => {
@@ -104,11 +105,15 @@ function CheckoutPage() {
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [citySearch]);
+  }, [citySearch, form.cityRef]);
 
   // Nova Poshta: Warehouse Search
   useEffect(() => {
-    if (!form.cityRef) return;
+    if (!form.cityRef || form.warehouseRef) {
+      setWarehouses([]);
+      setShowWarehouseDropdown(false);
+      return;
+    }
     const timer = setTimeout(async () => {
       try {
         const res = await novaPoshtaAPI.getWarehouses(form.cityRef, warehouseSearch);
@@ -119,7 +124,7 @@ function CheckoutPage() {
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [form.cityRef, warehouseSearch]);
+  }, [form.cityRef, form.warehouseRef, warehouseSearch]);
 
   const handleCitySelect = (city) => {
     setForm(prev => ({ 
