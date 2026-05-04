@@ -39,8 +39,20 @@ namespace KhduSouvenirShop.API.Controllers
         {
             _logger.LogInformation("Запит на отримання товарів з фільтрами");
             
-            // Ключ кешу залежить від фільтрів
-            string cacheKey = $"Products_{categoryId}_{search}_{sortBy}_{minPrice}_{maxPrice}";
+            // Спочатку визначаємо studentStatus
+            string studentStatus = "NONE";
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (int.TryParse(userIdClaim, out var uid))
+                {
+                    var user = await _context.Users.FindAsync(uid);
+                    if (user != null) studentStatus = user.StudentStatus ?? "NONE";
+                }
+            }
+            
+            // Ключ кешу залежить від фільтрів ТА studentStatus
+            string cacheKey = $"Products_{categoryId}_{search}_{sortBy}_{minPrice}_{maxPrice}_{studentStatus}";
             
             if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
             {
@@ -51,7 +63,7 @@ namespace KhduSouvenirShop.API.Controllers
 
                 // Фільтрація
                 if (categoryId.HasValue)
-                    query = query.Where(p => p.CategoryId == categoryId);
+                    query = query.Where(p => p.CategoryId == categoryId.Value);
 
                 if (!string.IsNullOrEmpty(search))
                     query = query.Where(p => p.Name.Contains(search) || p.Description.Contains(search));
@@ -72,17 +84,6 @@ namespace KhduSouvenirShop.API.Controllers
                 };
 
                 var products = await query.ToListAsync();
-                
-                string studentStatus = "NONE";
-                if (User?.Identity?.IsAuthenticated == true)
-                {
-                    var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                    if (int.TryParse(userIdClaim, out var uid))
-                    {
-                        var user = await _context.Users.FindAsync(uid);
-                        if (user != null) studentStatus = user.StudentStatus ?? "NONE";
-                    }
-                }
 
                 var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
 

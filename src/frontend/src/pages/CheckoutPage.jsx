@@ -218,6 +218,33 @@ function CheckoutPage() {
     return <div className="checkout-page"><div className="loading">Завантаження...</div></div>;
   }
 
+  if (orderResult) {
+    return (
+      <div className="checkout-page" style={{ maxWidth: 600, margin: '50px auto', padding: 20, textAlign: 'center' }}>
+        <div style={{ background: '#e6ffed', border: '1px solid #b7eb8f', borderRadius: 12, padding: 40 }}>
+          <h1 style={{ margin: '0 0 20px 0', color: '#1e4620' }}>✅ Замовлення оформлено!</h1>
+          <p style={{ fontSize: '1.1rem', margin: '10px 0' }}><strong>Номер замовлення:</strong> {orderResult.orderNumber}</p>
+          <p style={{ fontSize: '1.1rem', margin: '10px 0' }}><strong>Сума:</strong> {orderResult.totalAmount.toFixed(2)} грн</p>
+          <button 
+            onClick={() => navigate('/profile')} 
+            style={{ 
+              marginTop: 30, 
+              padding: '12px 24px', 
+              borderRadius: 8, 
+              border: 'none', 
+              background: '#007bff', 
+              color: '#fff', 
+              fontSize: '1rem', 
+              cursor: 'pointer' 
+            }}
+          >
+            Перейти в мої замовлення
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!cart || cart.items.length === 0) {
     return (
       <div className="checkout-page">
@@ -410,20 +437,6 @@ function CheckoutPage() {
                 <span>{finalTotal.toFixed(2)} грн</span>
               </div>
             </div>
-
-            {orderResult && (
-              <div style={{ marginTop: 24, padding: 16, background: '#e6ffed', border: '1px solid #b7eb8f', borderRadius: 8 }}>
-                <h3 style={{ margin: '0 0 10px 0', color: '#1e4620' }}>✅ Замовлення оформлено!</h3>
-                <p style={{ margin: '4px 0' }}><strong>№:</strong> {orderResult.orderNumber}</p>
-                <p style={{ margin: '4px 0' }}><strong>Сума:</strong> {orderResult.totalAmount.toFixed(2)} грн</p>
-                <button 
-                  onClick={() => navigate('/profile')} 
-                  style={{ width: '100%', marginTop: 15, padding: '8px', borderRadius: 6, border: '1px solid #b7eb8f', background: '#fff', cursor: 'pointer' }}
-                >
-                  Перейти в профіль
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
