@@ -6,7 +6,7 @@ namespace KhduSouvenirShop.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Administrator,Manager")]
     public class IntegrationsController : ControllerBase
     {
         private readonly IConfiguration _configuration;
