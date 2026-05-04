@@ -58,7 +58,7 @@ namespace KhduSouvenirShop.API.Controllers
         }
 
         [HttpPatch("manual-status/{userId}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> ManualStatusUpdate(int userId, [FromBody] ManualStatusDto dto)
         {
             var user = await _context.Users.FindAsync(userId);

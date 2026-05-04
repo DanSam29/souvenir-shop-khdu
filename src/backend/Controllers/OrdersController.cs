@@ -392,7 +392,7 @@ namespace KhduSouvenirShop.API.Controllers
         }
 
         [HttpGet("admin")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Administrator,Manager")] // Змінено Admin → Administrator
         public async Task<ActionResult> GetAllOrders([FromQuery] string? status)
         {
             var query = _context.Orders
@@ -479,7 +479,7 @@ namespace KhduSouvenirShop.API.Controllers
         // --- Admin Methods ---
 
         [HttpPatch("{id}/status")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> UpdateOrderStatus(int id, [FromBody] UpdateStatusDto dto)
         {
             var order = await _context.Orders
@@ -524,7 +524,7 @@ namespace KhduSouvenirShop.API.Controllers
         }
 
         [HttpPost("{id}/cancel")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> CancelOrder(int id, [FromBody] string? reason)
         {
             var result = await _paymentService.RefundPaymentAsync(id, reason);

@@ -275,7 +275,7 @@ namespace KhduSouvenirShop.API.Controllers
         // --- Admin Methods ---
 
         [HttpPost]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> CreateProduct([FromBody] ProductCreateDto dto)
         {
             var product = new Product
@@ -298,7 +298,7 @@ namespace KhduSouvenirShop.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> UpdateProduct(int id, [FromBody] ProductUpdateDto dto)
         {
             var product = await _context.Products.FindAsync(id);
@@ -319,7 +319,7 @@ namespace KhduSouvenirShop.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> DeleteProduct(int id)
         {
             var product = await _context.Products
@@ -342,7 +342,7 @@ namespace KhduSouvenirShop.API.Controllers
         }
 
         [HttpPost("{id}/images")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> UploadImage(int id, IFormFile file, [FromQuery] bool isPrimary = false)
         {
             var product = await _context.Products.Include(p => p.Images).FirstOrDefaultAsync(p => p.ProductId == id);
@@ -383,7 +383,7 @@ namespace KhduSouvenirShop.API.Controllers
         }
 
         [HttpDelete("images/{imageId}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> DeleteImage(int imageId)
         {
             var img = await _context.ProductImages.FindAsync(imageId);

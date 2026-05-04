@@ -10,7 +10,7 @@ namespace KhduSouvenirShop.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Administrator")]
     public class AnalyticsController(AppDbContext context) : ControllerBase
     {
         private readonly AppDbContext _context = context;

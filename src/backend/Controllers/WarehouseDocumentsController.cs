@@ -10,7 +10,7 @@ namespace KhduSouvenirShop.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Administrator,Manager")]
     public class WarehouseDocumentsController : ControllerBase
     {
         private readonly AppDbContext _context;

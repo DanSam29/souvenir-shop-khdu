@@ -201,7 +201,7 @@ namespace KhduSouvenirShop.API.Controllers
         // --- Admin Methods ---
 
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> GetAllUsers([FromQuery] string? search)
         {
             var query = _context.Users.AsQueryable();
@@ -227,7 +227,7 @@ namespace KhduSouvenirShop.API.Controllers
         }
 
         [HttpPatch("{id}/role")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> UpdateUserRole(int id, [FromBody] UpdateRoleDto dto)
         {
             var user = await _context.Users.FindAsync(id);
@@ -239,7 +239,7 @@ namespace KhduSouvenirShop.API.Controllers
         }
 
         [HttpPost("{id}/toggle-block")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Administrator")]
         public ActionResult ToggleBlockUser(int id)
         {
             return Ok(ApiResponse<object>.FailureResult("Блокування користувачів не підтримується", "NotImplemented"));

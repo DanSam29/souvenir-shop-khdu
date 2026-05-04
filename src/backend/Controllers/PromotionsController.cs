@@ -51,7 +51,7 @@ namespace KhduSouvenirShop.API.Controllers
         // --- Admin Methods ---
 
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> GetAllPromotions()
         {
             var promos = await _context.Promotions.OrderByDescending(p => p.CreatedAt).ToListAsync();
@@ -59,7 +59,7 @@ namespace KhduSouvenirShop.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> CreatePromotion([FromBody] PromotionDto dto)
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
@@ -92,7 +92,7 @@ namespace KhduSouvenirShop.API.Controllers
         }
 
         [HttpPatch("{id}/toggle")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> TogglePromotion(int id)
         {
             var promo = await _context.Promotions.FindAsync(id);
