@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KhduSouvenirShop.API.Models
 {
-    [Table("Orders")]
+    [Table("orders")]
     public class Order
     {
         [Key]

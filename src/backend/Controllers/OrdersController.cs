@@ -482,6 +482,12 @@ namespace KhduSouvenirShop.API.Controllers
         [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> UpdateOrderStatus(int id, [FromBody] UpdateStatusDto dto)
         {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var adminUserId))
+            {
+                return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            }
+
             var order = await _context.Orders
                 .Include(o => o.Payment)
                 .FirstOrDefaultAsync(o => o.OrderId == id);
@@ -514,6 +520,7 @@ namespace KhduSouvenirShop.API.Controllers
                 OrderId = order.OrderId,
                 OldStatus = oldStatus,
                 NewStatus = dto.Status,
+                ChangedByUserId = adminUserId,
                 Comment = dto.Comment ?? $"Статус змінено адміністратором. { (dto.TrackingNumber != null ? "ТТН: " + dto.TrackingNumber : "") }",
                 Timestamp = DateTime.UtcNow
             });

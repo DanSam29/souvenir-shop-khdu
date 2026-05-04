@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KhduSouvenirShop.API.Models
 {
-    [Table("OutgoingDocuments")]
+    [Table("outgoingdocuments")]
     public class OutgoingDocument
     {
         [Key]
@@ -39,6 +39,7 @@ namespace KhduSouvenirShop.API.Models
         [Column(TypeName = "date")]
         public DateTime DocumentDate { get; set; }
 
+        [Column("CreatedBy")]
         [ForeignKey("CreatedByUser")]
         public int? CreatedByUserId { get; set; }
 

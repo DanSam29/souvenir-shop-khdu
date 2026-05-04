@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KhduSouvenirShop.API.Models
 {
-    [Table("OrderHistories")]
+    [Table("orderhistory")]
     public class OrderHistory
     {
         [Key]
@@ -19,6 +19,7 @@ namespace KhduSouvenirShop.API.Models
         [MaxLength(50)]
         public string NewStatus { get; set; } = string.Empty;
 
+        [Column("ChangedBy")]
         [ForeignKey("ChangedByUser")]
         public int? ChangedByUserId { get; set; }
 
