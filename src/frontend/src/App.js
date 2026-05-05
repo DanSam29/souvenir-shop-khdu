@@ -1,7 +1,8 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/Header';
+import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import ProductPage from './pages/ProductPage';
 import RegisterPage from './pages/RegisterPage';
@@ -20,8 +21,11 @@ import PaymentCancelPage from './pages/PaymentCancelPage';
 import CategoriesAdmin from './pages/admin/CategoriesAdmin';
 import ProductsAdmin from './pages/admin/ProductsAdmin';
 import CompaniesAdmin from './pages/admin/CompaniesAdmin';
+import AccessDenied from './pages/AccessDenied';
 import logo from './assets/khdu-logo.png';
 import './App.css';
+
+const ADMIN_ROLES = ['Manager', 'Administrator', 'SuperAdmin'];
 
 function App() {
   return (
@@ -39,16 +43,55 @@ function App() {
               <Route path="/order/:id" element={<OrderDetailsPage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/orders" element={<AdminOrdersPage />} />
-              <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
-              <Route path="/admin/users" element={<AdminUsersPage />} />
-              <Route path="/admin/warehouse" element={<AdminWarehousePage />} />
+              <Route path="/access-denied" element={<AccessDenied />} />
+              
+              {/* Адмінські маршрути з захистом */}
+              <Route path="/admin" element={
+                <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/orders" element={
+                <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+                  <AdminOrdersPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/analytics" element={
+                <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+                  <AdminAnalyticsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/users" element={
+                <ProtectedRoute allowedRoles={['Administrator', 'SuperAdmin']}>
+                  <AdminUsersPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/warehouse" element={
+                <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+                  <AdminWarehousePage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/categories" element={
+                <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+                  <CategoriesAdmin />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/products" element={
+                <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+                  <ProductsAdmin />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/companies" element={
+                <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+                  <CompaniesAdmin />
+                </ProtectedRoute>
+              } />
+
               <Route path="/checkout/success" element={<PaymentSuccessPage />} />
               <Route path="/checkout/cancel" element={<PaymentCancelPage />} />
-              <Route path="/admin/categories" element={<CategoriesAdmin />} />
-              <Route path="/admin/products" element={<ProductsAdmin />} />
-              <Route path="/admin/companies" element={<CompaniesAdmin />} />
+              
+              {/* Перенаправлення для неіснуючих сторінок */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
           <footer className="footer">

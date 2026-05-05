@@ -8,8 +8,11 @@ import './Header.css';
 
 function Header() {
   const { t, i18n } = useTranslation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [cartCount, setCartCount] = useState(0);
+
+  // Перевірка чи є користувач адміністратором або менеджером
+  const isAdmin = user && ['Manager', 'Administrator', 'SuperAdmin'].includes(user.role);
 
   // Завантаження кількості товарів у кошику (тільки для авторизованих)
   useEffect(() => {
@@ -48,6 +51,12 @@ function Header() {
           <Link to="/" className="nav-link">
             {t('nav.home')}
           </Link>
+
+          {isAdmin && (
+            <Link to="/admin" className="nav-link nav-link-admin">
+              {t('nav.admin')}
+            </Link>
+          )}
           
           <button onClick={toggleLanguage} className="lang-switcher">
             {i18n.language === 'ua' ? 'EN' : 'UA'}

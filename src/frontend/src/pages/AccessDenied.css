@@ -1,0 +1,51 @@
+.access-denied-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 200px);
+  padding: 20px;
+  background-color: #f8f9fa;
+}
+
+.access-denied-content {
+  text-align: center;
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  max-width: 500px;
+  width: 100%;
+}
+
+.error-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.access-denied-content h1 {
+  color: #dc3545;
+  margin-bottom: 15px;
+  font-size: 28px;
+}
+
+.access-denied-content p {
+  color: #6c757d;
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.back-home-btn {
+  display: inline-block;
+  margin-top: 25px;
+  padding: 12px 24px;
+  background-color: #004a99;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.back-home-btn:hover {
+  background-color: #003366;
+}
