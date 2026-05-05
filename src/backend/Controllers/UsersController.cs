@@ -63,11 +63,12 @@ namespace KhduSouvenirShop.API.Controllers
             };
 
             // Логіка: Встановлення студентського статусу за доменом email
+            var isUniEnabled = _configuration.GetValue<bool>("Features:UniversityEnabled");
             var emailLower = newUser.Email.ToLowerInvariant();
             var allowedDomains = _configuration.GetSection("University:AllowedDomains").Get<string[]>() ?? 
                                  ["ksu.edu.ua", "student.ksu.edu.ua"];
 
-            if (allowedDomains.Any(domain => emailLower.EndsWith("@" + domain)))
+            if (isUniEnabled && allowedDomains.Any(domain => emailLower.EndsWith("@" + domain)))
             {
                 var studentInfo = await _universityService.GetStudentInfoAsync(newUser.Email!);
                 if (studentInfo != null && studentInfo.IsActive)
@@ -365,7 +366,6 @@ namespace KhduSouvenirShop.API.Controllers
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public string? Phone { get; set; }
-        public string Language { get; set; } = "ua";
     }
 
     // DTO для авторизації
@@ -380,7 +380,6 @@ namespace KhduSouvenirShop.API.Controllers
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string? Phone { get; set; }
-        public string? Language { get; set; }
     }
 
     public class ChangePasswordDto

@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './LoginPage.css';
 
 function LoginPage() {
+  const location = useLocation();
+  const registrationSuccess = location.state?.registrationSuccess;
+  
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -62,6 +65,20 @@ function LoginPage() {
       <div className="login-container">
         <form onSubmit={handleSubmit} className="login-form">
           <h2>Вхід в систему</h2>
+
+          {registrationSuccess && (
+            <div className="success-message" style={{ 
+              backgroundColor: '#e6ffed', 
+              color: '#28a745', 
+              padding: '10px', 
+              borderRadius: '4px', 
+              marginBottom: '15px',
+              border: '1px solid #b7eb8f',
+              textAlign: 'center'
+            }}>
+              Реєстрація успішна! Тепер ви можете увійти.
+            </div>
+          )}
 
           {error && <div className="error-message">{error}</div>}
 

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { usersAPI } from '../services/api';
 import './RegisterForm.css';
 
 function RegisterForm() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -12,7 +14,6 @@ function RegisterForm() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -41,20 +42,23 @@ function RegisterForm() {
 
     try {
       const response = await usersAPI.register(formData);
-      console.log('Реєстрація успішна:', response.data);
-      setSuccess(true);
-      // Очистка форми
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: '',
-        phone: ''
-      });
+      console.log('Реєстрація успішна:', response);
+      
+      // Перенаправлення на сторінку входу з повідомленням про успіх
+      navigate('/login', { state: { registrationSuccess: true } });
     } catch (err) {
       console.error('Помилка реєстрації:', err);
+      
+      const responseData = err.response?.data;
+      
       if (err.response?.status === 409) {
         setError('Email вже зареєстрований');
+      } else if (responseData && responseData.errors && responseData.errors.length > 0) {
+        // Відображаємо першу помилку з масиву помилок від backend (FluentValidation)
+        setError(responseData.errors[0]);
+      } else if (responseData && responseData.message) {
+        // Відображаємо повідомлення від backend
+        setError(responseData.message);
       } else {
         setError('Помилка реєстрації. Спробуйте пізніше.');
       }
@@ -62,16 +66,6 @@ function RegisterForm() {
       setLoading(false);
     }
   };
-
-  if (success) {
-    return (
-      <div className="success-message">
-        <h2>✓ Реєстрація успішна!</h2>
-        <p>Ви успішно зареєструвалися в системі.</p>
-        <p>Тепер ви можете увійти в свій обліковий запис.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="register-form-container">
