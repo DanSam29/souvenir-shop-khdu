@@ -274,6 +274,12 @@ namespace KhduSouvenirShop.API.Controllers
 
                 await _context.SaveChangesAsync();
 
+                // Відправка листа-підтвердження для накладеного платежу
+                if (payment.Method == "CashOnDelivery")
+                {
+                    await _emailService.SendOrderConfirmationAsync(order, user!);
+                }
+
                 if (payment.Method == "Card")
                 {
                     // Ця частина більше не повинна виконуватися тут для "Card" за новою логікою,
@@ -503,11 +509,20 @@ namespace KhduSouvenirShop.API.Controllers
                     .ThenInclude(oi => oi.Product)
                 .Include(o => o.Shipping)
                 .Include(o => o.Payment)
-                .FirstOrDefaultAsync(o => o.OrderId == id && o.UserId == userId);
+                .FirstOrDefaultAsync(o => o.OrderId == id);
 
             if (order == null)
             {
                 return NotFound(ApiResponse<object>.FailureResult("Замовлення не знайдено", "NotFound"));
+            }
+
+            // Перевірка прав: або власник, або адмін/менеджер
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            bool isPrivileged = userRole == "Administrator" || userRole == "Manager";
+
+            if (order.UserId != userId && !isPrivileged)
+            {
+                return Forbid();
             }
 
             var result = new

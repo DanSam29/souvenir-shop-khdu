@@ -89,10 +89,12 @@ function CompaniesAdmin() {
 
   return (
     <div style={{ padding: 20, maxWidth: 1200, margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h1>Компанії-постачальники</h1>
-        <div>
-          <Link to="/admin" style={{ marginRight: 10, textDecoration: 'none', color: '#666' }}>← Повернутися до дашборду</Link>
+      <div style={{ marginBottom: 20 }}>
+        <Link to="/admin" style={{ textDecoration: 'none', color: '#666', display: 'block', marginBottom: 10 }}>
+          ← Повернутися до дашборду
+        </Link>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h1>Компанії-постачальники</h1>
           <button 
             onClick={() => { setShowForm(true); setEditingCompany(null); resetForm(); }}
             style={{ padding: '10px 20px', background: '#007bff', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}

@@ -119,100 +119,145 @@ function ProductsAdmin() {
   if (error) return <div>{error}</div>;
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: 20 }}>
-      <div style={{ marginBottom: 20 }}>
-        <Link to="/admin" className="back-link">
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: 20 }}>
+      <div style={{ marginBottom: 30 }}>
+        <Link to="/admin" style={{ textDecoration: 'none', color: '#666', display: 'block', marginBottom: 10 }}>
           ← Назад до дашборду
         </Link>
-        <h2>Адмін: Товари</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h1>Керування товарами</h1>
+          <button 
+            onClick={() => { resetForm(); setEditId(null); }}
+            style={{ padding: '10px 20px', background: editId ? '#ffc107' : '#28a745', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}
+          >
+            {editId ? 'Скасувати редагування' : '+ Додати товар'}
+          </button>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ marginBottom: 20, display: 'grid', gap: 12 }}>
-        <input
-          name="name"
-          value={form.name}
-          onChange={handleChange}
-          placeholder="Назва"
-          required
-        />
-        <textarea
-          name="description"
-          value={form.description}
-          onChange={handleChange}
-          placeholder="Опис"
-          rows={3}
-        />
-        <input
-          name="price"
-          type="number"
-          step="0.01"
-          value={form.price}
-          onChange={handleChange}
-          placeholder="Ціна"
-          required
-        />
-        <input
-          name="weight"
-          type="number"
-          step="0.001"
-          value={form.weight}
-          onChange={handleChange}
-          placeholder="Вага"
-          required
-        />
-        <select
-          name="categoryId"
-          value={form.categoryId}
-          onChange={handleChange}
-          required
-        >
-          <option value="">Оберіть категорію</option>
-          {categories.map((c) => (
-            <option key={c.categoryId} value={c.categoryId}>{c.name}</option>
-          ))}
-        </select>
-        <input
-          name="stock"
-          type="number"
-          value={form.stock}
-          onChange={handleChange}
-          placeholder="Кількість на складі"
-        />
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button type="submit">{editId ? 'Оновити' : 'Створити'}</button>
-          {editId && <button type="button" onClick={resetForm}>Скасувати</button>}
-        </div>
-      </form>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 30 }}>
+        {/* Форма */}
+        <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', height: 'fit-content' }}>
+          <h3 style={{ marginBottom: 20 }}>{editId ? 'Редагувати товар' : 'Новий товар'}</h3>
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 15 }}>
+            <div className="form-group">
+              <label style={labelStyle}>Назва *</label>
+              <input name="name" value={form.name} onChange={handleChange} placeholder="Назва товару" style={inputStyle} required />
+            </div>
+            
+            <div className="form-group">
+              <label style={labelStyle}>Опис</label>
+              <textarea name="description" value={form.description} onChange={handleChange} placeholder="Опис товару" rows={4} style={inputStyle} />
+            </div>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left' }}>ID</th>
-            <th style={{ textAlign: 'left' }}>Назва</th>
-            <th style={{ textAlign: 'left' }}>Ціна</th>
-            <th style={{ textAlign: 'left' }}>Категорія</th>
-            <th style={{ textAlign: 'left' }}>Склад</th>
-            <th style={{ textAlign: 'left' }}>Дії</th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map((p) => (
-            <tr key={p.productId}>
-              <td>{p.productId}</td>
-              <td>{p.name}</td>
-              <td>{p.price}</td>
-              <td>{p.category?.name || p.categoryId}</td>
-              <td>{p.stock}</td>
-              <td>
-                <button onClick={() => startEdit(p)} style={{ marginRight: 8 }}>Редагувати</button>
-                <button onClick={() => handleDelete(p.productId)}>Видалити</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15 }}>
+              <div className="form-group">
+                <label style={labelStyle}>Ціна (грн) *</label>
+                <input name="price" type="number" step="0.01" value={form.price} onChange={handleChange} style={inputStyle} required />
+              </div>
+              <div className="form-group">
+                <label style={labelStyle}>Вага (кг) *</label>
+                <input name="weight" type="number" step="0.001" value={form.weight} onChange={handleChange} style={inputStyle} required />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label style={labelStyle}>Категорія *</label>
+              <select name="categoryId" value={form.categoryId} onChange={handleChange} style={inputStyle} required>
+                <option value="">Оберіть категорію</option>
+                {categories.map((c) => (
+                  <option key={c.categoryId} value={c.categoryId}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label style={labelStyle}>Залишок на складі</label>
+              <input name="stock" type="number" value={form.stock} onChange={handleChange} style={inputStyle} />
+            </div>
+
+            <button type="submit" style={{ padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', marginTop: 10 }}>
+              {editId ? 'Зберегти зміни' : 'Створити товар'}
+            </button>
+          </form>
+        </div>
+
+        {/* Таблиця */}
+        <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+          <h3 style={{ marginBottom: 20 }}>Список товарів ({products.length})</h3>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid #eee', textAlign: 'left' }}>
+                  <th style={thStyle}>Товар</th>
+                  <th style={thStyle}>Ціна</th>
+                  <th style={thStyle}>Склад</th>
+                  <th style={thStyle}>Дії</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((p) => (
+                  <tr key={p.productId} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                    <td style={tdStyle}>
+                      <div style={{ fontWeight: 500 }}>{p.name}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#888' }}>ID: {p.productId}</div>
+                    </td>
+                    <td style={tdStyle}>{p.price.toFixed(2)} грн</td>
+                    <td style={tdStyle}>
+                      <span style={{ 
+                        padding: '2px 8px', 
+                        borderRadius: 4, 
+                        fontSize: '0.85rem',
+                        background: p.stock > 0 ? '#e6ffed' : '#fff1f0',
+                        color: p.stock > 0 ? '#28a745' : '#cf1322'
+                      }}>
+                        {p.stock} шт
+                      </span>
+                    </td>
+                    <td style={tdStyle}>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button onClick={() => startEdit(p)} style={actionBtnStyle('#ffc107')}>✎</button>
+                        <button onClick={() => handleDelete(p.productId)} style={actionBtnStyle('#dc3545')}>✕</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
+
+const inputStyle = {
+  width: '100%',
+  padding: '10px',
+  borderRadius: 6,
+  border: '1px solid #ddd',
+  fontSize: '0.95rem'
+};
+
+const labelStyle = {
+  display: 'block',
+  marginBottom: 5,
+  fontSize: '0.9rem',
+  fontWeight: 600,
+  color: '#555'
+};
+
+const thStyle = { padding: '12px 8px', color: '#666', fontWeight: 600 };
+const tdStyle = { padding: '15px 8px' };
+
+const actionBtnStyle = (color) => ({
+  background: 'none',
+  border: `1px solid ${color}`,
+  color: color,
+  padding: '4px 8px',
+  borderRadius: 4,
+  cursor: 'pointer',
+  fontSize: '1rem'
+});
 
 export default ProductsAdmin;
