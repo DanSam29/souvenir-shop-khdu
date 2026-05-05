@@ -73,6 +73,7 @@ namespace KhduSouvenirShop.API.Controllers
                     productImage = ci.Product.Images.FirstOrDefault(i => i.IsPrimary)?.ImageURL 
                                    ?? ci.Product.Images.FirstOrDefault()?.ImageURL,
                     quantity = ci.Quantity,
+                    weight = ci.Product.Weight,
                     subtotal = discountedPrice * ci.Quantity
                 };
             }).ToList();

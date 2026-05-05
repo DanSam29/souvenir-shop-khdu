@@ -51,5 +51,11 @@
     "place_order": "Place Order",
     "success": "Order placed successfully!",
     "failed": "Failed to place order"
+  },
+  "access_denied": {
+    "title": "Access Denied",
+    "message_1": "Unfortunately, you do not have permission to view this page.",
+    "message_2": "If you believe this is an error, please contact the administrator.",
+    "back_home": "Back to Home"
   }
 }

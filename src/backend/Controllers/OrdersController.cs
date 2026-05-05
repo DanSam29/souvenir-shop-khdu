@@ -44,6 +44,7 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> Checkout([FromBody] CheckoutDto dto)
         {
+            string? paymentUrl = null;
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
             {
@@ -60,6 +61,54 @@ namespace KhduSouvenirShop.API.Controllers
                 return BadRequest(ApiResponse<object>.FailureResult("Кошик порожній", "BadRequest"));
             }
 
+            var user = await _context.Users.FindAsync(userId);
+            string studentStatus = user?.StudentStatus ?? "NONE";
+            var userPromotions = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
+
+            // --- НОВА ЛОГІКА ДЛЯ STRIPE (Етап 5 - Виправлення) ---
+            if (dto.PaymentMethod == "Card")
+            {
+                // Валідація залишків перед переходом до оплати
+                foreach (var item in cart.CartItems)
+                {
+                    if (item.Product.Stock < item.Quantity)
+                    {
+                        return BadRequest(ApiResponse<object>.FailureResult($"Товар '{item.Product.Name}' недостатньо на складі", "InsufficientStock"));
+                    }
+                }
+
+                // Розрахунок вартості доставки
+                var totalAfterUserPromos = cart.CartItems.Sum(ci => _promotionService.GetPriceAfterPromotions(ci.Product, userPromotions) * ci.Quantity);
+                var totalWeight = cart.CartItems.Sum(ci => ci.Product.Weight * ci.Quantity);
+                decimal shippingCost = 0;
+                if (!string.IsNullOrEmpty(dto.CityRef) && _configuration.GetValue<bool>("Features:NovaPoshtaEnabled"))
+                {
+                    shippingCost = await _novaPoshtaService.CalculateDeliveryCostAsync(dto.CityRef, totalWeight, totalAfterUserPromos);
+                }
+
+                var successUrl = _configuration["Stripe:SuccessUrl"] ?? "http://localhost:3000/checkout/success";
+                var cancelUrl = _configuration["Stripe:CancelUrl"] ?? "http://localhost:3000/checkout/cancel";
+
+                // Формуємо метадані для Stripe, щоб створити замовлення ПІСЛЯ оплати
+                var metadata = new Dictionary<string, string>
+                {
+                    { "userId", userId.ToString() },
+                    { "city", dto.City ?? "" },
+                    { "cityRef", dto.CityRef ?? "" },
+                    { "warehouseNumber", dto.WarehouseNumber ?? "" },
+                    { "warehouseRef", dto.WarehouseRef ?? "" },
+                    { "recipientName", dto.RecipientName ?? "" },
+                    { "recipientPhone", dto.RecipientPhone ?? "" },
+                    { "promoCode", dto.PromoCode ?? "" },
+                    { "shippingCost", shippingCost.ToString("F2") }
+                };
+
+                var session = await _paymentService.CreateCheckoutSessionForCartAsync(user!, cart, userPromotions, dto.PromoCode, successUrl, cancelUrl, metadata);
+                
+                return Ok(ApiResponse<object>.SuccessResult(new { paymentUrl = session.Url }, "Перенаправлення на оплату"));
+            }
+
+            // --- ЛОГІКА ДЛЯ НАКЛАДЕНОГО ПЛАТЕЖУ (Залишається як була) ---
             foreach (var item in cart.CartItems)
             {
                 if (item.Product.Stock < item.Quantity)
@@ -68,21 +117,18 @@ namespace KhduSouvenirShop.API.Controllers
                 }
             }
 
-            var user = await _context.Users.FindAsync(userId);
-            string studentStatus = user?.StudentStatus ?? "NONE";
-            var userPromotions = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
-
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
                 var originalSubtotal = cart.CartItems.Sum(ci => ci.Product.Price * ci.Quantity);
+                var totalAfterUserPromosForShipping = cart.CartItems.Sum(ci => _promotionService.GetPriceAfterPromotions(ci.Product, userPromotions) * ci.Quantity);
                 var totalWeight = cart.CartItems.Sum(ci => ci.Product.Weight * ci.Quantity);
                 
                 decimal shippingCost = 0;
                 if (!string.IsNullOrEmpty(dto.CityRef) && _configuration.GetValue<bool>("Features:NovaPoshtaEnabled"))
                 {
-                    shippingCost = await _novaPoshtaService.CalculateDeliveryCostAsync(dto.CityRef, totalWeight, originalSubtotal);
+                    shippingCost = await _novaPoshtaService.CalculateDeliveryCostAsync(dto.CityRef, totalWeight, totalAfterUserPromosForShipping);
                 }
 
                 var orderNumber = $"ORD-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..6]}";
@@ -227,24 +273,14 @@ namespace KhduSouvenirShop.API.Controllers
                 _context.CartItems.RemoveRange(cart.CartItems);
 
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
 
-                _logger.LogInformation("Замовлення {OrderNumber} створено користувачем {UserId}", order.OrderNumber, userId);
-
-                if (user != null)
-                {
-                    await _emailService.SendOrderConfirmationAsync(order, user);
-                }
-
-                string? paymentUrl = null;
                 if (payment.Method == "Card")
                 {
-                    var successUrl = _configuration["Stripe:SuccessUrl"] ?? "http://localhost:3000/checkout/success";
-                    var cancelUrl = _configuration["Stripe:CancelUrl"] ?? "http://localhost:3000/checkout/cancel";
-                    
-                    var session = await _paymentService.CreateCheckoutSessionAsync(order, successUrl, cancelUrl);
-                    paymentUrl = session.Url;
+                    // Ця частина більше не повинна виконуватися тут для "Card" за новою логікою,
+                    // але я залишу її для сумісності, якщо метод оплати зміниться в процесі.
                 }
+
+                await transaction.CommitAsync();
 
                 var result = new
                 {
@@ -270,7 +306,7 @@ namespace KhduSouvenirShop.API.Controllers
         [HttpPost("calculate")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> Calculate([FromBody] CheckoutDto dto)
+        public async Task<ActionResult> Calculate([FromBody] CalculateDto dto)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
@@ -297,8 +333,10 @@ namespace KhduSouvenirShop.API.Controllers
                 productId = ci.ProductId,
                 name = ci.Product.Name,
                 quantity = ci.Quantity,
+                weight = ci.Product.Weight,
                 originalPrice = ci.Product.Price,
-                priceAfterUserPromos = _promotionService.GetPriceAfterPromotions(ci.Product, promos)
+                priceAfterUserPromos = _promotionService.GetPriceAfterPromotions(ci.Product, promos),
+                finalPrice = _promotionService.GetPriceAfterPromotions(ci.Product, promos) // Початково до промокоду
             }).ToList();
 
             decimal subtotal = items.Sum(i => i.originalPrice * i.quantity);
@@ -323,15 +361,45 @@ namespace KhduSouvenirShop.API.Controllers
                     if (promo.Type == "PERCENTAGE")
                     {
                         var percent = Math.Clamp((double)promo.Value, 0, 100);
-                        var promoDiscount = Math.Round(totalAmount * (decimal)(percent / 100.0), 2);
-                        totalDiscount += promoDiscount;
-                        totalAmount -= promoDiscount;
+                        
+                        // Оновлюємо ціну кожного товару
+                        items = items.Select(i => new {
+                            i.productId,
+                            i.name,
+                            i.quantity,
+                            i.weight,
+                            i.originalPrice,
+                            i.priceAfterUserPromos,
+                            finalPrice = Math.Round(i.finalPrice * (decimal)(1 - percent / 100.0), 2)
+                        }).ToList();
+
+                        totalAmount = items.Sum(i => i.finalPrice * i.quantity);
+                        totalDiscount = subtotal - totalAmount;
                     }
                     else if (promo.Type == "FIXED_AMOUNT")
                     {
-                        var promoDiscount = Math.Min(promo.Value, totalAmount);
-                        totalDiscount += promoDiscount;
-                        totalAmount -= promoDiscount;
+                        var fixedAmount = Math.Max(0, promo.Value);
+                        var appliedTotal = Math.Min(fixedAmount, totalAmount);
+                        
+                        // Розподіляємо фіксовану знижку пропорційно
+                        items = items.Select(i => {
+                            var itemSubtotal = i.finalPrice * i.quantity;
+                            var share = totalAmount > 0 ? itemSubtotal / totalAmount : 0;
+                            var itemDiscountTotal = Math.Round(appliedTotal * share, 2);
+                            var perUnitDiscount = Math.Round(itemDiscountTotal / i.quantity, 2);
+                            return new {
+                                i.productId,
+                                i.name,
+                                i.quantity,
+                                i.weight,
+                                i.originalPrice,
+                                i.priceAfterUserPromos,
+                                finalPrice = Math.Max(0, i.finalPrice - perUnitDiscount)
+                            };
+                        }).ToList();
+
+                        totalAmount = items.Sum(i => i.finalPrice * i.quantity);
+                        totalDiscount = subtotal - totalAmount;
                     }
                 }
             }
@@ -582,6 +650,12 @@ namespace KhduSouvenirShop.API.Controllers
         public string? WarehouseRef { get; set; }
         public string? PaymentMethod { get; set; }
         public string? PromoCode { get; set; }
+    }
+
+    public class CalculateDto
+    {
+        public string? PromoCode { get; set; }
+        public string? CityRef { get; set; }
     }
 
     public class UpdateStatusDto

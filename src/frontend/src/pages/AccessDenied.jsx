@@ -10,11 +10,11 @@ const AccessDenied = () => {
     <div className="access-denied-container">
       <div className="access-denied-content">
         <div className="error-icon">🚫</div>
-        <h1>Доступ заборонено</h1>
-        <p>На жаль, у вас немає прав для перегляду цієї сторінки.</p>
-        <p>Якщо ви вважаєте, що це помилка, зверніться до адміністратора.</p>
+        <h1>{t('access_denied.title')}</h1>
+        <p>{t('access_denied.message_1')}</p>
+        <p>{t('access_denied.message_2')}</p>
         <Link to="/" className="back-home-btn">
-          Повернутися на головну
+          {t('access_denied.back_home')}
         </Link>
       </div>
     </div>

@@ -111,6 +111,92 @@ namespace KhduSouvenirShop.API.Services
             return session;
         }
 
+        public async Task<Session> CreateCheckoutSessionForCartAsync(User user, Cart cart, List<Promotion> promos, string? promoCode, string successUrl, string cancelUrl, Dictionary<string, string> metadata)
+        {
+            var promotionService = new PromotionService(_context);
+            var lineItems = new List<SessionLineItemOptions>();
+            decimal totalAmount = 0;
+
+            foreach (var item in cart.CartItems)
+            {
+                var priceAfterUserPromos = promotionService.GetPriceAfterPromotions(item.Product, promos);
+                
+                // Якщо є промокод, застосовуємо його до ціни (спрощена логіка для Stripe)
+                if (!string.IsNullOrEmpty(promoCode))
+                {
+                    var now = DateTime.UtcNow;
+                    var promo = await _context.Promotions.FirstOrDefaultAsync(p => p.PromoCode == promoCode && p.IsActive);
+                    if (promo != null)
+                    {
+                        if (promo.Type == "PERCENTAGE")
+                        {
+                            var percent = Math.Clamp((double)promo.Value, 0, 100);
+                            priceAfterUserPromos = Math.Round(priceAfterUserPromos * (decimal)(1 - percent / 100.0), 2);
+                        }
+                        else if (promo.Type == "FIXED_AMOUNT")
+                        {
+                            // Для фіксованої суми на весь кошик - пропорційно розподіляємо (спрощено)
+                            var cartTotal = cart.CartItems.Sum(ci => promotionService.GetPriceAfterPromotions(ci.Product, promos) * ci.Quantity);
+                            if (cartTotal > 0)
+                            {
+                                var share = (priceAfterUserPromos * item.Quantity) / cartTotal;
+                                var discountForItem = (promo.Value * share) / item.Quantity;
+                                priceAfterUserPromos = Math.Max(0, priceAfterUserPromos - discountForItem);
+                            }
+                        }
+                    }
+                }
+
+                lineItems.Add(new SessionLineItemOptions
+                {
+                    PriceData = new SessionLineItemPriceDataOptions
+                    {
+                        UnitAmountDecimal = priceAfterUserPromos * 100,
+                        Currency = "uah",
+                        ProductData = new SessionLineItemPriceDataProductDataOptions
+                        {
+                            Name = item.Product.Name,
+                            Description = item.Product.Description,
+                        },
+                    },
+                    Quantity = item.Quantity,
+                });
+                totalAmount += priceAfterUserPromos * item.Quantity;
+            }
+
+            // Додаємо доставку, якщо вона є в метаданих
+            if (metadata.TryGetValue("shippingCost", out var costStr) && decimal.TryParse(costStr, out var cost) && cost > 0)
+            {
+                lineItems.Add(new SessionLineItemOptions
+                {
+                    PriceData = new SessionLineItemPriceDataOptions
+                    {
+                        UnitAmountDecimal = cost * 100,
+                        Currency = "uah",
+                        ProductData = new SessionLineItemPriceDataProductDataOptions
+                        {
+                            Name = "Доставка Nova Poshta",
+                        },
+                    },
+                    Quantity = 1,
+                });
+            }
+
+            var options = new SessionCreateOptions
+            {
+                PaymentMethodTypes = new List<string> { "card" },
+                LineItems = lineItems,
+                Mode = "payment",
+                SuccessUrl = successUrl + "?session_id={CHECKOUT_SESSION_ID}",
+                CancelUrl = cancelUrl,
+                ClientReferenceId = $"CART_{user.UserId}",
+                Metadata = metadata
+            };
+
+            var service = new SessionService();
+            return await service.CreateAsync(options);
+        }
+
         public async Task<bool> HandleWebhookAsync(string json, string stripeSignature)
         {
             try
@@ -150,7 +236,14 @@ namespace KhduSouvenirShop.API.Services
 
         private async Task<bool> ProcessSuccessfulPayment(Session session)
         {
-            var orderIdStr = session.ClientReferenceId;
+            var reference = session.ClientReferenceId;
+            
+            if (reference != null && reference.StartsWith("CART_"))
+            {
+                return await CreateOrderFromSuccessfulSession(session);
+            }
+
+            var orderIdStr = reference;
             if (!int.TryParse(orderIdStr, out var orderId)) return false;
 
             var order = await _context.Orders
@@ -185,6 +278,173 @@ namespace KhduSouvenirShop.API.Services
             await _emailService.SendPaymentStatusAsync(order, "Оплачено", "Дякуємо за оплату через Stripe!");
 
             return true;
+        }
+
+        private async Task<bool> CreateOrderFromSuccessfulSession(Session session)
+        {
+            var userIdStr = session.Metadata["userId"];
+            if (!int.TryParse(userIdStr, out var userId)) return false;
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return false;
+
+            var cart = await _context.Carts
+                .Include(c => c.CartItems)
+                    .ThenInclude(ci => ci.Product)
+                .FirstOrDefaultAsync(c => c.UserId == userId);
+
+            if (cart == null || cart.CartItems.Count == 0)
+            {
+                _logger.LogWarning("Cart is empty for user {UserId} during webhook processing", userId);
+                return true; // Вже опрацьовано або кошик очищено іншим шляхом
+            }
+
+            var promoCode = session.Metadata.TryGetValue("promoCode", out var pc) ? pc : null;
+            decimal shippingCost = 0;
+            if (session.Metadata.TryGetValue("shippingCost", out var scStr)) decimal.TryParse(scStr, out shippingCost);
+
+            var promotionService = new PromotionService(_context);
+            var userPromotions = await promotionService.GetActivePromotionsForUserAsync(user.StudentStatus);
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var orderNumber = $"ORD-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..6]}";
+                var order = new Order
+                {
+                    UserId = userId,
+                    OrderNumber = orderNumber,
+                    Status = "Paid", // Оскільки це після успішної оплати
+                    ShippingCost = shippingCost,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Orders.Add(order);
+                await _context.SaveChangesAsync();
+
+                var shipping = new KhduSouvenirShop.API.Models.Shipping
+                {
+                    OrderId = order.OrderId,
+                    City = session.Metadata["city"],
+                    WarehouseNumber = session.Metadata["warehouseNumber"],
+                    CityRef = session.Metadata["cityRef"],
+                    WarehouseRef = session.Metadata["warehouseRef"],
+                    RecipientName = session.Metadata["recipientName"],
+                    RecipientPhone = session.Metadata["recipientPhone"]
+                };
+                _context.Shippings.Add(shipping);
+
+                var payment = new Payment
+                {
+                    OrderId = order.OrderId,
+                    Amount = (decimal)(session.AmountTotal ?? 0) / 100m,
+                    Method = "Card",
+                    Status = "Completed",
+                    TransactionId = session.PaymentIntentId,
+                    StripeSessionId = session.Id,
+                    StripePaymentIntentId = session.PaymentIntentId,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Payments.Add(payment);
+
+                decimal subtotal = 0;
+                var orderItems = new List<OrderItem>();
+                foreach (var item in cart.CartItems)
+                {
+                    item.Product.Stock -= item.Quantity;
+                    var priceAfterUserPromos = promotionService.GetPriceAfterPromotions(item.Product, userPromotions);
+                    
+                    var orderItem = new OrderItem
+                    {
+                        OrderId = order.OrderId,
+                        ProductId = item.ProductId,
+                        Quantity = item.Quantity,
+                        OriginalPrice = item.Product.Price,
+                        DiscountAmount = (item.Product.Price - priceAfterUserPromos) * item.Quantity,
+                        FinalPrice = priceAfterUserPromos
+                    };
+                    orderItems.Add(orderItem);
+                    subtotal += priceAfterUserPromos * item.Quantity;
+                }
+
+                // Застосування промокоду, якщо він був
+                if (!string.IsNullOrWhiteSpace(promoCode))
+                {
+                    var promo = await _context.Promotions.FirstOrDefaultAsync(p => p.PromoCode == promoCode && p.IsActive);
+                    if (promo != null)
+                    {
+                        if (promo.Type == "PERCENTAGE")
+                        {
+                            var percent = Math.Clamp((double)promo.Value, 0, 100);
+                            foreach (var oi in orderItems)
+                            {
+                                var disc = Math.Round(oi.FinalPrice * (decimal)(percent / 100.0), 2);
+                                oi.DiscountAmount += disc * oi.Quantity;
+                                oi.FinalPrice -= disc;
+                                oi.AppliedPromotionId = promo.PromotionId;
+                            }
+                        }
+                        else if (promo.Type == "FIXED_AMOUNT")
+                        {
+                            var appliedTotal = Math.Min(promo.Value, subtotal);
+                            foreach (var oi in orderItems)
+                            {
+                                var share = (oi.FinalPrice * oi.Quantity) / subtotal;
+                                var itemDisc = Math.Round(appliedTotal * share, 2);
+                                oi.DiscountAmount += itemDisc;
+                                oi.FinalPrice -= Math.Round(itemDisc / oi.Quantity, 2);
+                                oi.AppliedPromotionId = promo.PromotionId;
+                            }
+                        }
+                        promo.CurrentUsage += 1;
+                    }
+                }
+
+                order.TotalAmount = orderItems.Sum(oi => oi.FinalPrice * oi.Quantity) + shippingCost;
+
+                foreach (var oi in orderItems)
+                {
+                    _context.OrderItems.Add(oi);
+                    _context.OutgoingDocuments.Add(new OutgoingDocument
+                    {
+                        ProductId = oi.ProductId,
+                        Quantity = oi.Quantity,
+                        OrderId = order.OrderId,
+                        Reason = "ORDER",
+                        OriginalPrice = oi.OriginalPrice,
+                        AppliedPromotionId = oi.AppliedPromotionId,
+                        DiscountAmount = oi.DiscountAmount,
+                        FinalPrice = oi.FinalPrice,
+                        DocumentDate = DateTime.UtcNow,
+                        CreatedByUserId = userId,
+                        Notes = $"Створено автоматично після оплати Stripe {order.OrderNumber}"
+                    });
+                }
+
+                _context.CartItems.RemoveRange(cart.CartItems);
+                
+                _context.OrderHistories.Add(new OrderHistory
+                {
+                    OrderId = order.OrderId,
+                    NewStatus = "Paid",
+                    Comment = "Замовлення створено та оплачено через Stripe Checkout",
+                    Timestamp = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Order {OrderNumber} created from Stripe Session {SessionId}", order.OrderNumber, session.Id);
+                await _emailService.SendOrderConfirmationAsync(order, user);
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error creating order from Stripe Session {SessionId}", session.Id);
+                return false;
+            }
         }
 
         private async Task<bool> ProcessFailedPayment(PaymentIntent paymentIntent)

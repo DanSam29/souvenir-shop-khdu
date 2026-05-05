@@ -155,8 +155,15 @@ function CheckoutPage() {
     if (form.cityRef && cart) {
       const calculateShipping = async () => {
         try {
-          const totalWeight = cart.items.reduce((acc, item) => acc + (item.weight || 0.5) * item.quantity, 0);
-          const res = await novaPoshtaAPI.calculate(form.cityRef, totalWeight, cart.totalAmount);
+          const items = calcPreview?.items ?? cart.items;
+          // Використовуємо реальну вагу з БД, якщо вона є, інакше 0.5кг (fallback)
+          const totalWeight = items.reduce((acc, item) => {
+            const w = item.weight !== undefined ? item.weight : 0.5;
+            return acc + w * item.quantity;
+          }, 0);
+          
+          const currentTotal = calcPreview?.totalAmount ?? cart.totalAmount;
+          const res = await novaPoshtaAPI.calculate(form.cityRef, totalWeight, currentTotal);
           setShippingCost(res.data.cost);
         } catch (err) {
           console.error('Error calculating shipping', err);
@@ -164,7 +171,7 @@ function CheckoutPage() {
       };
       calculateShipping();
     }
-  }, [form.cityRef, cart]);
+  }, [form.cityRef, cart, calcPreview]);
 
   // Автоперерахунок при введенні промокоду
   useEffect(() => {
@@ -261,7 +268,9 @@ function CheckoutPage() {
     );
   }
 
-  const finalTotal = (calcPreview?.totalAmount ?? cart.totalAmount) + shippingCost;
+  const cartTotal = cart?.totalAmount ?? 0;
+  const previewTotal = calcPreview?.totalAmount ?? cartTotal;
+  const finalTotal = previewTotal + (shippingCost || 0);
 
   return (
     <div className="checkout-page" style={{ maxWidth: 900, margin: '0 auto', padding: 20 }}>
@@ -420,18 +429,25 @@ function CheckoutPage() {
           <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
             <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>Ваше замовлення</h2>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {(calcPreview?.items ?? cart.items).map((item) => (
-                <li key={item.cartItemId || item.productId} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: '0.95rem' }}>
-                  <span style={{ color: '#555' }}>{item.name || item.productName} × {item.quantity}</span>
-                  <span style={{ fontWeight: 500 }}>{(item.subtotal || (item.price * item.quantity)).toFixed(2)} грн</span>
-                </li>
-              ))}
+              {(calcPreview?.items ?? cart.items).map((item) => {
+                // Визначаємо ціну: беремо з calcPreview (якщо є) або з кошика
+                const itemPrice = item.finalPrice ?? item.productPrice ?? item.price ?? 0;
+                const quantity = item.quantity ?? 0;
+                const itemSubtotal = itemPrice * quantity;
+                
+                return (
+                  <li key={item.cartItemId || item.productId} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: '0.95rem' }}>
+                    <span style={{ color: '#555' }}>{item.name || item.productName} × {quantity}</span>
+                    <span style={{ fontWeight: 500 }}>{itemSubtotal.toFixed(2)} грн</span>
+                  </li>
+                );
+              })}
             </ul>
             
             <div style={{ marginTop: 20, paddingTop: 15, borderTop: '1px solid #eee' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span style={{ color: '#666' }}>Товари</span>
-                <span>{(calcPreview?.totalAmount ?? cart.totalAmount).toFixed(2)} грн</span>
+                <span>{previewTotal.toFixed(2)} грн</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                 <span style={{ color: '#666' }}>Доставка (Нова Пошта)</span>
