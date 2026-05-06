@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { cartAPI, ordersAPI, usersAPI, novaPoshtaAPI, featuresAPI } from '../services/api';
 
 function CheckoutPage() {
-  useTranslation();
+  const { t, i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [cart, setCart] = useState(null);
@@ -14,6 +14,8 @@ function CheckoutPage() {
   const [orderResult, setOrderResult] = useState(null);
   const [calcPreview, setCalcPreview] = useState(null);
   const [features, setFeatures] = useState(null);
+
+  const isEn = i18n.language === 'en';
 
   // Nova Poshta states
   const [cities, setCities] = useState([]);
@@ -227,16 +229,16 @@ function CheckoutPage() {
   };
 
   if (loading) {
-    return <div className="checkout-page"><div className="loading">Завантаження...</div></div>;
+    return <div className="checkout-page"><div className="loading">{t('common.loading')}</div></div>;
   }
 
   if (orderResult) {
     return (
       <div className="checkout-page" style={{ maxWidth: 600, margin: '50px auto', padding: 20, textAlign: 'center' }}>
         <div style={{ background: '#e6ffed', border: '1px solid #b7eb8f', borderRadius: 12, padding: 40 }}>
-          <h1 style={{ margin: '0 0 20px 0', color: '#1e4620' }}>✅ Замовлення оформлено!</h1>
-          <p style={{ fontSize: '1.1rem', margin: '10px 0' }}><strong>Номер замовлення:</strong> {orderResult.orderNumber}</p>
-          <p style={{ fontSize: '1.1rem', margin: '10px 0' }}><strong>Сума:</strong> {orderResult.totalAmount.toFixed(2)} грн</p>
+          <h1 style={{ margin: '0 0 20px 0', color: '#1e4620' }}>✅ {t('checkout.success')}</h1>
+          <p style={{ fontSize: '1.1rem', margin: '10px 0' }}><strong>{t('checkout.order_number')}:</strong> {orderResult.orderNumber}</p>
+          <p style={{ fontSize: '1.1rem', margin: '10px 0' }}><strong>{t('cart.total')}:</strong> {orderResult.totalAmount.toFixed(2)} {t('common.currency')}</p>
           <button 
             onClick={() => navigate('/profile')} 
             style={{ 
@@ -250,7 +252,7 @@ function CheckoutPage() {
               cursor: 'pointer' 
             }}
           >
-            Перейти в мої замовлення
+            {t('checkout.go_to_orders')}
           </button>
         </div>
       </div>
@@ -261,8 +263,8 @@ function CheckoutPage() {
     return (
       <div className="checkout-page">
         <div className="empty-cart">
-          <h2>Кошик порожній</h2>
-          <Link to="/" className="back-to-catalog-btn">Перейти до каталогу</Link>
+          <h2>{t('cart.empty')}</h2>
+          <Link to="/" className="back-to-catalog-btn">{t('product.back_to_catalog')}</Link>
         </div>
       </div>
     );
@@ -274,17 +276,17 @@ function CheckoutPage() {
 
   return (
     <div className="checkout-page" style={{ maxWidth: 900, margin: '0 auto', padding: 20 }}>
-      <Link to="/cart" className="back-link" style={{ textDecoration: 'none', color: '#666' }}>← Назад до кошика</Link>
-      <h1 style={{ marginBottom: 30 }}>Оформлення замовлення</h1>
+      <Link to="/cart" className="back-link" style={{ textDecoration: 'none', color: '#666' }}>← {t('product.back_to_cart')}</Link>
+      <h1 style={{ marginBottom: 30 }}>{t('checkout.title')}</h1>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 30 }}>
         <form onSubmit={handleSubmit} style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
-          <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>Дані доставки</h2>
+          <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>{t('checkout.delivery')}</h2>
 
           {features?.novaPoshtaEnabled ? (
             <>
               <div style={{ position: 'relative', marginBottom: 20 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Місто (Нова Пошта)</label>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.city_np')}</label>
                 <input
                   type="text"
                   value={citySearch}
@@ -292,7 +294,7 @@ function CheckoutPage() {
                     setCitySearch(e.target.value);
                     if (form.cityRef) setForm(p => ({ ...p, cityRef: '', warehouseRef: '' }));
                   }}
-                  placeholder="Почніть вводити назву міста..."
+                  placeholder={t('checkout.city_placeholder')}
                   style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
                 />
                 {showCityDropdown && cities.length > 0 && (
@@ -313,13 +315,13 @@ function CheckoutPage() {
               </div>
 
               <div style={{ position: 'relative', marginBottom: 20 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Відділення</label>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.warehouse')}</label>
                 <input
                   type="text"
                   value={warehouseSearch}
                   onChange={(e) => setWarehouseSearch(e.target.value)}
                   disabled={!form.cityRef}
-                  placeholder={form.cityRef ? "Виберіть відділення..." : "Спочатку виберіть місто"}
+                  placeholder={form.cityRef ? t('checkout.warehouse_placeholder') : t('checkout.select_city_first')}
                   style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box', background: form.cityRef ? '#fff' : '#f9f9f9' }}
                 />
                 {showWarehouseDropdown && warehouses.length > 0 && (
@@ -342,25 +344,25 @@ function CheckoutPage() {
           ) : (
             <>
               <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Місто</label>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.city')}</label>
                 <input
                   type="text"
                   name="city"
                   value={form.city}
                   onChange={handleChange}
-                  placeholder="Введіть назву міста"
+                  placeholder={t('checkout.city_placeholder_manual')}
                   style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
                   required
                 />
               </div>
               <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Відділення</label>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.warehouse')}</label>
                 <input
                   type="text"
                   name="warehouseNumber"
                   value={form.warehouseNumber}
                   onChange={handleChange}
-                  placeholder="Введіть відділення"
+                  placeholder={t('checkout.warehouse_placeholder_manual')}
                   style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
                   required
                 />
@@ -368,29 +370,29 @@ function CheckoutPage() {
             </>
           )}
 
-          <h2 style={{ fontSize: '1.2rem', margin: '30px 0 20px', borderBottom: '1px solid #eee', paddingBottom: 10 }}>Оплата та промокод</h2>
+          <h2 style={{ fontSize: '1.2rem', margin: '30px 0 20px', borderBottom: '1px solid #eee', paddingBottom: 10 }}>{t('checkout.payment_promo')}</h2>
 
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Спосіб оплати</label>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.payment_method')}</label>
             <select
               name="paymentMethod"
               value={form.paymentMethod}
               onChange={handleChange}
               style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', cursor: 'pointer' }}
             >
-              {features?.stripeEnabled && <option value="Card">💳 Оплата карткою (Stripe)</option>}
-              <option value="CashOnDelivery">📦 Накладений платіж</option>
+              {features?.stripeEnabled && <option value="Card">💳 {t('checkout.payment_card')}</option>}
+              <option value="CashOnDelivery">📦 {t('checkout.payment_cod')}</option>
             </select>
           </div>
           
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Промокод</label>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.promo_code')}</label>
             <input
               type="text"
               name="promoCode"
               value={form.promoCode}
               onChange={handleChange}
-              placeholder="Введіть промокод (якщо є)"
+              placeholder={t('checkout.promo_placeholder')}
               style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
             />
           </div>
@@ -421,24 +423,25 @@ function CheckoutPage() {
               transition: 'background 0.2s'
             }}
           >
-            {submitting ? 'Оформлення...' : 'Підтвердити замовлення'}
+            {submitting ? t('common.submitting') : t('checkout.place_order')}
           </button>
         </form>
 
         <div style={{ position: 'sticky', top: 20 }}>
           <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>Ваше замовлення</h2>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>{t('checkout.your_order')}</h2>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {(calcPreview?.items ?? cart.items).map((item) => {
                 // Визначаємо ціну: беремо з calcPreview (якщо є) або з кошика
                 const itemPrice = item.finalPrice ?? item.productPrice ?? item.price ?? 0;
                 const quantity = item.quantity ?? 0;
                 const itemSubtotal = itemPrice * quantity;
+                const displayName = (isEn && (item.nameEn || item.productNameEn)) ? (item.nameEn || item.productNameEn) : (item.name || item.productName);
                 
                 return (
                   <li key={item.cartItemId || item.productId} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: '0.95rem' }}>
-                    <span style={{ color: '#555' }}>{item.name || item.productName} × {quantity}</span>
-                    <span style={{ fontWeight: 500 }}>{itemSubtotal.toFixed(2)} грн</span>
+                    <span style={{ color: '#555' }}>{displayName} × {quantity}</span>
+                    <span style={{ fontWeight: 500 }}>{itemSubtotal.toFixed(2)} {t('common.currency')}</span>
                   </li>
                 );
               })}
@@ -446,16 +449,16 @@ function CheckoutPage() {
             
             <div style={{ marginTop: 20, paddingTop: 15, borderTop: '1px solid #eee' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ color: '#666' }}>Товари</span>
-                <span>{previewTotal.toFixed(2)} грн</span>
+                <span style={{ color: '#666' }}>{t('cart.items')}</span>
+                <span>{previewTotal.toFixed(2)} {t('common.currency')}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                <span style={{ color: '#666' }}>Доставка (Нова Пошта)</span>
-                <span style={{ color: shippingCost > 0 ? '#000' : '#888' }}>{shippingCost > 0 ? `${shippingCost.toFixed(2)} грн` : 'буде розраховано'}</span>
+                <span style={{ color: '#666' }}>{t('checkout.delivery_cost')}</span>
+                <span style={{ color: shippingCost > 0 ? '#000' : '#888' }}>{shippingCost > 0 ? `${shippingCost.toFixed(2)} ${t('common.currency')}` : t('checkout.will_be_calculated')}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 700, marginTop: 10, color: '#000' }}>
-                <span>Разом</span>
-                <span>{finalTotal.toFixed(2)} грн</span>
+                <span>{t('cart.total')}</span>
+                <span>{finalTotal.toFixed(2)} {t('common.currency')}</span>
               </div>
             </div>
           </div>

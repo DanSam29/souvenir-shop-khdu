@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { usersAPI } from '../services/api';
 import './RegisterForm.css';
 
 function RegisterForm() {
+  const { i18n } = useTranslation();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -41,7 +43,11 @@ function RegisterForm() {
     }
 
     try {
-      const response = await usersAPI.register(formData);
+      const payload = {
+        ...formData,
+        language: i18n.language
+      };
+      const response = await usersAPI.register(payload);
       console.log('Реєстрація успішна:', response);
       
       // Перенаправлення на сторінку входу з повідомленням про успіх

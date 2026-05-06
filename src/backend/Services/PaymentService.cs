@@ -285,7 +285,7 @@ namespace KhduSouvenirShop.API.Services
             _logger.LogInformation("Order {OrderId} successfully paid via Stripe", orderId);
 
             // Відправка листа про успішну оплату
-            await _emailService.SendPaymentStatusAsync(order, "Оплачено", "Дякуємо за оплату через Stripe!");
+            await _emailService.SendPaymentConfirmationAsync(order.User.Email, order.OrderNumber, order.Payment.Amount, "ua");
 
             return true;
         }
@@ -447,7 +447,7 @@ namespace KhduSouvenirShop.API.Services
                 InvalidateCache();
 
                 _logger.LogInformation("Order {OrderNumber} created from Stripe Session {SessionId}", order.OrderNumber, session.Id);
-                await _emailService.SendOrderConfirmationAsync(order, user);
+                await _emailService.SendOrderConfirmationAsync(user.Email, order.OrderNumber, "ua");
                 
                 return true;
             }

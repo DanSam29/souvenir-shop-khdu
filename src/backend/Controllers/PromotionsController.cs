@@ -48,7 +48,9 @@ namespace KhduSouvenirShop.API.Controllers
             var result = promos.Select(p => new {
                 p.PromotionId,
                 p.Name,
+                p.NameEn,
                 p.Description,
+                p.DescriptionEn,
                 p.Type,
                 p.Value,
                 p.TargetType,
@@ -77,7 +79,9 @@ namespace KhduSouvenirShop.API.Controllers
             var promo = new Promotion
             {
                 Name = dto.Name,
+                NameEn = dto.NameEn,
                 Description = dto.Description,
+                DescriptionEn = dto.DescriptionEn,
                 Type = dto.Type,
                 Value = dto.Value,
                 TargetType = dto.TargetType,
@@ -121,7 +125,9 @@ namespace KhduSouvenirShop.API.Controllers
     public class PromotionDto
     {
         public string Name { get; set; } = string.Empty;
+        public string? NameEn { get; set; }
         public string? Description { get; set; }
+        public string? DescriptionEn { get; set; }
         public string Type { get; set; } = "PERCENTAGE";
         public decimal Value { get; set; }
         public string TargetType { get; set; } = "PRODUCT";

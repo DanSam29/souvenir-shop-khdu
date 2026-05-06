@@ -55,7 +55,7 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 FirstName = registerDto.FirstName,
                 LastName = registerDto.LastName,
-                Email = registerDto.Email,
+                Email = registerDto.Email.ToLower().Trim(),
                 Password = passwordHash,
                 Phone = registerDto.Phone,
                 Role = "Customer",
@@ -82,8 +82,8 @@ namespace KhduSouvenirShop.API.Controllers
                     newUser.StudentExpiresAt = DateTime.UtcNow.AddMonths(4);
                     _logger.LogInformation("Користувач {Email} автоматично верифікований як студент. Статус: {Status}", newUser.Email, newUser.StudentStatus);
 
-                    // Відправка листа про верифікацію
-                    await _emailService.SendStudentVerificationAsync(newUser, newUser.StudentStatus);
+                    // Відправка email про зміну статусу
+                    await _emailService.SendStudentVerificationEmailAsync(newUser.Email, newUser.StudentStatus, "ua");
                 }
             }
             else

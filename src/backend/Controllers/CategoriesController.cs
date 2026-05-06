@@ -55,7 +55,9 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 categoryId = category.CategoryId,
                 name = category.Name,
+                nameEn = category.NameEn,
                 description = category.Description,
+                descriptionEn = category.DescriptionEn,
                 displayOrder = category.DisplayOrder,
                 subCategories = all
                     .Where(c => c.ParentCategoryId == category.CategoryId)
@@ -73,7 +75,9 @@ namespace KhduSouvenirShop.API.Controllers
             var category = new Category
             {
                 Name = dto.Name,
+                NameEn = dto.NameEn,
                 Description = dto.Description,
+                DescriptionEn = dto.DescriptionEn,
                 ParentCategoryId = dto.ParentCategoryId,
                 DisplayOrder = dto.DisplayOrder,
                 CreatedAt = DateTime.UtcNow
@@ -94,7 +98,9 @@ namespace KhduSouvenirShop.API.Controllers
             if (category == null) return NotFound(ApiResponse<object>.FailureResult("Категорію не знайдено", "NotFound"));
 
             category.Name = dto.Name;
+            category.NameEn = dto.NameEn;
             category.Description = dto.Description;
+            category.DescriptionEn = dto.DescriptionEn;
             category.ParentCategoryId = dto.ParentCategoryId;
             category.DisplayOrder = dto.DisplayOrder;
             category.UpdatedAt = DateTime.UtcNow;
@@ -139,7 +145,9 @@ namespace KhduSouvenirShop.API.Controllers
     public class CategoryDto
     {
         public string Name { get; set; } = string.Empty;
+        public string? NameEn { get; set; }
         public string? Description { get; set; }
+        public string? DescriptionEn { get; set; }
         public int? ParentCategoryId { get; set; }
         public int DisplayOrder { get; set; } = 0;
     }

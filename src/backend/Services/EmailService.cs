@@ -6,9 +6,9 @@ namespace KhduSouvenirShop.API.Services
 {
     public interface IEmailService
     {
-        Task SendOrderConfirmationAsync(Order order, User user);
-        Task SendPaymentStatusAsync(Order order, string status, string? comment = null);
-        Task SendStudentVerificationAsync(User user, string status);
+        Task SendOrderConfirmationAsync(string email, string orderNumber, string lang = "ua");
+        Task SendPaymentConfirmationAsync(string email, string orderNumber, decimal amount, string lang = "ua");
+        Task SendStudentVerificationEmailAsync(string email, string status, string lang = "ua");
     }
 
     public class EmailService : IEmailService
@@ -22,49 +22,34 @@ namespace KhduSouvenirShop.API.Services
             _logger = logger;
         }
 
-        public async Task SendOrderConfirmationAsync(Order order, User user)
+        public async Task SendOrderConfirmationAsync(string email, string orderNumber, string lang = "ua")
         {
-            string subject = $"Замовлення #{order.OrderNumber} прийнято";
-
-            string body = $@"
-                <h1>Дякуємо за замовлення, {user.FirstName}!</h1>
-                <p>Ваше замовлення <strong>#{order.OrderNumber}</strong> успішно створено.</p>
-                <p>Сума до сплати: <strong>{order.TotalAmount:F2} грн</strong></p>
-                <p>Статус: {order.Status}</p>
-                <hr/>
-                <p>З повагою, Команда KSU Souvenir Shop</p>";
-
-            await SendEmailAsync(user.Email, subject, body);
-        }
-
-        public async Task SendPaymentStatusAsync(Order order, string status, string? comment = null)
-        {
-            if (order.User == null) return;
+            string subject = lang == "en" ? "Order Confirmation" : "Підтвердження замовлення";
+            string body = lang == "en" 
+                ? $"<h1>Thank you for your order!</h1><p>Your order number: <b>{orderNumber}</b></p>"
+                : $"<h1>Дякуємо за ваше замовлення!</h1><p>Номер вашого замовлення: <b>{orderNumber}</b></p>";
             
-            string subject = $"Оновлення статусу оплати замовлення #{order.OrderNumber}";
-
-            string body = $@"
-                <h2>Статус вашої оплати: {status}</h2>
-                <p>Замовлення: #{order.OrderNumber}</p>
-                {(!string.IsNullOrEmpty(comment) ? $"<p>Коментар: {comment}</p>" : "")}
-                <hr/>
-                <p>Дякуємо, що ви з нами!</p>";
-
-            await SendEmailAsync(order.User.Email, subject, body);
+            await SendEmailAsync(email, subject, body);
         }
 
-        public async Task SendStudentVerificationAsync(User user, string status)
+        public async Task SendPaymentConfirmationAsync(string email, string orderNumber, decimal amount, string lang = "ua")
         {
-            string subject = "Оновлення вашого студентського статусу";
+            string subject = lang == "en" ? "Payment Received" : "Оплата отримана";
+            string body = lang == "en"
+                ? $"<h1>Payment successful!</h1><p>We received your payment of {amount} UAH for order {orderNumber}.</p>"
+                : $"<h1>Оплата успішна!</h1><p>Ми отримали вашу оплату в розмірі {amount} грн за замовлення {orderNumber}.</p>";
 
-            string body = $@"
-                <h2>Вітаємо, {user.FirstName}!</h2>
-                <p>Ваш студентський статус у KSU Souvenir Shop було оновлено на: <strong>{status}</strong>.</p>
-                <p>Тепер вам доступні спеціальні знижки для студентів.</p>
-                <hr/>
-                <p>Приємних покупок!</p>";
+            await SendEmailAsync(email, subject, body);
+        }
 
-            await SendEmailAsync(user.Email, subject, body);
+        public async Task SendStudentVerificationEmailAsync(string email, string status, string lang = "ua")
+        {
+            string subject = lang == "en" ? "Student Status Verified" : "Студентський статус підтверджено";
+            string body = lang == "en"
+                ? $"<h1>Congratulations!</h1><p>Your student status has been verified as: <b>{status}</b>. You can now use your discounts.</p>"
+                : $"<h1>Вітаємо!</h1><p>Ваш статус студента підтверджено: <b>{status}</b>. Тепер ви можете користуватися своїми знижками.</p>";
+
+            await SendEmailAsync(email, subject, body);
         }
 
         private async Task SendEmailAsync(string toEmail, string subject, string body)

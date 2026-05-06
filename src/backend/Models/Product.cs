@@ -13,9 +13,15 @@ namespace KhduSouvenirShop.API.Models
         [MaxLength(200)]
         public string Name { get; set; } = string.Empty;
 
+        [MaxLength(200)]
+        public string? NameEn { get; set; }
+
         [Required]
         [Column(TypeName = "text")]
         public string Description { get; set; } = string.Empty;
+
+        [Column(TypeName = "text")]
+        public string? DescriptionEn { get; set; }
 
         [Required]
         [Column(TypeName = "decimal(10,2)")]

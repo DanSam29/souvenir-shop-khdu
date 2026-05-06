@@ -69,7 +69,9 @@ namespace KhduSouvenirShop.API.Controllers
                     query = query.Where(p => p.CategoryId == categoryId.Value);
 
                 if (!string.IsNullOrEmpty(search))
-                    query = query.Where(p => p.Name.Contains(search) || p.Description.Contains(search));
+                    query = query.Where(p => p.Name.Contains(search) || p.Description.Contains(search) || 
+                                            (p.NameEn != null && p.NameEn.Contains(search)) || 
+                                            (p.DescriptionEn != null && p.DescriptionEn.Contains(search)));
 
                 if (minPrice.HasValue)
                     query = query.Where(p => p.Price >= minPrice.Value);
@@ -94,8 +96,14 @@ namespace KhduSouvenirShop.API.Controllers
                 {
                     productId = p.ProductId,
                     name = p.Name,
+                    nameEn = p.NameEn,
                     description = p.Description,
-                    category = p.Category != null ? new { categoryId = p.Category.CategoryId, name = p.Category.Name } : null,
+                    descriptionEn = p.DescriptionEn,
+                    category = p.Category != null ? new { 
+                        categoryId = p.Category.CategoryId, 
+                        name = p.Category.Name,
+                        nameEn = p.Category.NameEn
+                    } : null,
                     categoryId = p.CategoryId,
                     images = p.Images.Select(i => new { imageId = i.ImageId, imageURL = i.ImageURL, isPrimary = i.IsPrimary }).ToList(),
                     price = _promotionService.GetPriceAfterPromotions(p, promos),
@@ -151,8 +159,14 @@ namespace KhduSouvenirShop.API.Controllers
                 {
                     productId = product.ProductId,
                     name = product.Name,
+                    nameEn = product.NameEn,
                     description = product.Description,
-                    category = product.Category != null ? new { categoryId = product.Category.CategoryId, name = product.Category.Name } : null,
+                    descriptionEn = product.DescriptionEn,
+                    category = product.Category != null ? new { 
+                        categoryId = product.Category.CategoryId, 
+                        name = product.Category.Name,
+                        nameEn = product.Category.NameEn
+                    } : null,
                     categoryId = product.CategoryId,
                     images = product.Images.Select(i => new { imageId = i.ImageId, imageURL = i.ImageURL, isPrimary = i.IsPrimary }).ToList(),
                     price = _promotionService.GetPriceAfterPromotions(product, promos),
@@ -206,7 +220,9 @@ namespace KhduSouvenirShop.API.Controllers
                 var products = await _context.Products
                     .Include(p => p.Category)
                     .Include(p => p.Images)
-                    .Where(p => p.Name.Contains(query) || p.Description.Contains(query))
+                    .Where(p => p.Name.Contains(query) || p.Description.Contains(query) || 
+                                (p.NameEn != null && p.NameEn.Contains(query)) || 
+                                (p.DescriptionEn != null && p.DescriptionEn.Contains(query)))
                     .ToListAsync();
 
                 var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
@@ -214,8 +230,14 @@ namespace KhduSouvenirShop.API.Controllers
                 {
                     productId = p.ProductId,
                     name = p.Name,
+                    nameEn = p.NameEn,
                     description = p.Description,
-                    category = p.Category != null ? new { categoryId = p.Category.CategoryId, name = p.Category.Name } : null,
+                    descriptionEn = p.DescriptionEn,
+                    category = p.Category != null ? new { 
+                        categoryId = p.Category.CategoryId, 
+                        name = p.Category.Name,
+                        nameEn = p.Category.NameEn
+                    } : null,
                     categoryId = p.CategoryId,
                     images = p.Images.Select(i => new { imageId = i.ImageId, imageURL = i.ImageURL, isPrimary = i.IsPrimary }).ToList(),
                     price = _promotionService.GetPriceAfterPromotions(p, promos),

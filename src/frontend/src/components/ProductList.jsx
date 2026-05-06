@@ -5,7 +5,7 @@ import { productsAPI, categoriesAPI } from '../services/api';
 import './ProductList.css';
 
 function ProductList() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [products, setProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [originalProducts, setOriginalProducts] = useState([]); 
@@ -14,6 +14,8 @@ function ProductList() {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   
+  const isEn = i18n.language === 'en';
+
   // Фільтри
   const [priceRange, setPriceRange] = useState([0, 10000]);
   const [maxPrice, setMaxPrice] = useState(10000);
@@ -68,17 +70,7 @@ function ProductList() {
     setProducts(filtered);
   }, [allProducts, priceRange, selectedCategories, getAllCategoryIds]);
 
-  // Завантаження товарів та категорій при монтуванні
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // Застосування фільтрів при їх зміні
-  useEffect(() => {
-    applyFilters();
-  }, [priceRange, selectedCategories, allProducts, applyFilters]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [productsRes, categoriesRes] = await Promise.all([
@@ -100,11 +92,21 @@ function ProductList() {
       setError(null);
     } catch (err) {
       console.error('Помилка завантаження:', err);
-      setError('Не вдалося завантажити товари');
+      setError(t('common.load_error') || 'Не вдалося завантажити товари');
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  // Завантаження товарів та категорій при монтуванні
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Застосування фільтрів при їх зміні
+  useEffect(() => {
+    applyFilters();
+  }, [priceRange, selectedCategories, allProducts, applyFilters]);
 
   // Пошук товарів
   const handleSearch = async (e) => {
@@ -121,7 +123,7 @@ function ProductList() {
       setError(null);
     } catch (err) {
       console.error('Помилка пошуку:', err);
-      setError('Помилка пошуку товарів');
+      setError(t('common.search_error') || 'Помилка пошуку товарів');
     } finally {
       setLoading(false);
     }
@@ -152,26 +154,29 @@ function ProductList() {
   }
   // Рекурсивне рендеринг дерева категорій
   const renderCategoryTree = (nodes, level = 0) => {
-    return nodes.map(category => (
-      <React.Fragment key={category.categoryId}>
-        <label 
-          className="category-checkbox" 
-          style={{ marginLeft: `${level * 20}px` }}
-        >
-          <input
-            type="checkbox"
-            checked={selectedCategories.includes(category.categoryId)}
-            onChange={() => toggleCategory(category.categoryId)}
-          />
-          <span className={level === 0 ? 'parent-category' : 'child-category'}>
-            {category.name}
-          </span>
-        </label>
-        {category.subCategories && category.subCategories.length > 0 && 
-          renderCategoryTree(category.subCategories, level + 1)
-        }
-      </React.Fragment>
-    ));
+    return nodes.map(category => {
+      const displayName = (isEn && category.nameEn) ? category.nameEn : category.name;
+      return (
+        <React.Fragment key={category.categoryId}>
+          <label 
+            className="category-checkbox" 
+            style={{ marginLeft: `${level * 20}px` }}
+          >
+            <input
+              type="checkbox"
+              checked={selectedCategories.includes(category.categoryId)}
+              onChange={() => toggleCategory(category.categoryId)}
+            />
+            <span className={level === 0 ? 'parent-category' : 'child-category'}>
+              {displayName}
+            </span>
+          </label>
+          {category.subCategories && category.subCategories.length > 0 && 
+            renderCategoryTree(category.subCategories, level + 1)
+          }
+        </React.Fragment>
+      );
+    });
   };
 
   if (loading && products.length === 0) {
@@ -182,7 +187,7 @@ function ProductList() {
     return (
       <div className="error">
         <p>{error}</p>
-        <button onClick={loadData}>Спробувати знову</button>
+        <button onClick={loadData}>{t('common.try_again')}</button>
       </div>
     );
   }
@@ -220,13 +225,13 @@ function ProductList() {
         {/* Фільтри зліва */}
         <aside className="filters-sidebar">
           <div className="filters-header">
-            <h3>Фільтри</h3>
-            <button onClick={resetFilters} className="reset-btn">Скинути</button>
+            <h3>{t('common.filters')}</h3>
+            <button onClick={resetFilters} className="reset-btn">{t('common.reset')}</button>
           </div>
 
           {/* Фільтр за ціною */}
           <div className="filter-section">
-            <h4>Ціна</h4>
+            <h4>{t('common.price')}</h4>
             <div className="price-range">
               <input
                 type="range"
@@ -237,8 +242,8 @@ function ProductList() {
                 className="price-slider"
               />
               <div className="price-labels">
-                <span>До: </span>
-                <span>{priceRange[1]} грн</span>
+                <span>{t('common.to')}: </span>
+                <span>{priceRange[1]} {t('common.currency')}</span>
               </div>
             </div>
           </div>

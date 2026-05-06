@@ -38,7 +38,9 @@ namespace KhduSouvenirShop.API.Controllers
             var product = new Product
             {
                 Name = dto.Name.Trim(),
+                NameEn = dto.NameEn?.Trim(),
                 Description = dto.Description ?? string.Empty,
+                DescriptionEn = dto.DescriptionEn,
                 Price = dto.Price,
                 Weight = dto.Weight,
                 CategoryId = dto.CategoryId,
@@ -54,7 +56,9 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 productId = product.ProductId,
                 name = product.Name,
+                nameEn = product.NameEn,
                 description = product.Description,
+                descriptionEn = product.DescriptionEn,
                 price = product.Price,
                 weight = product.Weight,
                 categoryId = product.CategoryId,
@@ -83,7 +87,9 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 productId = product.ProductId,
                 name = product.Name,
+                nameEn = product.NameEn,
                 description = product.Description,
+                descriptionEn = product.DescriptionEn,
                 price = product.Price,
                 weight = product.Weight,
                 categoryId = product.CategoryId,
@@ -114,7 +120,9 @@ namespace KhduSouvenirShop.API.Controllers
             }
 
             product.Name = string.IsNullOrWhiteSpace(dto.Name) ? product.Name : dto.Name.Trim();
+            product.NameEn = dto.NameEn?.Trim();
             product.Description = dto.Description ?? product.Description;
+            product.DescriptionEn = dto.DescriptionEn;
             product.Price = dto.Price > 0 ? dto.Price : product.Price;
             product.Weight = dto.Weight > 0 ? dto.Weight : product.Weight;
             product.CategoryId = dto.CategoryId;
@@ -156,7 +164,9 @@ namespace KhduSouvenirShop.API.Controllers
     public class ProductDto
     {
         public string Name { get; set; } = string.Empty;
+        public string? NameEn { get; set; }
         public string? Description { get; set; }
+        public string? DescriptionEn { get; set; }
         public decimal Price { get; set; }
         public decimal Weight { get; set; }
         public int CategoryId { get; set; }

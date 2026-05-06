@@ -289,7 +289,7 @@ namespace KhduSouvenirShop.API.Controllers
                 // Відправка листа-підтвердження для накладеного платежу
                 if (payment.Method == "CashOnDelivery")
                 {
-                    await _emailService.SendOrderConfirmationAsync(order, user!);
+                    await _emailService.SendOrderConfirmationAsync(user!.Email, order.OrderNumber, "ua");
                 }
 
                 if (payment.Method == "Card")
@@ -350,6 +350,7 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 productId = ci.ProductId,
                 name = ci.Product.Name,
+                nameEn = ci.Product.NameEn,
                 quantity = ci.Quantity,
                 weight = ci.Product.Weight,
                 originalPrice = ci.Product.Price,
@@ -384,6 +385,7 @@ namespace KhduSouvenirShop.API.Controllers
                         items = items.Select(i => new {
                             i.productId,
                             i.name,
+                            i.nameEn,
                             i.quantity,
                             i.weight,
                             i.originalPrice,
@@ -408,6 +410,7 @@ namespace KhduSouvenirShop.API.Controllers
                             return new {
                                 i.productId,
                                 i.name,
+                                i.nameEn,
                                 i.quantity,
                                 i.weight,
                                 i.originalPrice,
@@ -469,6 +472,7 @@ namespace KhduSouvenirShop.API.Controllers
                 {
                     productId = oi.ProductId,
                     name = oi.Product.Name,
+                    nameEn = oi.Product.NameEn,
                     quantity = oi.Quantity,
                     price = oi.FinalPrice
                 })
@@ -563,6 +567,7 @@ namespace KhduSouvenirShop.API.Controllers
                 {
                     productId = oi.ProductId,
                     name = oi.Product.Name,
+                    nameEn = oi.Product.NameEn,
                     quantity = oi.Quantity,
                     price = oi.FinalPrice
                 })

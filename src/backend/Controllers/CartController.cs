@@ -68,6 +68,7 @@ namespace KhduSouvenirShop.API.Controllers
                     cartItemId = ci.CartItemId,
                     productId = ci.ProductId,
                     productName = ci.Product.Name,
+                    productNameEn = ci.Product.NameEn,
                     productPrice = discountedPrice,
                     originalPrice = ci.Product.Price,
                     productImage = ci.Product.Images.FirstOrDefault(i => i.IsPrimary)?.ImageURL 

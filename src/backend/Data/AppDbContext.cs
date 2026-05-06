@@ -185,22 +185,22 @@ namespace KhduSouvenirShop.API.Data
 
             // Початкові категорії
             modelBuilder.Entity<Category>().HasData(
-                new Category { CategoryId = 1, Name = "Футболки", DisplayOrder = 1, CreatedAt = seedDate },
-                new Category { CategoryId = 2, Name = "Худі", DisplayOrder = 2, CreatedAt = seedDate },
-                new Category { CategoryId = 3, Name = "Гуртки", DisplayOrder = 3, CreatedAt = seedDate },
-                new Category { CategoryId = 4, Name = "Канцелярія", DisplayOrder = 4, CreatedAt = seedDate }
+                new Category { CategoryId = 1, Name = "Футболки", NameEn = "T-Shirts", DisplayOrder = 1, CreatedAt = seedDate },
+                new Category { CategoryId = 2, Name = "Худі", NameEn = "Hoodies", DisplayOrder = 2, CreatedAt = seedDate },
+                new Category { CategoryId = 3, Name = "Гуртки", NameEn = "Mugs", DisplayOrder = 3, CreatedAt = seedDate },
+                new Category { CategoryId = 4, Name = "Канцелярія", NameEn = "Stationery", DisplayOrder = 4, CreatedAt = seedDate }
             );
 
             // Початкові товари
             modelBuilder.Entity<Product>().HasData(
-                new Product { ProductId = 1, Name = "Футболка біла", Description = "Біла футболка з логотипом ХДУ", Price = 399.00m, Weight = 0.200m, CategoryId = 1, Stock = 100, CreatedAt = seedDate },
-                new Product { ProductId = 2, Name = "Футболка синя", Description = "Синя футболка з логотипом ХДУ", Price = 399.00m, Weight = 0.200m, CategoryId = 1, Stock = 100, CreatedAt = seedDate },
-                new Product { ProductId = 3, Name = "Худі чорний", Description = "Чорне худі з емблемою ХДУ", Price = 899.00m, Weight = 0.800m, CategoryId = 2, Stock = 50, CreatedAt = seedDate },
-                new Product { ProductId = 4, Name = "Худі сірий", Description = "Сіре худі з емблемою ХДУ", Price = 899.00m, Weight = 0.800m, CategoryId = 2, Stock = 50, CreatedAt = seedDate },
-                new Product { ProductId = 5, Name = "Гуртка керамічна", Description = "Біла керамічна гуртка з логотипом ХДУ", Price = 199.00m, Weight = 0.350m, CategoryId = 3, Stock = 200, CreatedAt = seedDate },
-                new Product { ProductId = 6, Name = "Термогорнятко сталь", Description = "Термогорнятко зі сталі з логотипом ХДУ", Price = 499.00m, Weight = 0.450m, CategoryId = 3, Stock = 120, CreatedAt = seedDate },
-                new Product { ProductId = 7, Name = "Ручка металева", Description = "Металева ручка з гравіюванням ХДУ", Price = 129.00m, Weight = 0.050m, CategoryId = 4, Stock = 300, CreatedAt = seedDate },
-                new Product { ProductId = 8, Name = "Блокнот A5", Description = "Блокнот формату A5 з логотипом ХДУ", Price = 149.00m, Weight = 0.250m, CategoryId = 4, Stock = 180, CreatedAt = seedDate }
+                new Product { ProductId = 1, Name = "Футболка біла", NameEn = "White T-Shirt", Description = "Біла футболка з логотипом ХДУ", DescriptionEn = "White t-shirt with KSU logo", Price = 399.00m, Weight = 0.200m, CategoryId = 1, Stock = 100, CreatedAt = seedDate },
+                new Product { ProductId = 2, Name = "Футболка синя", NameEn = "Blue T-Shirt", Description = "Синя футболка з логотипом ХДУ", DescriptionEn = "Blue t-shirt with KSU logo", Price = 399.00m, Weight = 0.200m, CategoryId = 1, Stock = 100, CreatedAt = seedDate },
+                new Product { ProductId = 3, Name = "Худі чорний", NameEn = "Black Hoodie", Description = "Чорне худі з емблемою ХДУ", DescriptionEn = "Black hoodie with KSU emblem", Price = 899.00m, Weight = 0.800m, CategoryId = 2, Stock = 50, CreatedAt = seedDate },
+                new Product { ProductId = 4, Name = "Худі сірий", NameEn = "Grey Hoodie", Description = "Сіре худі з емблемою ХДУ", DescriptionEn = "Grey hoodie with KSU emblem", Price = 899.00m, Weight = 0.800m, CategoryId = 2, Stock = 50, CreatedAt = seedDate },
+                new Product { ProductId = 5, Name = "Гуртка керамічна", NameEn = "Ceramic Mug", Description = "Біла керамічна гуртка з логотипом ХДУ", DescriptionEn = "White ceramic mug with KSU logo", Price = 199.00m, Weight = 0.350m, CategoryId = 3, Stock = 200, CreatedAt = seedDate },
+                new Product { ProductId = 6, Name = "Термогорнятко сталь", NameEn = "Steel Thermo Mug", Description = "Термогорнятко зі сталі з логотипом ХДУ", DescriptionEn = "Steel thermo mug with KSU logo", Price = 499.00m, Weight = 0.450m, CategoryId = 3, Stock = 120, CreatedAt = seedDate },
+                new Product { ProductId = 7, Name = "Ручка металева", NameEn = "Metal Pen", Description = "Металева ручка з гравіюванням ХДУ", DescriptionEn = "Metal pen with KSU engraving", Price = 129.00m, Weight = 0.050m, CategoryId = 4, Stock = 300, CreatedAt = seedDate },
+                new Product { ProductId = 8, Name = "Блокнот A5", NameEn = "A5 Notebook", Description = "Блокнот формату A5 з логотипом ХДУ", DescriptionEn = "A5 notebook with KSU logo", Price = 149.00m, Weight = 0.250m, CategoryId = 4, Stock = 180, CreatedAt = seedDate }
             );
 
             // Зображення товарів

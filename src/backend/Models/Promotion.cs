@@ -13,8 +13,14 @@ namespace KhduSouvenirShop.API.Models
         [MaxLength(200)]
         public string Name { get; set; } = string.Empty;
 
+        [MaxLength(200)]
+        public string? NameEn { get; set; }
+
         [MaxLength(500)]
         public string? Description { get; set; }
+
+        [MaxLength(500)]
+        public string? DescriptionEn { get; set; }
 
         // Type: PERCENTAGE, FIXED_AMOUNT, SPECIAL_PRICE
         [Required]

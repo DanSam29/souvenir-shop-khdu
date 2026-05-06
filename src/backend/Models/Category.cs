@@ -13,12 +13,18 @@ namespace KhduSouvenirShop.API.Models
         [MaxLength(100)]
         public string Name { get; set; } = string.Empty;
 
+        [MaxLength(100)]
+        public string? NameEn { get; set; }
+
         public int? ParentCategoryId { get; set; }
 
         public int DisplayOrder { get; set; } = 0;
 
         [MaxLength(500)]
         public string? Description { get; set; }
+
+        [MaxLength(500)]
+        public string? DescriptionEn { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

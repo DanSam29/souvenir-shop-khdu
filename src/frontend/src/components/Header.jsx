@@ -44,7 +44,7 @@ function Header() {
           <img src={logo} alt="Герб ХДУ" className="logo-emblem" />
           <div className="logo-text">
             <h1>{t('common.app_name')}</h1>
-            <span className="logo-subtitle">Херсонський державний університет</span>
+            <span className="logo-subtitle">{t('common.university_name')}</span>
           </div>
         </Link>
         <nav className="nav">

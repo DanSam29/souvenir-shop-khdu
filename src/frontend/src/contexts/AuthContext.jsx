@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { usersAPI } from '../services/api';
 
 const AuthContext = createContext(null);
@@ -17,14 +18,15 @@ export const AuthProvider = ({ children }) => {
   const loadUserData = useCallback(async () => {
     try {
       const response = await usersAPI.getCurrentUser();
-      setUser(response.data);
+      const userData = response.data;
+      setUser(userData);
     } catch (error) {
       console.error('Помилка завантаження даних користувача:', error);
       logout(); // Якщо токен невалідний - виходимо
     } finally {
       setLoading(false);
     }
-  }, [logout]); // Залежність: logout, оскільки функція loadUserData її використовує.
+  }, [logout]); // Залежність: logout
 
   // Перевірка токену при завантаженні додатку
   useEffect(() => {
@@ -43,7 +45,7 @@ export const AuthProvider = ({ children }) => {
     
     localStorage.setItem('token', token);
     setUser(userData);
-    
+
     return response.data;
   };
 
