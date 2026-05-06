@@ -7,15 +7,19 @@ function AdminAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('month');
 
+  const getStartDate = useCallback(() => {
+    let from = new Date();
+    if (period === 'week') from.setDate(from.getDate() - 7);
+    else if (period === 'month') from.setMonth(from.getMonth() - 1);
+    else if (period === 'year') from.setFullYear(from.getFullYear() - 1);
+    else if (period === 'today') from.setHours(0, 0, 0, 0);
+    return from;
+  }, [period]);
+
   const loadAnalytics = useCallback(async () => {
     try {
       setLoading(true);
-      let from = new Date();
-      if (period === 'week') from.setDate(from.getDate() - 7);
-      else if (period === 'month') from.setMonth(from.getMonth() - 1);
-      else if (period === 'year') from.setFullYear(from.getFullYear() - 1);
-      else if (period === 'today') from.setHours(0, 0, 0, 0);
-
+      const from = getStartDate();
       const res = await analyticsAPI.getSummary({ from: from.toISOString() });
       setData(res.data);
     } catch (err) {
@@ -23,7 +27,7 @@ function AdminAnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  }, [period]);
+  }, [getStartDate]);
 
   useEffect(() => {
     loadAnalytics();
@@ -31,13 +35,24 @@ function AdminAnalyticsPage() {
 
   const handleExport = async () => {
     try {
-      const res = await analyticsAPI.exportSales();
+      const from = getStartDate();
+      const to = new Date();
+      
+      const res = await analyticsAPI.exportSales({ 
+        from: from.toISOString(),
+        to: to.toISOString()
+      });
+      
+      const startDateStr = from.toISOString().split('T')[0];
+      const endDateStr = to.toISOString().split('T')[0];
+      
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `sales_report_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `sales_report_${startDateStr}_${endDateStr}.csv`);
       document.body.appendChild(link);
       link.click();
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       alert('Помилка при завантаженні звіту');
     }
