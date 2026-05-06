@@ -105,7 +105,13 @@
     "will_be_calculated": "буде розраховано",
     "phone": "Телефон",
     "address": "Адреса",
-    "city_prefix": "м."
+    "city_prefix": "м.",
+    "addresses": "Адреси"
+  },
+  "footer": {
+    "app_name_full": "ХДУ Сувеніри",
+    "university_full": "Херсонський державний університет",
+    "copyright": "Всі права захищено."
   },
   "order": {
     "title": "Замовлення",
@@ -115,7 +121,13 @@
     "track_on_np": "Відстежити на сайті Нової Пошти",
     "payment_status": "Статус оплати",
     "item_name": "Назва",
-    "quantity": "К-сть"
+    "quantity": "К-сть",
+    "legal_address": "Юридична",
+    "actual_address": "Фактична",
+    "legal_street": "вул. Університетська, 27",
+    "legal_city": "Херсон",
+    "actual_street": "вул. Шевченка, 14",
+    "actual_city": "Івано-Франківськ"
   },
   "access_denied": {
     "title": "Доступ заборонено",

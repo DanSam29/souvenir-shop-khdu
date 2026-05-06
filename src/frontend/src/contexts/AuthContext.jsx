@@ -1,5 +1,4 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
 import { usersAPI } from '../services/api';
 
 const AuthContext = createContext(null);

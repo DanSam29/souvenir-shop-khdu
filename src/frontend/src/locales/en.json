@@ -105,7 +105,13 @@
     "will_be_calculated": "will be calculated",
     "phone": "Phone",
     "address": "Address",
-    "city_prefix": "city"
+    "city_prefix": "",
+    "addresses": "Addresses"
+  },
+  "footer": {
+    "app_name_full": "KSU Souvenirs",
+    "university_full": "Kherson State University",
+    "copyright": "All rights reserved."
   },
   "order": {
     "title": "Order",
@@ -115,7 +121,13 @@
     "track_on_np": "Track on Nova Poshta website",
     "payment_status": "Payment Status",
     "item_name": "Name",
-    "quantity": "Qty"
+    "quantity": "Qty",
+    "legal_address": "Legal",
+    "actual_address": "Actual",
+    "legal_street": "27 Universytetska St.",
+    "legal_city": "Kherson",
+    "actual_street": "14 Shevchenka St.",
+    "actual_city": "Ivano-Frankivsk"
   },
   "access_denied": {
     "title": "Access Denied",

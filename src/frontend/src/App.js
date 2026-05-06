@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/Header';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -28,6 +29,8 @@ import './App.css';
 const ADMIN_ROLES = ['Manager', 'Administrator', 'SuperAdmin'];
 
 function App() {
+  const { t } = useTranslation();
+
   return (
     <AuthProvider>
       <Router>
@@ -99,26 +102,26 @@ function App() {
               <div className="footer-logo">
                 <img src={logo} alt="Герб ХДУ" className="footer-emblem" />
                 <div>
-                  <h3>ХДУ Сувеніри</h3>
-                  <p>Херсонський державний університет</p>
+                  <h3>{t('footer.app_name_full')}</h3>
+                  <p>{t('footer.university_full')}</p>
                 </div>
               </div>
               <div className="footer-info">
                 <div className="footer-section">
-                  <h4>Контакти</h4>
+                  <h4>{t('checkout.phone')} / {t('profile.email')}</h4>
                   <p>📧 office@ksu.ks.ua</p>
                   <p>📞 +380963102636</p>
                   <p>🌐 <a href="https://www.kspu.edu/default.aspx?lang=uk" target="_blank" rel="noopener noreferrer">www.kspu.edu</a></p>
                 </div>
                 <div className="footer-section">
-                  <h4>Адреси</h4>
-                  <p><strong>Юридична:</strong><br />вул. Університетська, 27,<br />м. Херсон, 73003</p>
-                  <p><strong>Фактична:</strong><br />вул. Шевченка, 14,<br />м. Івано-Франківськ, 76018</p>
+                  <h4>{t('common.addresses')}</h4>
+                  <p><strong>{t('order.legal_address')}:</strong><br />{t('order.legal_street')},<br />{t('checkout.city_prefix')} {t('order.legal_city')}, 73003</p>
+                  <p><strong>{t('order.actual_address')}:</strong><br />{t('order.actual_street')},<br />{t('checkout.city_prefix')} {t('order.actual_city')}, 76018</p>
                 </div>
               </div>
             </div>
             <div className="footer-bottom">
-              <p>© 2025 Херсонський державний університет. Всі права захищено.</p>
+              <p>© 2026 {t('footer.university_full')}. {t('footer.copyright')}</p>
             </div>
           </footer>
         </div>
