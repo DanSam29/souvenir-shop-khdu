@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
@@ -10,10 +11,21 @@ namespace KhduSouvenirShop.API.Controllers
     [Route("api/admin/categories")]
     [ApiController]
     [Authorize(Roles = "Manager,Administrator")]
-    public class AdminCategoriesController(AppDbContext context, ILogger<AdminCategoriesController> logger) : ControllerBase
+    public class AdminCategoriesController(AppDbContext context, ILogger<AdminCategoriesController> logger, IMemoryCache cache) : ControllerBase
     {
         private readonly AppDbContext _context = context;
         private readonly ILogger<AdminCategoriesController> _logger = logger;
+        private readonly IMemoryCache _cache = cache;
+
+        private void InvalidateCache()
+        {
+            _cache.Remove("Public_Categories_Tree");
+            _cache.Remove("Public_Products_All");
+            
+            // Також інкрементуємо версію товарів, бо вони залежать від категорій
+            var currentVersion = _cache.Get<int>("Products_Cache_Version");
+            _cache.Set("Products_Cache_Version", currentVersion + 1);
+        }
 
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
@@ -44,6 +56,8 @@ namespace KhduSouvenirShop.API.Controllers
 
             _context.Categories.Add(category);
             await _context.SaveChangesAsync();
+
+            InvalidateCache();
 
             var result = new
             {
@@ -118,6 +132,7 @@ namespace KhduSouvenirShop.API.Controllers
             category.DisplayOrder = dto.DisplayOrder;
 
             await _context.SaveChangesAsync();
+            InvalidateCache();
 
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Категорію оновлено"));
         }
@@ -150,6 +165,7 @@ namespace KhduSouvenirShop.API.Controllers
 
             _context.Categories.Remove(category);
             await _context.SaveChangesAsync();
+            InvalidateCache();
 
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Категорію видалено"));
         }

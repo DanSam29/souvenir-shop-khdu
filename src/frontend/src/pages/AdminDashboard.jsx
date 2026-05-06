@@ -1,25 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ordersAPI, adminUsersAPI, warehouseAPI, integrationsAPI } from '../services/api';
+import { ordersAPI, adminUsersAPI, warehouseAPI, integrationsAPI, categoriesAPI } from '../services/api';
 
 function AdminDashboard() {
-  const [stats, setStats] = useState({ orders: 0, users: 0, stock: 0 });
+  const [stats, setStats] = useState({ orders: 0, users: 0, stock: 0, categories: 0 });
   const [integrations, setIntegrations] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const [oRes, uRes, sRes, iRes] = await Promise.all([
+        const [oRes, uRes, sRes, iRes, cRes] = await Promise.all([
           ordersAPI.getAll(),
           adminUsersAPI.getAll(),
           warehouseAPI.getStock(),
-          integrationsAPI.getStatus()
+          integrationsAPI.getStatus(),
+          categoriesAPI.getAll()
         ]);
+
+        // Підрахунок загальної кількості категорій (включаючи підкатегорії)
+        const countCategories = (nodes) => {
+          let count = 0;
+          nodes.forEach(node => {
+            count++;
+            if (node.subCategories && node.subCategories.length > 0) {
+              count += countCategories(node.subCategories);
+            }
+          });
+          return count;
+        };
+
         setStats({
           orders: oRes.data.length,
           users: uRes.data.length,
-          stock: sRes.data.length
+          stock: sRes.data.length,
+          categories: countCategories(cRes.data)
         });
         setIntegrations(iRes.data);
       } catch (err) {
@@ -47,6 +62,11 @@ function AdminDashboard() {
           <h3>Товари</h3>
           <p style={{ fontSize: '2rem', fontWeight: 700 }}>{stats.stock}</p>
           <Link to="/admin/products">Керувати →</Link>
+        </div>
+        <div style={statCardStyle}>
+          <h3>Категорії</h3>
+          <p style={{ fontSize: '2rem', fontWeight: 700 }}>{stats.categories}</p>
+          <Link to="/admin/categories">Керувати →</Link>
         </div>
         <div style={statCardStyle}>
           <h3>Користувачі</h3>

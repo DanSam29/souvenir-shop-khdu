@@ -67,6 +67,14 @@ export const productsAPI = {
   
   // GET товари за категорією
   getByCategory: (categoryId) => api.get(`/Products/category/${categoryId}`),
+
+  // POST завантаження зображення
+  uploadImage: (productId, formData) => api.post(`/Products/${productId}/images`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+
+  // DELETE видалення зображення
+  deleteImage: (imageId) => api.delete(`/Products/images/${imageId}`),
 };
 
 // API функції для Categories

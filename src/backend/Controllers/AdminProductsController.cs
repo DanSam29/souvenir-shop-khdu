@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
@@ -10,10 +11,18 @@ namespace KhduSouvenirShop.API.Controllers
     [Route("api/admin/products")]
     [ApiController]
     [Authorize(Roles = "Manager,Administrator")]
-    public class AdminProductsController(AppDbContext context, ILogger<AdminProductsController> logger) : ControllerBase
+    public class AdminProductsController(AppDbContext context, ILogger<AdminProductsController> logger, IMemoryCache cache) : ControllerBase
     {
         private readonly AppDbContext _context = context;
         private readonly ILogger<AdminProductsController> _logger = logger;
+        private readonly IMemoryCache _cache = cache;
+
+        private void InvalidateCache()
+        {
+            var currentVersion = _cache.Get<int>("Products_Cache_Version");
+            _cache.Set("Products_Cache_Version", currentVersion + 1);
+            _cache.Remove("Public_Products_All");
+        }
 
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
@@ -38,6 +47,8 @@ namespace KhduSouvenirShop.API.Controllers
 
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
+
+            InvalidateCache();
 
             var result = new
             {
@@ -110,6 +121,7 @@ namespace KhduSouvenirShop.API.Controllers
             product.Stock = dto.Stock >= 0 ? dto.Stock : product.Stock;
 
             await _context.SaveChangesAsync();
+            InvalidateCache();
 
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Товар оновлено"));
         }
@@ -135,6 +147,7 @@ namespace KhduSouvenirShop.API.Controllers
 
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
+            InvalidateCache();
 
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Товар видалено"));
         }

@@ -4,6 +4,7 @@ using KhduSouvenirShop.API.Models.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
 
 namespace KhduSouvenirShop.API.Controllers
@@ -15,11 +16,20 @@ namespace KhduSouvenirShop.API.Controllers
     {
         private readonly AppDbContext _context;
         private readonly ILogger<WarehouseDocumentsController> _logger;
+        private readonly IMemoryCache _cache;
 
-        public WarehouseDocumentsController(AppDbContext context, ILogger<WarehouseDocumentsController> logger)
+        public WarehouseDocumentsController(AppDbContext context, ILogger<WarehouseDocumentsController> logger, IMemoryCache cache)
         {
             _context = context;
             _logger = logger;
+            _cache = cache;
+        }
+
+        private void InvalidateCache()
+        {
+            var currentVersion = _cache.Get<int>("Products_Cache_Version");
+            _cache.Set("Products_Cache_Version", currentVersion + 1);
+            _cache.Remove("Public_Products_All");
         }
 
         // --- Incoming Documents (Прибуткові накладні) ---
@@ -72,6 +82,8 @@ namespace KhduSouvenirShop.API.Controllers
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                InvalidateCache();
 
                 return Ok(ApiResponse<object>.SuccessResult(doc, "Прибуткову накладну створено"));
             }
@@ -138,6 +150,8 @@ namespace KhduSouvenirShop.API.Controllers
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                InvalidateCache();
 
                 return Ok(ApiResponse<object>.SuccessResult(doc, "Видаткову накладну створено"));
             }

@@ -4,6 +4,7 @@ using KhduSouvenirShop.API.Models.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
 
 namespace KhduSouvenirShop.API.Controllers
@@ -14,11 +15,20 @@ namespace KhduSouvenirShop.API.Controllers
     {
         private readonly AppDbContext _context;
         private readonly Services.PromotionService _promotionService;
+        private readonly IMemoryCache _cache;
 
-        public PromotionsController(AppDbContext context, Services.PromotionService promotionService)
+        public PromotionsController(AppDbContext context, Services.PromotionService promotionService, IMemoryCache cache)
         {
             _context = context;
             _promotionService = promotionService;
+            _cache = cache;
+        }
+
+        private void InvalidateCache()
+        {
+            var currentVersion = _cache.Get<int>("Products_Cache_Version");
+            _cache.Set("Products_Cache_Version", currentVersion + 1);
+            _cache.Remove("Public_Products_All");
         }
 
         // --- Public Methods ---
@@ -87,6 +97,7 @@ namespace KhduSouvenirShop.API.Controllers
 
             _context.Promotions.Add(promo);
             await _context.SaveChangesAsync();
+            InvalidateCache();
 
             return Ok(ApiResponse<object>.SuccessResult(promo, "Акцію створено"));
         }
@@ -101,6 +112,7 @@ namespace KhduSouvenirShop.API.Controllers
             promo.IsActive = !promo.IsActive;
             promo.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+            InvalidateCache();
 
             return Ok(ApiResponse<object>.SuccessResult(new { id = promo.PromotionId, isActive = promo.IsActive }));
         }

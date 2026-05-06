@@ -50,9 +50,12 @@ namespace KhduSouvenirShop.API.Controllers
                     if (user != null) studentStatus = user.StudentStatus ?? "NONE";
                 }
             }
+
+            // Отримуємо поточну версію кешу
+            var cacheVersion = _cache.Get<int>("Products_Cache_Version");
             
-            // Ключ кешу залежить від фільтрів ТА studentStatus
-            string cacheKey = $"Products_{categoryId}_{search}_{sortBy}_{minPrice}_{maxPrice}_{studentStatus}";
+            // Ключ кешу залежить від версії, фільтрів ТА studentStatus
+            string cacheKey = $"v{cacheVersion}_Products_{categoryId}_{search}_{sortBy}_{minPrice}_{maxPrice}_{studentStatus}";
             
             if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
             {
@@ -127,7 +130,8 @@ namespace KhduSouvenirShop.API.Controllers
                 }
             }
 
-            var cacheKey = $"product:{id}:{studentStatus}";
+            var cacheVersion = _cache.Get<int>("Products_Cache_Version");
+            var cacheKey = $"v{cacheVersion}_product:{id}:{studentStatus}";
             if (!_cache.TryGetValue(cacheKey, out object? dto))
             {
                 var product = await _context.Products
@@ -195,7 +199,8 @@ namespace KhduSouvenirShop.API.Controllers
                 }
             }
 
-            var cacheKey = $"products:search:{norm}:{studentStatus}";
+            var cacheVersion = _cache.Get<int>("Products_Cache_Version");
+            var cacheKey = $"v{cacheVersion}_products:search:{norm}:{studentStatus}";
             if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
             {
                 var products = await _context.Products
@@ -243,7 +248,8 @@ namespace KhduSouvenirShop.API.Controllers
                 }
             }
 
-            var cacheKey = $"products:category:{categoryId}:{studentStatus}";
+            var cacheVersion = _cache.Get<int>("Products_Cache_Version");
+            var cacheKey = $"v{cacheVersion}_products:category:{categoryId}:{studentStatus}";
             if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
             {
                 var products = await _context.Products
@@ -399,8 +405,11 @@ namespace KhduSouvenirShop.API.Controllers
 
         private void InvalidateCache()
         {
+            // Інкрементуємо версію кешу, що фактично інвалідує всі існуючі ключі для товарів
+            var currentVersion = _cache.Get<int>("Products_Cache_Version");
+            _cache.Set("Products_Cache_Version", currentVersion + 1);
+            
             _cache.Remove("Public_Products_All");
-            // В ідеалі тут треба видалити всі ключі, що починаються з Products_
         }
     }
 

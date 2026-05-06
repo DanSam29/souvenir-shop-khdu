@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
 using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
@@ -20,6 +21,7 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly KhduSouvenirShop.API.Services.INovaPoshtaService _novaPoshtaService;
         private readonly KhduSouvenirShop.API.Services.IEmailService _emailService;
         private readonly IConfiguration _configuration;
+        private readonly IMemoryCache _cache;
 
         public OrdersController(
             AppDbContext context, 
@@ -28,7 +30,8 @@ namespace KhduSouvenirShop.API.Controllers
             KhduSouvenirShop.API.Services.IPaymentService paymentService,
             KhduSouvenirShop.API.Services.INovaPoshtaService novaPoshtaService,
             KhduSouvenirShop.API.Services.IEmailService emailService,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IMemoryCache cache)
         {
             _context = context;
             _logger = logger;
@@ -37,6 +40,14 @@ namespace KhduSouvenirShop.API.Controllers
             _novaPoshtaService = novaPoshtaService;
             _emailService = emailService;
             _configuration = configuration;
+            _cache = cache;
+        }
+
+        private void InvalidateCache()
+        {
+            var currentVersion = _cache.Get<int>("Products_Cache_Version");
+            _cache.Set("Products_Cache_Version", currentVersion + 1);
+            _cache.Remove("Public_Products_All");
         }
 
         [HttpPost("checkout")]
@@ -273,6 +284,7 @@ namespace KhduSouvenirShop.API.Controllers
                 _context.CartItems.RemoveRange(cart.CartItems);
 
                 await _context.SaveChangesAsync();
+                InvalidateCache();
 
                 // Відправка листа-підтвердження для накладеного платежу
                 if (payment.Method == "CashOnDelivery")
@@ -624,6 +636,7 @@ namespace KhduSouvenirShop.API.Controllers
             });
 
             await _context.SaveChangesAsync();
+            InvalidateCache();
 
             return Ok(ApiResponse<object>.SuccessResult(new { orderId = order.OrderId, status = order.Status }, "Статус замовлення оновлено"));
         }
@@ -641,6 +654,7 @@ namespace KhduSouvenirShop.API.Controllers
             var refundResult = await _paymentService.RefundPaymentAsync(id, reason);
             if (refundResult)
             {
+                InvalidateCache();
                 return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення скасовано, кошти повернуто"));
             }
             
@@ -651,6 +665,7 @@ namespace KhduSouvenirShop.API.Controllers
                 return StatusCode(500, ApiResponse<object>.FailureResult("Не вдалося скасувати замовлення", "InternalServerError"));
             }
 
+            InvalidateCache();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення скасовано"));
         }
     }

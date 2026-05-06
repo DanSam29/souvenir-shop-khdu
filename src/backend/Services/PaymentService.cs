@@ -1,6 +1,7 @@
 using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Stripe;
 using Stripe.Checkout;
 
@@ -12,16 +13,25 @@ namespace KhduSouvenirShop.API.Services
         private readonly ILogger<PaymentService> _logger;
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
+        private readonly IMemoryCache _cache;
         private readonly string _webhookSecret;
 
-        public PaymentService(AppDbContext context, ILogger<PaymentService> logger, IConfiguration configuration, IEmailService emailService)
+        public PaymentService(AppDbContext context, ILogger<PaymentService> logger, IConfiguration configuration, IEmailService emailService, IMemoryCache cache)
         {
             _context = context;
             _logger = logger;
             _configuration = configuration;
             _emailService = emailService;
+            _cache = cache;
             StripeConfiguration.ApiKey = _configuration["Stripe:SecretKey"];
             _webhookSecret = _configuration["Stripe:WebhookSecret"] ?? string.Empty;
+        }
+
+        private void InvalidateCache()
+        {
+            var currentVersion = _cache.Get<int>("Products_Cache_Version");
+            _cache.Set("Products_Cache_Version", currentVersion + 1);
+            _cache.Remove("Public_Products_All");
         }
 
         public async Task<Session> CreateCheckoutSessionAsync(Order order, string successUrl, string cancelUrl)
@@ -434,6 +444,8 @@ namespace KhduSouvenirShop.API.Services
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
+                InvalidateCache();
+
                 _logger.LogInformation("Order {OrderNumber} created from Stripe Session {SessionId}", order.OrderNumber, session.Id);
                 await _emailService.SendOrderConfirmationAsync(order, user);
                 
@@ -513,6 +525,8 @@ namespace KhduSouvenirShop.API.Services
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
+                InvalidateCache();
+
                 _logger.LogInformation("Order {OrderId} cancelled and stock restored. Reason: {Comment}", orderId, comment);
                 return true;
             }
@@ -582,6 +596,7 @@ namespace KhduSouvenirShop.API.Services
                 });
 
                 await _context.SaveChangesAsync();
+                InvalidateCache();
                 _logger.LogInformation("Successfully refunded payment for Order {OrderId} and restored stock", orderId);
                 return true;
             }
