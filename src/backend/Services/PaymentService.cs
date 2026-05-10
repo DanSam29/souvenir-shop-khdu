@@ -207,39 +207,50 @@ namespace KhduSouvenirShop.API.Services
             return await service.CreateAsync(options);
         }
 
-        public async Task<bool> HandleWebhookAsync(string json, string stripeSignature)
+        public async Task<bool> HandleWebhookAsync(string? json, string? stripeSignature, string? sessionId = null)
         {
             try
             {
-                var stripeEvent = EventUtility.ConstructEvent(json, stripeSignature, _webhookSecret);
+                Session session;
 
-                if (stripeEvent.Type == "checkout.session.completed")
+                if (!string.IsNullOrEmpty(stripeSignature) && !string.IsNullOrEmpty(json))
                 {
-                    var session = stripeEvent.Data.Object as Session;
-                    if (session == null) return false;
+                    var stripeEvent = EventUtility.ConstructEvent(json, stripeSignature, _webhookSecret);
 
-                    return await ProcessSuccessfulPayment(session);
+                    if (stripeEvent.Type == "checkout.session.completed")
+                    {
+                        session = (stripeEvent.Data.Object as Session)!;
+                        return await ProcessSuccessfulPayment(session);
+                    }
+                    else if (stripeEvent.Type == "payment_intent.payment_failed")
+                    {
+                        var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
+                        if (paymentIntent == null) return false;
+
+                        return await ProcessFailedPayment(paymentIntent);
+                    }
+                    else if (stripeEvent.Type == "checkout.session.expired")
+                    {
+                        session = (stripeEvent.Data.Object as Session)!;
+                        return await ProcessExpiredSession(session);
+                    }
                 }
-                else if (stripeEvent.Type == "payment_intent.payment_failed")
+                else if (!string.IsNullOrEmpty(sessionId))
                 {
-                    var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
-                    if (paymentIntent == null) return false;
-
-                    return await ProcessFailedPayment(paymentIntent);
-                }
-                else if (stripeEvent.Type == "checkout.session.expired")
-                {
-                    var session = stripeEvent.Data.Object as Session;
-                    if (session == null) return false;
-
-                    return await ProcessExpiredSession(session);
+                    var service = new SessionService();
+                    session = await service.GetAsync(sessionId);
+                    
+                    if (session.PaymentStatus == "paid")
+                    {
+                        return await ProcessSuccessfulPayment(session);
+                    }
                 }
 
                 return true;
             }
             catch (StripeException e)
             {
-                _logger.LogError(e, "Stripe Webhook Error");
+                _logger.LogError(e, "Stripe Webhook/Verify Error");
                 return false;
             }
         }

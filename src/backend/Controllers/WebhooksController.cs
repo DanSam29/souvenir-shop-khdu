@@ -28,7 +28,7 @@ namespace KhduSouvenirShop.API.Controllers
                 return BadRequest();
             }
 
-            var result = await _paymentService.HandleWebhookAsync(json, stripeSignature!);
+            var result = await _paymentService.HandleWebhookAsync(json, stripeSignature!, null);
 
             if (!result)
             {

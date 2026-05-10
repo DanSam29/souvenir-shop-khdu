@@ -133,6 +133,7 @@ export const cartAPI = {
 export const ordersAPI = {
   checkout: (payload) => api.post('/Orders/checkout', payload),
   calculate: (payload) => api.post('/Orders/calculate', payload),
+  verifyPayment: (sessionId) => api.get(`/Orders/verify-payment?sessionId=${sessionId}`),
   getOrders: () => api.get('/Orders/my'),
   getOrder: (id) => api.get(`/Orders/${id}`),
   // Адмінські методи

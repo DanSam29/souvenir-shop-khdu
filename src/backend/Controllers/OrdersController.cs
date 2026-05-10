@@ -76,50 +76,6 @@ namespace KhduSouvenirShop.API.Controllers
             string studentStatus = user?.StudentStatus ?? "NONE";
             var userPromotions = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
 
-            // --- НОВА ЛОГІКА ДЛЯ STRIPE (Етап 5 - Виправлення) ---
-            if (dto.PaymentMethod == "Card")
-            {
-                // Валідація залишків перед переходом до оплати
-                foreach (var item in cart.CartItems)
-                {
-                    if (item.Product.Stock < item.Quantity)
-                    {
-                        return BadRequest(ApiResponse<object>.FailureResult($"Товар '{item.Product.Name}' недостатньо на складі", "InsufficientStock"));
-                    }
-                }
-
-                // Розрахунок вартості доставки
-                var totalAfterUserPromos = cart.CartItems.Sum(ci => _promotionService.GetPriceAfterPromotions(ci.Product, userPromotions) * ci.Quantity);
-                var totalWeight = cart.CartItems.Sum(ci => ci.Product.Weight * ci.Quantity);
-                decimal shippingCost = 0;
-                if (!string.IsNullOrEmpty(dto.CityRef) && _configuration.GetValue<bool>("Features:NovaPoshtaEnabled"))
-                {
-                    shippingCost = await _novaPoshtaService.CalculateDeliveryCostAsync(dto.CityRef, totalWeight, totalAfterUserPromos);
-                }
-
-                var successUrl = _configuration["Stripe:SuccessUrl"] ?? "http://localhost:3000/checkout/success";
-                var cancelUrl = _configuration["Stripe:CancelUrl"] ?? "http://localhost:3000/checkout/cancel";
-
-                // Формуємо метадані для Stripe, щоб створити замовлення ПІСЛЯ оплати
-                var metadata = new Dictionary<string, string>
-                {
-                    { "userId", userId.ToString() },
-                    { "city", dto.City ?? "" },
-                    { "cityRef", dto.CityRef ?? "" },
-                    { "warehouseNumber", dto.WarehouseNumber ?? "" },
-                    { "warehouseRef", dto.WarehouseRef ?? "" },
-                    { "recipientName", dto.RecipientName ?? "" },
-                    { "recipientPhone", dto.RecipientPhone ?? "" },
-                    { "promoCode", dto.PromoCode ?? "" },
-                    { "shippingCost", shippingCost.ToString("F2") }
-                };
-
-                var session = await _paymentService.CreateCheckoutSessionForCartAsync(user!, cart, userPromotions, dto.PromoCode, successUrl, cancelUrl, metadata);
-                
-                return Ok(ApiResponse<object>.SuccessResult(new { paymentUrl = session.Url }, "Перенаправлення на оплату"));
-            }
-
-            // --- ЛОГІКА ДЛЯ НАКЛАДЕНОГО ПЛАТЕЖУ (Залишається як була) ---
             foreach (var item in cart.CartItems)
             {
                 if (item.Product.Stock < item.Quantity)
@@ -294,8 +250,11 @@ namespace KhduSouvenirShop.API.Controllers
 
                 if (payment.Method == "Card")
                 {
-                    // Ця частина більше не повинна виконуватися тут для "Card" за новою логікою,
-                    // але я залишу її для сумісності, якщо метод оплати зміниться в процесі.
+                    var successUrl = _configuration["Stripe:SuccessUrl"] ?? "http://localhost:3000/checkout/success";
+                    var cancelUrl = _configuration["Stripe:CancelUrl"] ?? "http://localhost:3000/checkout/cancel";
+                    
+                    var session = await _paymentService.CreateCheckoutSessionAsync(order, successUrl, cancelUrl);
+                    paymentUrl = session.Url;
                 }
 
                 await transaction.CommitAsync();
@@ -479,6 +438,26 @@ namespace KhduSouvenirShop.API.Controllers
             });
 
             return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(result));
+        }
+
+        [HttpGet("verify-payment")]
+        public async Task<ActionResult> VerifyPayment([FromQuery] string sessionId)
+        {
+            if (string.IsNullOrEmpty(sessionId))
+                return BadRequest(ApiResponse<object>.FailureResult("Session ID is required"));
+
+            try
+            {
+                var result = await _paymentService.HandleWebhookAsync(null, sessionId); // We'll modify HandleWebhookAsync to handle manual verify
+                if (result)
+                    return Ok(ApiResponse<object>.SuccessResult(null, "Payment verified"));
+                else
+                    return BadRequest(ApiResponse<object>.FailureResult("Payment verification failed"));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<object>.FailureResult(ex.Message));
+            }
         }
 
         [HttpGet("admin")]

@@ -1,18 +1,41 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { ordersAPI } from '../services/api';
 
 function PaymentSuccessPage() {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
   const navigate = useNavigate();
+  const [verifying, setVerifying] = useState(!!sessionId);
 
   useEffect(() => {
-    // Тут можна було б додати перевірку статусу сесії через бекенд, 
-    // але для MVP ми просто показуємо успіх.
     if (!sessionId) {
       navigate('/');
+      return;
     }
+
+    const verify = async () => {
+      try {
+        await ordersAPI.verifyPayment(sessionId);
+      } catch (err) {
+        console.error('Помилка верифікації платежу:', err);
+      } finally {
+        setVerifying(false);
+      }
+    };
+
+    verify();
   }, [sessionId, navigate]);
+
+  if (verifying) {
+    return (
+      <div className="payment-result-page" style={{ maxWidth: 600, margin: '50px auto', textAlign: 'center', padding: 20 }}>
+        <div className="spinner" style={{ fontSize: '48px', marginBottom: '20px' }}>⌛</div>
+        <h1>Перевіряємо статус оплати...</h1>
+        <p>Будь ласка, зачекайте кілька секунд.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="payment-result-page" style={{ maxWidth: 600, margin: '50px auto', textAlign: 'center', padding: 20 }}>
