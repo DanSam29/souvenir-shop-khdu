@@ -276,7 +276,7 @@ function CheckoutPage() {
 
   return (
     <div className="checkout-page" style={{ maxWidth: 900, margin: '0 auto', padding: 20 }}>
-      <Link to="/cart" className="back-link" style={{ textDecoration: 'none', color: '#666' }}>← {t('product.back_to_cart')}</Link>
+      <Link to="/cart" className="back-link" style={{ textDecoration: 'none', color: '#007bff', fontWeight: 500 }}>← {t('product.back_to_cart')}</Link>
       <h1 style={{ marginBottom: 30 }}>{t('checkout.title')}</h1>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 30 }}>

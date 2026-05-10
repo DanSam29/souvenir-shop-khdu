@@ -187,7 +187,7 @@ function ProfilePage() {
                           </span>
                         </td>
                         <td style={{ padding: '15px 8px' }}>
-                          <Link to={`/order/${order.orderId}`} style={{ color: '#007bff', textDecoration: 'none', fontSize: '0.9rem' }}>{t('profile.details')} →</Link>
+                          <Link to={`/order/${order.orderId}`} state={{ from: 'profile' }} style={{ color: '#007bff', textDecoration: 'none', fontSize: '0.9rem' }}>{t('profile.details')} →</Link>
                         </td>
                       </tr>
                     ))}

@@ -25,7 +25,8 @@
     "update_error": "Update error",
     "remove_error": "Removal error",
     "clear_error": "Clear error",
-    "submitting": "Submitting..."
+    "submitting": "Submitting...",
+    "addresses": "Addresses"
   },
   "nav": {
     "home": "Home",
@@ -117,6 +118,7 @@
     "title": "Order",
     "not_found": "Order not found",
     "back_to_profile": "Back to profile",
+    "back_to_admin_orders": "Back to admin orders",
     "tracking_number": "Tracking Number",
     "track_on_np": "Track on Nova Poshta website",
     "payment_status": "Payment Status",

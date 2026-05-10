@@ -25,7 +25,8 @@
     "update_error": "Помилка оновлення",
     "remove_error": "Помилка видалення",
     "clear_error": "Помилка очищення",
-    "submitting": "Оформлення..."
+    "submitting": "Оформлення...",
+    "addresses": "Адреси"
   },
   "nav": {
     "home": "Головна",
@@ -117,6 +118,7 @@
     "title": "Замовлення",
     "not_found": "Замовлення не знайдено",
     "back_to_profile": "Назад до профілю",
+    "back_to_admin_orders": "Назад до списку замовлень",
     "tracking_number": "ТТН",
     "track_on_np": "Відстежити на сайті Нової Пошти",
     "payment_status": "Статус оплати",

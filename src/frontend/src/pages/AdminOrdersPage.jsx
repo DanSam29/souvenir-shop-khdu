@@ -74,7 +74,7 @@ function AdminOrdersPage() {
               <td style={tdStyle}>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button 
-                    onClick={() => navigate(`/order/${o.orderId}`)}
+                    onClick={() => navigate(`/order/${o.orderId}`, { state: { from: 'admin' } })}
                     style={{ padding: '5px 10px', background: '#007bff', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}
                   >
                     Деталі

@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ordersAPI } from '../services/api';
 
 function OrderDetailsPage() {
   const { id } = useParams();
+  const location = useLocation();
   const { t, i18n } = useTranslation();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const isEn = i18n.language === 'en';
+  const fromAdmin = location.state?.from === 'admin';
+  const backPath = fromAdmin ? '/admin/orders' : '/profile';
+  const backText = fromAdmin ? t('order.back_to_admin_orders') : t('order.back_to_profile');
 
   useEffect(() => {
     const loadOrder = async () => {
@@ -33,7 +37,7 @@ function OrderDetailsPage() {
 
   return (
     <div className="order-details" style={{ maxWidth: 800, margin: '40px auto', padding: '0 20px' }}>
-      <Link to="/profile" style={{ textDecoration: 'none', color: '#666' }}>← {t('order.back_to_profile')}</Link>
+      <Link to={backPath} style={{ textDecoration: 'none', color: '#007bff', fontWeight: 500 }}>← {backText}</Link>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 }}>
         <h1>{t('order.title')} #{order.orderNumber}</h1>
         <span style={{ 
