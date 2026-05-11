@@ -135,6 +135,7 @@
 | Admin Panel | WarehouseModule | `/api/warehouse/companies/{id}` | PUT | `{name, contactPerson, phone, email, address, notes}` | `{id, message: "Фірму оновлено"}` |
 | Admin Panel | WarehouseModule | `/api/warehouse/companies/{id}/deactivate` | POST | - | `{message: "Фірму деактивовано"}` |
 | Admin Panel | WarehouseModule | `/api/warehouse/companies/search` | GET | `?query=Текстиль` | `{companies: [{id, name, contactPerson}]}` |
+
 Примітки до валідації:  
   - POST `/api/warehouse/companies`: перевіряє унікальність name та email
   - PUT `/api/warehouse/companies/{id}`: перевіряє унікальність email якщо змінено
@@ -246,6 +247,7 @@
 | AnalyticsService | ReportService | `generatePDF(data, template)` | Internal | `{data: object, template: string}` | `{fileStream: byte[]}` |
 | AnalyticsService | ReportService | `generateExcel(data, template)` | Internal | `{data: object, template: string}` | `{fileStream: byte[]}` |
 | AnalyticsService | ReportService | `generateCSV(data)` | Internal | `{data: object}` | `{fileStream: byte[]}` |
+
 Примітки:  
   - Права доступу:  
     + Менеджер (MANAGER) має доступ до:  

@@ -50,6 +50,7 @@
   - Легка інтеграція з React та .NET Core  
   - Краща підтримка кешування  
   - Зрозуміла структура endpoints для документації  
+
 Недоліки GraphQL у нашому випадку:  
   - Надмірна складність для простого CRUD  
   - Більший overhead для малого проєкту  
@@ -62,6 +63,7 @@
   - Вища швидкість читання даних для операцій SELECT (перегляд каталогу, пошук)  
   - Відмінна підтримка в Entity Framework Core через Pomelo.EntityFrameworkCore.MySql  
   - Достатня функціональність: JSON поля, ACID транзакції, full-text search  
+
 Альтернатива (PostgreSQL):  
   - Можна використати для складніших аналітичних систем  
   - Має переваги при дуже великих обсягах даних
@@ -72,6 +74,7 @@
   - Достатній для невеликого магазину  
   - Економія ресурсів на Render.com  
   - Простіше налаштування та підтримка  
+
 Коли потрібен Redis:  
   - При горизонтальному масштабуванні (багато серверів)  
   - При потребі розподіленого кешу  
@@ -84,6 +87,7 @@
   - Легше розгортання (один Docker контейнер)  
   - Достатньо для магазину з 500-1000 користувачів  
   - Модульна структура дозволяє легко виділити мікросервіси у майбутньому  
+
 Коли потрібні мікросервіси:  
   - При масштабуванні окремих модулів незалежно  
   - При розподіленій команді розробки  
@@ -95,6 +99,7 @@
   - S3-сумісний API (легко мігрувати на AWS S3 у майбутньому)  
   - Повний контроль над даними  
   - Простіше налаштування для навчального проєкту  
+
 Альтернатива (AWS S3):  
   - Платний сервіс (навіть Free Tier має обмеження)  
   - Можна використати для production версії
@@ -109,6 +114,7 @@
 | React Admin | 4.x | Адміністративна панель |
 | Tailwind CSS | 3.x | Utility-first CSS фреймворк |
 | Vite | 5.x | Build tool та dev server |
+
 Обґрунтування вибору React:  
   - Найпопулярніший фреймворк  
   - Компонентний підхід (переважне використання коду)  
@@ -127,7 +133,8 @@
 | iTextSharp (iText7) | 5.x | Генерація PDF звітів з графіками та таблицями |
 | EPPlus | 7.x | Генерація Excel (XLSX) звітів з форматуванням та графіками |
 | CsvHelper | 30.x | Генерація CSV файлів для експорту табличних даних |
-Обґрунтування вибору .NET Core:  
+
+Обґрунтування вибору .NET Core:
   - Кросплатформність (Windows, Linux, macOS)  
   - Висока продуктивність  
   - Вбудована підтримка Dependency Injection  
@@ -250,7 +257,8 @@ API/
 ### 5.2. CORS політика
 AllowedOrigins:  
   - https://khdu-eshop.onrender.com (Production Frontend)  
-  - http://localhost:5173 (Development Frontend)  
+  - http://localhost:5173 (Development Frontend)
+
 AllowedMethods: GET, POST, PUT, DELETE  
 AllowedHeaders: Authorization, Content-Type
 ## 6. Продуктивність та масштабованість
@@ -261,6 +269,7 @@ Frontend:
   - Кешування статичних ресурсів (1 рік)  
   - Compression (Gzip/Brotli)  
   - Minification та uglification  
+
 Backend:  
   - In-Memory кешування (товари, категорії) - TTL:  
       + Товари та категорії - TTL: 5 хвилин  
@@ -274,6 +283,7 @@ Backend:
   - Connection pooling (MySQL)  
   - Асинхронні операції (async/await)  
   - Pagination для списків (default: 20 items)  
+
 Database:  
   - Індекси на часто використовуваних полях:  
       + Products.Name (full-text search)  
@@ -291,6 +301,7 @@ Database:
   - Збільшення RAM/CPU на Render.com  
   - Оптимізація SQL запитів  
   - Покращення алгоритмів  
+
 Горизонтальне масштабування (Long-term):  
   - Multiple backend instances за Load Balancer  
   - Перехід на Redis для розподіленого кешу  
@@ -305,6 +316,7 @@ Levels:
   - Warning: Потенційні проблеми  
   - Error: Помилки з stack trace  
   - Critical: Критичні збої системи  
+
 Що логується:  
   - Всі API запити (endpoint, method, status, duration)  
   - Помилки з повним stack trace  
@@ -341,6 +353,7 @@ Levels:
   - Кількість експортованих звітів за день  
   - Розмір згенерованих звітів (моніторинг memory usage)  
   - Кількість одночасних запитів до аналітики  
+
 Інструменти:  
   - Render.com Dashboard (CPU, RAM, Network)  
   - Serilog logs (Elasticsearch у production)  
@@ -390,6 +403,7 @@ Backend:
   - `MINIO\_ENDPOINT=\...`  
   - `MINIO\_ACCESS\_KEY=\...`  
   - `MINIO\_SECRET\_KEY=\...`  
+
 Frontend:  
   - `VITE\_API\_URL=https://api.khdu-eshop.onrender.com`  
   - `VITE\_STRIPE\_PUBLISHABLE\_KEY=...`
@@ -440,16 +454,20 @@ Promotion (Акція/Знижка):
   - Пріоритет та ліміти: priority (0-100), usageLimit, currentUsage  
   - Статус: isActive  
   - Метадані: createdBy, createdAt, updatedAt  
+
 UserPromotion (Персональна знижка):  
   - Зв'язок: userId, promotionId  
   - Метрики: assignedAt, usedCount  
+
 User (розширення):  
   - Студентський статус: studentStatus (NONE/REGULAR/SCHOLARSHIP/HIGH\_ACHIEVER)  
   - Академічні дані: gpa (decimal 0.00-5.00)  
   - Верифікація: studentVerifiedAt, studentExpiresAt  
+
 OrderItem (розширення):  
   - Ціни: originalPrice, finalPrice  
   - Знижка: appliedPromotionId, discountAmount  
+
 OutgoingDocument (розширення):  
   - Ціни: originalPrice, finalPrice (для Reason=ORDER)  
   - Знижка: appliedPromotionId, discountAmount (для Reason=ORDER)
@@ -467,6 +485,7 @@ GetApplicablePromotions(userId, cartItems):
       + startDate <= now <= endDate (якщо вказано)  
       + currentUsage < usageLimit (якщо вказано)  
   - Повернути список знижок  
+
 **Крок 2: Валідація промокоду (якщо введено)**  
 ValidatePromoCode(code, userId, cartItems):  
   - Знайти Promotion WHERE promoCode = code  
@@ -478,6 +497,7 @@ ValidatePromoCode(code, userId, cartItems):
   - Перевірити minQuantity <= totalQuantity  
   - Якщо всі перевірки пройдені → return valid  
   - Інакше → return error з причиною  
+
 **Крок 3: Розрахунок фінальних цін зі стакуванням**  
 CalculateFinalPrices(cartItems, promotions, promoCode): 
 FOR EACH item IN cartItems:  
@@ -508,6 +528,7 @@ FOR EACH item IN cartItems:
     - Оновити finalPrice, appliedPromotionId  
 8. Зберегти: originalPrice, appliedPromotionId, discountAmount, finalPrice  
 RETURN items з розрахованими цінами  
+
 **Крок 4: Збереження інформації про знижки**  
 При створенні замовлення:  
 1. OrderItems зберігають: originalPrice, appliedPromotionId, discountAmount, finalPrice  
@@ -557,6 +578,7 @@ VerifyStudent(email):
   - Середній чек з знижкою (AVG(Orders.TotalAmount))  
   - Конверсія (кількість замовлень зі знижкою / загальна кількість переглядів акції)  
   - ROI = (Revenue з акції - Сума знижок) / Сума знижок \* 100%  
+
 Dashboard для менеджера:  
   - Топ-10 акцій за кількістю використань  
   - Топ-10 акцій за сумою знижок  
@@ -567,17 +589,21 @@ Dashboard для менеджера:
 Промокод використано повністю:  
   - Перевірка: currentUsage < usageLimit  
   - Повідомлення: "Промокод вичерпано"  
+
 Закінчився термін studentStatus:  
   - Автоматична деактивація знижок при studentExpiresAt < NOW()  
   - Email-нагадування за тиждень до закінчення  
   - Кнопка "Оновити статус" в особистому кабінеті  
+
 University API недоступний:  
   - Створення задачі в StudentVerificationQueue  
   - Повторні спроби: 1 год, 6 год, 24 год  
   - Якщо не вдалося → переведення в ручну верифікацію  
+
 Стакування знижок призводить до від'ємної ціни:  
   - Обмеження: finalPrice >= 0  
   - Якщо finalPrice < 0 → finalPrice = 0, discountAmount = originalPrice  
+
 Промокод не відповідає умовам:  
   - Перевірка minOrderAmount, minQuantity  
   - Чіткі повідомлення: "Для цього промокоду потрібна мінімальна сума замовлення 500 грн"
@@ -594,16 +620,19 @@ AnalyticsModule побудований за принципами:
   - AnalyticsController отримує параметри (startDate, endDate, filters, groupBy)  
   - Валідує параметри (період не більше 2 років, дати валідні)  
   - Перевіряє права доступу (MANAGER або ADMIN)  
+
 Крок 2: Перевірка кешу  
   - AnalyticsService формує ключ кешу на основі параметрів  
   - Перевіряє наявність даних у In-Memory Cache  
   - Якщо дані в кеші та актуальні (TTL не вийшов) → повертає з кешу  
   - Якщо кеш порожній або застарілий → переходить до розрахунку  
+
 Крок 3: Збір даних з репозиторіїв  
   - OrderRepository.getOrdersByPeriod(startDate, endDate, filters)  
   - ProductRepository.getProductsByIds(productIds)  
   - IncomingRepository.getIncomingByProducts(productIds, period) -- для розрахунку ROI  
   - PromotionRepository.getPromotionsByPeriod(period) -- для аналізу знижок  
+
 Крок 4: Розрахунок метрик  
   - Паралельні розрахунки (використання Task.WhenAll в C#)  
   - Aggregate metrics: totalOrders, totalRevenue, averageOrderValue  
@@ -611,12 +640,15 @@ AnalyticsModule побудований за принципами:
   - Distributions: salesByPaymentMethod, salesByStatus (GroupBy + Count/Sum)  
   - Top lists: topProducts, topCategories (OrderByDescending + Take)  
   - Comparisons: changeVsPreviousPeriod (розрахунок % змін)  
+
 Крок 5: Формування результату  
   - AnalyticsService формує DTO (SalesAnalyticsDTO, ProductAnalyticsDTO тощо)  
   - Додає метадані (generatedAt, calculationTime, cached: false)  
+
 Крок 6: Збереження в кеш  
   - Cache.set(cacheKey, result, TTL=15min)  
   - Логування події розрахунку (Serilog)  
+
 Крок 7: Повернення результату  
   - AnalyticsController повертає HTTP 200 OK з даними  
   - Frontend отримує дані та будує візуалізації
@@ -663,6 +695,7 @@ AnalyticsModule побудований за принципами:
       + Comma separator (або semicolon для європейських локалей)  
       + Тільки табличні дані, без графіків  
       + Ідеально для подальшої обробки в Excel/Power BI  
+
 Асинхронна обробка великих звітів:  
   - Якщо звіт містить > 5000 записів → асинхронна генерація  
   - Користувач отримує job ID  
@@ -693,6 +726,7 @@ AnalyticsModule взаємодіє з:
   - WarehouseModule - читання IncomingDocuments для розрахунку витрат та ROI  
   - UserModule - читання користувачів для аналізу поведінки  
   - ReportService - генерація PDF/Excel/CSV файлів  
+
 Напрямок залежностей: AnalyticsModule залежить від інших модулів, але інші модулі не залежать від AnalyticsModule (односторонні залежності).
 ### 11.7. Майбутні покращення
 - Real-time analytics через WebSocket (live dashboard updates)  
@@ -714,4 +748,5 @@ AnalyticsModule взаємодіє з:
   - Комплексна система аналітики для управління бізнес-процесами (продажі, товари, категорії, акції, фінанси, конверсія, поведінка користувачів)  
   - Детальна аналітика ефективності акцій для прийняття бізнес-рішень  
   - Експорт звітів у форматах PDF/Excel/CSV для подальшого аналізу  
+
 Система здатна обслуговувати 500-1000 одночасних користувачів та має потенціал для масштабування до 10000+ користувачів з мінімальними архітектурними змінами. Архітектура системи знижок та аналітики побудована з урахуванням гнучкості та можливості розширення функціоналу (A/B тестування, ML-рекомендації, програми лояльності, predictive analytics, Data Warehouse integration).

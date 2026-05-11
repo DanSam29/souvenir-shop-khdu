@@ -4,7 +4,7 @@
   - Entities (Domain Models) - сутності предметної області, що відображають структуру бази даних  
   - DTOs (Data Transfer Objects) - об'єкти передачі даних для комунікації між шарами додатку
 ## Domain Models (Entities)
-**1. User (Користувач)**  
+### 1. User (Користувач)
 Призначення: Зберігає інформацію про користувачів системи (гості, клієнти, менеджери, адміністратори).  
 Таблиця в БД: Users  
 Поля:  
@@ -25,6 +25,7 @@
 | studentExpiresAt | DateTime | Ні | Дата закінчення студентського статусу |
 | createdAt | DateTime | Так | Дата реєстрації |
 | updatedAt | DateTime | Так | Дата останнього оновлення |
+
 Методи:  
   - register() - реєстрація нового користувача  
   - login() - автентифікація та генерація JWT токену  
@@ -32,13 +33,14 @@
   - changePassword() - зміна паролю  
   - block() - блокування облікового запису  
   - unblock() - розблокування облікового запису  
+
 Зв'язки:  
   - 1:1 з Cart (один кошик на користувача)  
   - 1:N з Order (багато замовлень)  
   - 1:N з Shipping (збережені адреси доставки)  
   - 1:N з UserPromotion (персональні знижки)  
   - 1:N з Promotion (створені менеджером, через createdBy)  
-**2. Product (Товар)**  
+### 2. Product (Товар)
 Призначення: Зберігає інформацію про товари магазину.  
 Таблиця в БД: Products  
 Поля:  
@@ -53,14 +55,17 @@
 | categoryId | int | Так | FK до Categories |
 | createdAt | DateTime | Так | Дата створення |
 | updatedAt | DateTime | Так | Дата оновлення |
+
 Обчислювані поля:  
   - stock - поточний залишок на складі (розраховується через WarehouseModule на основі IncomingDocuments та OutgoingDocuments)  
+
 Методи:  
   - create() - створення товару  
   - update() - оновлення інформації  
   - delete() - видалення товару  
   - getStock() - отримання поточного залишку  
   - checkAvailability(quantity) - перевірка доступності кількості  
+
 Зв'язки:  
   - N:1 з Category  
   - 1:N з ProductImage  
@@ -68,7 +73,7 @@
   - 1:N з OrderItem  
   - 1:N з IncomingDocument  
   - 1:N з OutgoingDocument  
-**3. Category (Категорія)**  
+### 3. Category (Категорія)
 Призначення: Організація товарів в ієрархічну структуру категорій.  
 Таблиця в БД: Categories  
 Поля:  
@@ -80,16 +85,18 @@
 | parentId | int | Ні | FK до батьківської категорії (self-reference) |
 | order | int | Так | Порядок відображення (default: 0) |
 | createdAt | DateTime | Так | Дата створення |
+
 Методи:  
   - create() - створення категорії  
   - update() - оновлення категорії  
   - delete() - видалення категорії  
   - getChildren() - отримання дочірніх категорій  
   - getProducts() - отримання товарів категорії  
+
 Зв'язки:  
   - 1:N з Product  
   - 0..1:N з Category (рекурсивний зв'язок для ієрархії)  
-**4. ProductImage (Зображення товару)**  
+### 4. ProductImage (Зображення товару)
 Призначення: Зберігання посилань на зображення товарів.  
 Таблиця в БД: ProductImages  
 Поля:  
@@ -101,13 +108,15 @@
 | imageUrl | string(500) | Так | URL зображення в MinIO Storage |
 | isPrimary | bool | Так | Головне зображення (default: false) |
 | order | int | Так | Порядок відображення (default: 0) |
+
 Методи:  
   - upload() - завантаження зображення в MinIO  
   - delete() - видалення зображення  
   - setPrimary() - встановлення головного зображення  
+
 Зв'язки:  
   - N:1 з Product  
-**5. Cart (Кошик)**  
+### 5. Cart (Кошик)
 Призначення: Тимчасове зберігання товарів, обраних користувачем для покупки.  
 Таблиця в БД: Cart  
 Поля:  
@@ -118,16 +127,18 @@
 | userId | int | Так | FK до Users (унікальний) |
 | createdAt | DateTime | Так | Дата створення |
 | updatedAt | DateTime | Так | Дата останнього оновлення |
+
 Методи:  
   - addItem(productId, quantity) - додавання товару  
   - removeItem(productId) - видалення товару  
   - updateQuantity(productId, quantity) - оновлення кількості  
   - clear() - очищення кошика  
   - getTotal() - розрахунок загальної суми  
+
 Зв'язки:  
   - 1:1 з User  
   - 1:N з CartItem (композиція)  
-**6. CartItem (Елемент кошика)**  
+### 6. CartItem (Елемент кошика)
 Призначення: Зберігання товарів в кошику з кількістю.  
 Таблиця в БД: CartItems  
 Поля:  
@@ -139,14 +150,17 @@
 | productId | int | Так | FK до Products |
 | quantity | int | Так | Кількість (default: 1) |
 | addedAt | DateTime | Так | Дата додавання |
+
 Унікальні обмеження:  
   - (cartId, productId) - один товар раз у кошику  
+
 Методи:  
   - getSubtotal() - розрахунок вартості позиції (price × quantity)  
+
 Зв'язки:  
   - N:1 з Cart  
   - N:1 з Product  
-**7. Order (Замовлення)**  
+### 7. Order (Замовлення)
 Призначення: Зберігання інформації про замовлення клієнтів.  
 Таблиця в БД: Orders  
 Поля:  
@@ -162,11 +176,13 @@
 | paymentMethod | PaymentMethod | Так | Спосіб оплати (enum) |
 | createdAt | DateTime | Так | Дата створення |
 | updatedAt | DateTime | Так | Дата оновлення |
+
 Методи:  
   - create() - створення замовлення  
   - updateStatus(newStatus) - зміна статусу  
   - cancel(reason) - скасування замовлення  
   - getTotal() - розрахунок загальної суми  
+
 Зв'язки:  
   - N:1 з User  
   - 1:N з OrderItem (композиція, включаючи інформацію про знижки)  
@@ -174,7 +190,7 @@
   - 1:1 з Shipping  
   - 1:N з OrderHistory  
   - 1:N з OutgoingDocument (копіює знижки з OrderItem)  
-**8. OrderItem (Товар в замовленні)**  
+### 8. OrderItem (Товар в замовленні)
 Призначення: Зберігання товарів в замовленні з фіксацією ціни.  
 Таблиця в БД: OrderItems  
 Поля:  
@@ -189,15 +205,17 @@
 | appliedPromotionId | int | Ні | FK до Promotions (найвигідніша знижка) |
 | discountAmount | decimal(10,2) | Так | Сума знижки в грн (default: 0) |
 | finalPrice | decimal(10,2) | Так | Фінальна ціна після знижки |
+
 Методи:  
   - getSubtotal() - розрахунок вартості позиції (finalPrice × quantity)  
   - getDiscountTotal() - розрахунок загальної суми знижки (discountAmount × quantity)  
   - getOriginalTotal() - розрахунок вартості без знижок (originalPrice × quantity)  
+ 
 Зв'язки:  
   - N:1 з Order  
   - N:1 з Product  
   - N:1 з Promotion (якщо appliedPromotionId не null)  
-**9. OrderHistory (Історія замовлення)**  
+### 9. OrderHistory (Історія замовлення)
 Призначення: Аудит всіх змін статусів замовлення.  
 Таблиця в БД: OrderHistory  
 Поля:  
@@ -211,12 +229,14 @@
 | changedBy | int | Ні | FK до Users (хто змінив) |
 | comment | text | Ні | Коментар (наприклад, ТТН) |
 | timestamp | DateTime | Так | Час зміни |
+
 Методи:  
   - log() - логування зміни статусу  
+
 Зв'язки:  
   - N:1 з Order  
   - N:1 з User  
-**10. Payment (Платіж)**  
+### 10. Payment (Платіж)
 Призначення: Зберігання інформації про платежі.  
 Таблиця в БД: Payments  
 Поля:  
@@ -233,13 +253,15 @@
 | stripePaymentIntentId | string(255) | Ні | ID транзакції Stripe |
 | createdAt | DateTime | Так | Дата створення |
 | updatedAt | DateTime | Так | Дата оновлення |
+
 Методи:  
   - createSession() - створення платіжної сесії Stripe  
   - updateStatus(status) - оновлення статусу  
   - refund() - повернення коштів  
+
 Зв'язки:  
   - 1:1 з Order  
-**11. Shipping (Доставка)**  
+### 11. Shipping (Доставка)
 Призначення: Інформація про доставку замовлення або збережена адреса користувача.  
 Таблиця в БД: Shipping  
 Поля:  
@@ -256,13 +278,15 @@
 | phone | string(20) | Так | Контактний телефон |
 | trackingNumber | string(100) | Ні | ТТН Nova Poshta |
 | isDefault | bool | Так | Адреса за замовчуванням (default: false) |
+
 Методи:  
   - save() - збереження адреси  
   - calculateCost() - розрахунок вартості доставки через Nova Poshta API  
+
 Зв'язки:  
   - 1:1 з Order (якщо orderId не null)  
   - N:1 з User (якщо userId не null)  
-**12. IncomingDocument (Прибуткова накладна)**  
+### 12. IncomingDocument (Прибуткова накладна)
 Призначення: Документування надходження товарів на склад.  
 Таблиця в БД: IncomingDocuments  
 Поля:  
@@ -278,14 +302,16 @@
 | notes | text | Ні | Примітки |
 | createdAt | DateTime | Так | Дата створення запису |
 | createdBy | int | Так | FK до Users (менеджер) |
+
 Методи:  
   - create() - створення накладної  
   - updateStock() - збільшення Stock товару  
+
 Зв'язки:  
   - N:1 з Product  
   - N:1 з Company (постачальник)  
   - N:1 з User (createdBy)  
-**13. OutgoingDocument (Видаткова накладна)**  
+### 13. OutgoingDocument (Видаткова накладна)
 Призначення: Документування списання товарів зі складу.  
 Таблиця в БД: OutgoingDocuments  
 Поля:  
@@ -306,22 +332,25 @@
 | documentDate | Date | Так | Дата документа |
 | createdAt | DateTime | Так | Дата створення |
 | createdBy | int | Ні | FK до Users (NULL для автоматичних) |
+
 Правила валідації:  
   - companyId обов\'язковий, якщо reason = RETURN (повернення товару постачальнику)  
   - Для інших причин (DAMAGED, LOST, INVENTORY) companyId = NULL  
   - Поля знижок (originalPrice, appliedPromotionId, discountAmount, finalPrice) заповнюються ТІЛЬКИ для reason = ORDER  
   - Для reason = ORDER ці поля копіюються з відповідного OrderItem  
   - Для інших причин поля знижок = NULL  
+
 Методи:  
   - create() - створення накладної  
   - updateStock() - зменшення Stock товару  
+
 Зв'язки:  
   - N:1 з Product  
   - N:1 з Order (якщо orderId не null)  
   - N:1 з Company (якщо companyId не null - для повернень)  
   - N:1 з User (createdBy)  
   - N:1 з Promotion (якщо appliedPromotionId не null - для ORDER)  
-**14. Promotion (Акція/Знижка)**  
+### 14. Promotion (Акція/Знижка)
 Призначення: Управління акціями та знижками на товари. Підтримує різні типи знижок, цільові аудиторії, промокоди, умови застосування та стакування знижок.  
 Таблиця в БД: Promotions  
 Поля:  
@@ -348,6 +377,7 @@
 | createdBy | int | Так | FK до Users (менеджер) |
 | createdAt | DateTime | Так | Дата створення |
 | updatedAt | DateTime | Так | Дата оновлення |
+
 Методи:  
   - create() - створення нової акції  
   - update() - оновлення параметрів акції  
@@ -359,6 +389,7 @@
   - incrementUsage() - збільшення лічильника використань  
   - isValid() - перевірка чи акція дійсна (активна, в межах дат, не вичерпано ліміт)  
   - calculateDiscount(originalPrice) - розрахунок суми знижки  
+
 Зв'язки:  
   - N:1 з User (createdBy - менеджер який створив)  
   - 1:N з UserPromotion (персональні призначення)  
@@ -366,7 +397,7 @@
   - 1:N з OutgoingDocument (застосовані знижки при списанні)  
   - N:1 з Product (якщо targetType=PRODUCT)  
   - N:1 з Category (якщо targetType=CATEGORY)  
-**15. UserPromotion (Персональна знижка)**  
+### 15. UserPromotion (Персональна знижка)
 Призначення: Зв'язок між користувачами та акціями (many-to-many). Зберігає інформацію про персональні знижки користувачів та історію їх використання.  
 Таблиця в БД: UserPromotions  
 
@@ -377,14 +408,16 @@
 | promotionId | int | Так | FK до Promotions |
 | assignedAt | DateTime | Так | Дата призначення знижки |
 | usedCount | int | Так | Кількість використань (default: 0) |
+
 Методи:  
   - assign(userId, promotionId) - призначення знижки користувачу  
   - incrementUsedCount() - збільшення лічильника використань  
   - getHistory(userId) - отримання історії використаних знижок  
+
 Зв'язки:  
   - N:1 з User  
   - N:1 з Promotion  
-**16. Company (Фірма-постачальник)**  
+### 16. Company (Фірма-постачальник)
 Призначення: Зберігання інформації про фірми-постачальники для складського обліку.  
 Таблиця в БД: Companies  
 Поля:  
@@ -401,17 +434,19 @@
 | isActive | bool | Так | Чи активна фірма (default: true) |
 | createdAt | DateTime | Так | Дата створення |
 | updatedAt | DateTime | Так | Дата останнього оновлення |
+
 Методи:  
   - create() - створення нової фірми  
   - update() - оновлення даних фірми  
   - deactivate() - деактивація фірми (м'яке видалення)  
   - getIncomingDocuments() - отримання всіх прибуткових накладних від цієї фірми  
   - getOutgoingDocuments() - отримання всіх повернень цій фірмі  
+
 Зв'язки:  
   - 1:N з IncomingDocument (одна фірма може мати багато надходжень)  
   - 1:N з OutgoingDocument (одна фірма може мати багато повернень)
 ## Data Transfer Objects (DTOs)
-**1. RegisterDTO**  
+### 1. RegisterDTO
 Призначення: Передача даних реєстрації нового користувача.  
 Поля:  
 
@@ -424,9 +459,10 @@
 | confirmPassword | string | Так | Має співпадати з password |
 | phone | string | Ні | Формат: +380XXXXXXXXX |
 | acceptTerms | bool | Так | Має бути true |
+
 Використовується в:  
   - AuthController.register()  
-**2. LoginDTO**  
+### 2. LoginDTO
 Призначення: Передача даних для автентифікації.  
 Поля:  
 
@@ -434,9 +470,10 @@
 |------|-----|-------------|------|
 | email | string | Так | Валідний email |
 | password | string | Так | Не порожній |
+
 Використовується в:  
   - AuthController.login()  
-**3. ProductDTO**  
+### 3. ProductDTO
 Призначення: Передача даних товару (створення/оновлення).  
 Поля:  
 
@@ -448,10 +485,11 @@
 | weight | decimal | Так | > 0, макс. 3 знаки після коми |
 | categoryId | int | Так | Існуюча категорія |
 | images | List<File> | Так (для створення) | JPEG/PNG/WebP, макс. 5MB |
+
 Використовується в:  
   - ProductController.create()  
   - ProductController.update()  
-**4. CategoryDTO**  
+### 4. CategoryDTO
 Призначення: Передача даних категорії.  
 Поля:  
 
@@ -460,10 +498,11 @@
 | name | string | Так | 3-100 символів |
 | parentId | int | Ні | Існуюча категорія |
 | order | int | Ні | >= 0 |
+
 Використовується в:  
   - CategoryController.create()  
   - CategoryController.update()  
-**5. AddToCartDTO**  
+### 5. AddToCartDTO
 Призначення: Додавання товару до кошика.  
 Поля:  
 
@@ -471,9 +510,10 @@
 |------|-----|-------------|------|
 | productId | int | Так | Існуючий товар |
 | quantity | int | Так | > 0 |
+
 Використовується в:  
   - CartController.addItem()  
-**6. UpdateCartDTO**  
+### 6. UpdateCartDTO
 Призначення: Оновлення кількості товару в кошику.  
 Поля:  
 
@@ -481,9 +521,10 @@
 |------|-----|-------------|------|
 | productId | int | Так | Існуючий товар в кошику |
 | quantity | int | Так | > 0 |
+
 Використовується в:  
   - CartController.updateItem()  
-**7. CreateOrderDTO**  
+### 7. CreateOrderDTO
 Призначення: Оформлення замовлення.  
 Поля:  
 
@@ -492,11 +533,13 @@
 | items | List<OrderItemDTO> | Так | Не порожній |
 | shippingAddress | AddressDTO | Так | Валідна адреса |
 | paymentMethod | PaymentMethod | Так | Card або CashOnDelivery |
+
 Вкладені DTO:  
   - OrderItemDTO: { productId: int, quantity: int }  
+
 Використовується в:  
   - OrderController.createOrder()  
-**8. AddressDTO**  
+### 8. AddressDTO
 Призначення: Передача даних адреси доставки.  
 Поля:  
 
@@ -508,11 +551,12 @@
 | warehouseRef | string | Так | Ref з Nova Poshta API |
 | phone | string | Так | Формат: +380XXXXXXXXX |
 | isDefault | bool | Ні | Default: false |
+
 Використовується в:  
   - CreateOrderDTO  
   - ShippingController.addAddress()  
   - UserController.addAddress()  
-**9. UpdateProfileDTO**  
+### 9. UpdateProfileDTO
 Призначення: Оновлення профілю користувача.  
 Поля:  
 
@@ -521,9 +565,10 @@
 | firstName | string | Так | 2-50 символів |
 | lastName | string | Так | 2-50 символів |
 | phone | string | Ні | Формат: +380XXXXXXXXX |
+
 Використовується в:  
   - UserController.updateProfile()  
-**10. ChangePasswordDTO**  
+### 10. ChangePasswordDTO
 Призначення: Зміна паролю користувача.  
 Поля:  
 
@@ -532,9 +577,10 @@
 | currentPassword | string | Так | Не порожній |
 | newPassword | string | Так | Мін. 8 символів, букви + цифри |
 | confirmPassword | string | Так | Має співпадати з newPassword |
+
 Використовується в:  
   - UserController.changePassword()  
-**11. IncomingDTO**  
+### 11. IncomingDTO
 Призначення: Оформлення прибуткової накладної.  
 Поля:  
 
@@ -546,9 +592,10 @@
 | companyId | int | Так | Існуюча активна фірма |
 | documentDate | Date | Так | <= поточна дата |
 | notes | string | Ні | Макс. 1000 символів |
+
 Використовується в:  
   - WarehouseController.createIncoming()  
-**12. OutgoingDTO**  
+### 12. OutgoingDTO
 Призначення: Оформлення видаткової накладної (вручну).  
 Поля:  
 
@@ -559,11 +606,12 @@
 | companyId | int | Умовно | Обов'язковий якщо reason=RETURN, інакше null |
 | reason | OutgoingReason | Так | Damaged/Lost/Return/Inventory |
 | notes | string | Ні | Макс. 1000 символів |
+
 Примітка: Reason "Order" використовується тільки для автоматичних накладних при замовленні.  
 Правило валідації: якщо reason = RETURN, то companyId обов'язковий та має відповідати активній фірмі в БД.  
 Використовується в:  
   - WarehouseController.createOutgoing()  
-**13. CompanyDTO**  
+### 13. CompanyDTO
 Призначення: Базовий DTO для передачі даних фірми.  
 Поля:  
 
@@ -575,10 +623,11 @@
 | email | string | Так | Валідний email, унікальний |
 | address | string | Так | Макс. 500 символів |
 | notes | string | Ні | Макс. 1000 символів |
+
 Використовується в:  
   - WarehouseController.getCompanies()  
   - Відображення списку фірм в інтерфейсі  
-**14. CreateCompanyDTO**  
+### 14. CreateCompanyDTO
 Призначення: Створення нової фірми-постачальника.  
 Поля:  
 
@@ -590,9 +639,10 @@
 | email | string | Так | Валідний email, унікальний |
 | address | string | Так | Макс. 500 символів |
 | notes | string | Ні | Макс. 1000 символів |
+
 Використовується в:  
   - WarehouseController.createCompany()  
-**15. UpdateCompanyDTO**  
+### 15. UpdateCompanyDTO
 Призначення: Оновлення даних існуючої фірми.  
 Поля:  
 
@@ -604,9 +654,10 @@
 | email | string | Так | Валідний email, унікальний |
 | address | string | Так | Макс. 500 символів |
 | notes | string | Ні | Макс. 1000 символів |
+
 Використовується в:  
   - WarehouseController.updateCompany()  
-**16. UpdateStatusDTO**  
+### 16. UpdateStatusDTO
 Призначення: Зміна статусу замовлення адміністратором.  
 Поля:  
 
@@ -615,9 +666,10 @@
 | newStatus | OrderStatus | Так | Processing/Shipped/Delivered/Cancelled |
 | comment | string | Ні | Макс. 500 символів (ТТН) |
 | reason | string | Так (якщо Cancelled) | Причина скасування |
+
 Використовується в:  
   - AdminController.updateOrderStatus()  
-**17. CreateSessionDTO**  
+### 17. CreateSessionDTO
 Призначення: Створення платіжної сесії Stripe.  
 Поля:  
 
@@ -626,9 +678,10 @@
 | orderId | int | Так | Існуюче замовлення |
 | amount | decimal | Так | > 0 |
 | currency | string | Так | UAH |
+
 Використовується в:  
   - PaymentController.createSession()  
-**18. CalculateCostDTO**  
+### 18. CalculateCostDTO
 Призначення: Розрахунок вартості доставки.  
 Поля:  
 
@@ -637,9 +690,10 @@
 | cityRef | string | Так | Ref з Nova Poshta API |
 | warehouseRef | string | Так | Ref з Nova Poshta API |
 | weight | decimal | Так | > 0 (сумарна вага товарів) |
+
 Використовується в:  
   - ShippingController.calculateCost()  
-**19. PromotionDTO**  
+### 19. PromotionDTO
 Призначення: Базовий DTO для передачі даних акції (відображення).  
 Поля:  
 
@@ -663,11 +717,12 @@
 | currentUsage | int | Так | Поточна кількість використань |
 | isActive | bool | Так | Чи активна |
 | createdAt | int | Так | Дата створення |
+
 Використовується в:  
   - PromotionController.getAll()  
   - PromotionController.getById()  
   - UserController.getMyPromotions()  
-**20. CreatePromotionDTO**  
+### 20. CreatePromotionDTO
 Призначення: Створення нової акції/знижки менеджером.  
 Поля:  
 
@@ -687,6 +742,7 @@
 | minQuantity | int | Ні | >= 1 (nullable) |
 | priority | int | Ні | 0-100 (default: 0) |
 | usageLimit | int | Ні | >= 1 (nullable) |
+
 Правила валідації:  
   - Якщо type = PERCENTAGE, value <= 100  
   - Якщо type = SPECIAL\_PRICE, value < ціни товару  
@@ -694,9 +750,10 @@
   - Якщо targetType = CATEGORY, targetId обов'язковий та існує в Categories  
   - Якщо promoCode вказано, перевірити унікальність  
   - endDate > startDate (якщо обидва вказані)  
+
 Використовується в:  
   - PromotionController.create()  
-**21. UpdatePromotionDTO**  
+### 21. UpdatePromotionDTO
 Призначення: Оновлення існуючої акції.  
 Поля:  
 
@@ -716,9 +773,10 @@
 | minQuantity | int | Ні | >= 1 (nullable) |
 | priority | int | Ні | 0-100 (default: 0) |
 | usageLimit | int | Ні | >= 1 (nullable) |
+
 Використовується в:  
   - PromotionController.update()  
-**22. ApplyPromoCodeDTO**  
+### 22. ApplyPromoCodeDTO
 Призначення: Застосування промокоду при оформленні замовлення.  
 Поля:  
 
@@ -727,9 +785,10 @@
 | promoCode | string | Так | Промокод для перевірки |
 | userId | int | Так | ID користувача |
 | cartItems | List<CartItemDTO> | Так | Товари в кошику для валідації |
+
 Використовується в:  
   - PromotionController.validatePromoCode()  
-**23. AssignPromotionDTO**  
+### 23. AssignPromotionDTO
 Призначення: Призначення персональної знижки користувачу менеджером.  
 Поля:  
 
@@ -737,13 +796,15 @@
 |------|-----|-------------|------|
 | userId | int | Так | Існуючий користувач |
 | promotionId | int | Так | Існуюча акція |
+
 Правила валідації:  
   - userId існує в Users  
   - promotionId існує в Promotions та isActive = true  
   - Комбінація (userId, promotionId) унікальна в UserPromotions  
+
 Використовується в:  
   - PromotionController.assignToUser()  
-**24. StudentVerificationDTO**  
+### 24. StudentVerificationDTO
 Призначення: Результат верифікації студента через University API.  
 Поля:  
 
@@ -758,10 +819,11 @@
 | enrollmentYear | int | Ні | Рік вступу |
 | faculty | string | Ні | Факультет |
 | specialty | string | Ні | Спеціальність |
+
 Використовується в:  
   - UniversityIntegration.verifyStudent()  
   - AuthController.register() (внутрішньо)  
-**25. ProductFilters (Query параметри)**  
+### 25. ProductFilters (Query параметри)
 Призначення: Фільтрація та пагінація товарів.  
 Поля:  
 
@@ -775,9 +837,10 @@
 | search | string | Ні | Пошук за назвою |
 | sort | string | Ні | Сортування (price/name/createdAt) |
 | order | string | Ні | Порядок (asc/desc) |
+
 Використовується в:  
   - ProductController.getAll()  
-**26. OrderFilters (Query параметри)**  
+### 26. OrderFilters (Query параметри)
 Призначення: Фільтрація замовлень користувача.  
 Поля:  
 
@@ -788,9 +851,10 @@
 | status | OrderStatus | Ні | Фільтр за статусом |
 | startDate | Date | Ні | Початкова дата |
 | endDate | Date | Ні | Кінцева дата |
+
 Використовується в:  
   - OrderController.getHistory()  
-**27. AdminOrderFilters (Query параметри)**  
+### 27. AdminOrderFilters (Query параметри)
 Призначення: Фільтрація всіх замовлень для адміністратора.  
 Поля:  
 
@@ -803,9 +867,10 @@
 | startDate | Date | Ні | Початкова дата |
 | endDate | Date | Ні | Кінцева дата |
 | orderNumber | string | Ні | Пошук за номером |
+
 Використовується в:  
   - AdminController.getAllOrders()  
-**28. UserFilters (Query параметри)**  
+### 28. UserFilters (Query параметри)
 Призначення: Фільтрація користувачів для адміністратора.  
 Поля:  
 
@@ -816,9 +881,10 @@
 | role | Role | Ні | Фільтр за роллю |
 | status | UserStatus | Ні | Фільтр за статусом |
 | search | string | Ні | Пошук за ім'ям/email |
+
 Використовується в:  
   - AdminController.getAllUsers()  
-**29. DocFilters (Query параметри)**  
+### 29. DocFilters (Query параметри)
 Призначення: Фільтрація складських документів.  
 Поля:  
 
@@ -831,10 +897,11 @@
 | endDate | Date | Ні | Кінцева дата |
 | createdBy | int | Ні | Хто створив (для IncomingDocuments) |
 | reason | OutgoingReason | Ні | Причина (для OutgoingDocuments) |
+
 Використовується в:  
   - WarehouseController.getIncomingHistory()  
   - WarehouseController.getOutgoingHistory()  
-**30. StockFilters (Query параметри)**  
+### 30. StockFilters (Query параметри)
 Призначення: Фільтрація залишків товарів.  
 Поля:  
 
@@ -845,9 +912,10 @@
 | categoryId | int | Ні | Фільтр за категорією |
 | lowStock | bool | Ні | Тільки товари з низьким запасом (< 10) |
 | outOfStock | bool | Ні | Тільки товари без залишків (= 0) |
+
 Використовується в:  
   - WarehouseController.getCurrentStock()  
-**31. PromotionFilters (Query параметри)**  
+### 31. PromotionFilters (Query параметри)
 Призначення: Фільтрація акцій та знижок.  
 Поля:  
 
@@ -864,10 +932,11 @@
 | search | string | Ні | Пошук за назвою акції або промокодом |
 | sort | string | Ні | Сортування (name/createdAt/currentUsage/priority) |
 | order | string | Ні | Порядок (asc/desc) |
+
 Використовується в:  
   - PromotionController.getAll()  
   - AdminController.getAllPromotions()  
-**32. AnalyticsFilters (Query параметри)**  
+### 32. AnalyticsFilters (Query параметри)
 Призначення: Базові параметри фільтрації для всіх типів аналітики.  
 Поля:  
 
@@ -878,14 +947,16 @@
 | productId | int | Ні | Фільтр за конкретним товаром (nullable) |
 | categoryId | int | Ні | Фільтр за категорією (nullable) |
 | groupBy | string | Ні | Групування: day/week/month (default: day) |
+
 Правила валідації:  
   - startDate <= endDate  
   - Період не більше 2 років (endDate - startDate <= 730 days)  
   - groupBy має бути один з: "day", "week", "month"  
+
 Використовується в:  
   - AnalyticsController.getSalesAnalytics()  
   - AnalyticsController.getCategoryAnalytics()  
-**33. DateRange**  
+### 33. DateRange
 Призначення: Представлення часового діапазону для аналітики.  
 Поля:  
 
@@ -893,6 +964,7 @@
 |------|-----|-------------|------|
 | startDate | DateTime | Так | Дата початку періоду |
 | endDate | DateTime | Так | Дата закінчення періоду |
+
 Використовується в:  
   - SalesAnalyticsDTO  
   - ProductAnalyticsDTO  
@@ -901,7 +973,7 @@
   - FinancialReportDTO  
   - PromotionEffectivenessDTO  
   - UserBehaviorDTO  
-**34. SalesAnalyticsDTO**  
+### 34. SalesAnalyticsDTO
 Призначення: Результат аналізу продажів за період з детальною розбивкою.  
 Поля:  
 
@@ -916,13 +988,15 @@
 | salesByStatus | Dictionary<OrderStatus, int> | Так | Розподіл за статусами |
 | topProducts | List<ProductMetric> | Так | Топ-10 товарів |
 | changeVsPrevious | ChangeMetrics | Ні | Зміни відносно попереднього періоду |
+
 Вкладені класи:  
   - DailyMetric: { date: DateTime, revenue: decimal, orders: int }  
   - ChangeMetrics: { ordersChange: decimal, revenueChange: decimal, avgOrderChange: decimal }  
+
 Використовується в:  
   - AnalyticsController.getSalesAnalytics()  
   - AnalyticsService.getSalesAnalytics()  
-**35. ProductAnalyticsDTO**  
+### 35. ProductAnalyticsDTO
 Призначення: Аналіз популярності товарів за різними метриками.  
 Поля:  
 
@@ -933,11 +1007,13 @@
 | topByRevenue | List<ProductMetric> | Так | Топ товарів за доходом |
 | topByProfit | List<ProductMetric> | Так | Топ товарів за прибутком |
 | lowStock | List<ProductMetric> | Так | Товари з низькими залишками |
+
 Вкладені класи:  
   - ProductStock: { productId: int, productName: string, currentStock: int, minStock: int }  
+
 Використовується в:  
   - AnalyticsController.getProductPopularity()  
-**36. CategoryAnalyticsDTO**  
+### 36. CategoryAnalyticsDTO
 Призначення: Аналітика продажів по категоріях товарів.  
 Поля:  
 
@@ -947,11 +1023,13 @@
 | revenueByCategory | List<CategoryMetric> | Так | Дохід по категоріях |
 | quantityByCategory | List<CategoryMetric> | Так | Кількість по категоріях |
 | categoryShare | List<CategoryMetric> | Так | Частка категорій в загальному доході |
+
 Вкладені класи:  
   - CategoryShare: { categoryId: int, categoryName: string, sharePercent: decimal }  
+
 Використовується в:  
   - AnalyticsController.getCategoryAnalytics()  
-**37. ConversionMetricsDTO**  
+### 37. ConversionMetricsDTO
 Призначення: Метрики конверсії та ефективності магазину.  
 Поля:  
 
@@ -965,9 +1043,10 @@
 | repeatPurchaseRate | decimal | Так | Repeat Purchase Rate (%) |
 | averageOrderItems | decimal | Так | Середня кількість товарів в замовленні |
 | cartAbandonmentRate | decimal | Так | Cart Abandonment Rate (%) |
+
 Використовується в:  
   - AnalyticsController.getConversionMetrics()  
-**38. FinancialReportDTO**  
+### 38. FinancialReportDTO
 Призначення: Фінансовий звіт з розрахунком прибутку та ROI.  
 Поля:  
 
@@ -982,12 +1061,14 @@
 | roiByProduct | List <ProductROI> | Так | ROI по товарах |
 | roiByCategory | List <CategoryROI> | Так | ROI по категоріях |
 | profitMargin | decimal | Так | Рентабельність (%) |
+
 Вкладені класи:  
   - ProductROI: { productId: int, productName: string, revenue: decimal, cost: decimal, profit: decimal, roi: decimal }  
   - CategoryROI: { categoryId: int, categoryName: string, revenue: decimal, cost: decimal, profit: decimal, roi: decimal }  
+
 Використовується в:  
   - AnalyticsController.getFinancialReport()  
-**39. PromotionEffectivenessDTO**  
+### 39. PromotionEffectivenessDTO
 Призначення: Детальна аналітика ефективності конкретної акції.  
 Поля:  
 
@@ -1003,9 +1084,10 @@
 | conversionRateWithPromo | decimal | Так | Конверсія зі знижкою |
 | conversionRateWithoutPromo | decimal | Так | Конверсія без знижки |
 | roi | decimal | Так | ROI акції (%) |
+
 Використовується в:  
   - AnalyticsController.getPromotionEffectiveness()  
-**40. UserBehaviorDTO**  
+### 40. UserBehaviorDTO
 Призначення: Аналіз поведінки користувачів магазину.  
 Поля:  
 
@@ -1016,12 +1098,14 @@
 | averageTimeToFirstPurchase | decimal | Так | Середнійчас допершоїпокупки(днів) |
 | cohortAnalysis | List<CohortData> | Так | Когортнийаналіз |
 | categoryHeatmap | Dictionary<string,Dictionary<int, int>> | Так | Heat mapкатегорійпо днях |
+
 Вкладені класи:  
   - CustomerMetric: { userId: int, orderCount: int, totalSpent: decimal }  
   - CohortData: { month: string, newUsers: int, retentionRate: decimal }  
+
 Використовується в:  
   - AnalyticsController.getUserBehaviorAnalytics()  
-**41. ProductMetric**  
+### 41. ProductMetric
 Призначення: Метрики продуктивності окремого товару.  
 Поля:  
 
@@ -1032,10 +1116,11 @@
 | quantity | int | Так | Кількість проданих одиниць |
 | revenue | decimal | Так | Дохід від товару (грн) |
 | profit | decimal | Ні | Прибуток від товару (грн, nullable) |
+
 Використовується в:  
   - SalesAnalyticsDTO (вкладений в topProducts)  
   - ProductAnalyticsDTO (вкладений в topByQuantity, topByRevenue, topByProfit)  
-**42. CategoryMetric**  
+### 42. CategoryMetric
 Призначення: Метрики продуктивності категорії товарів.  
 Поля:  
 
@@ -1046,9 +1131,10 @@
 | quantity | int | Так | Кількість проданих одиниць |
 | revenue | decimal | Так | Дохід від категорії (грн) |
 | averageOrderValue | decimal | Так | Середній чек по категорії (грн) |
+
 Використовується в:  
   - CategoryAnalyticsDTO (вкладений в revenueByCategory, quantityByCategory)  
-**43. ExportReportDTO**  
+### 43. ExportReportDTO
 Призначення: Параметри для експорту аналітичного звіту.  
 Поля:  
 
@@ -1058,12 +1144,14 @@
 | reportType | string | Так | Тип звіту: sales/products/categories/financial/conversion/behavior |
 | period | DateRange | Так | Період для звіту |
 | filters | Dictionary<string, object> | Ні | Додаткові фільтри (nullable) |
+
 Правила валідації:  
   - format має бути один з: "PDF", "CSV", "Excel"  
   - reportType має бути один з: "sales", "products", "categories", "financial", "conversion", "behavior", "promotion"  
+
 Використовується в:  
   - AnalyticsController.exportReport()  
-**44. PopularityFilters (Query параметри)**  
+### 44. PopularityFilters (Query параметри)**  
 Призначення: Фільтри для аналізу популярності товарів.  
 Поля:  
 
@@ -1073,9 +1161,11 @@
 | metric | string | Так | Метрика: quantity/revenue/profit |
 | categoryId | int | Ні | Фільтр за категорією (nullable) |
 | limit | int | Ні | Кількість товарів (default: 10, max: 100) |
+
 Правила валідації:  
   - metric має бути один з: "quantity", "revenue", "profit"  
   - limit має бути в діапазоні 1-100  
+
 Використовується в:  
   - AnalyticsController.getProductPopularity()
 ## Enumerations
@@ -1093,6 +1183,7 @@ enum Role
 Використовується в:  
   - User.role  
   - JWT токенах для авторизації  
+
 **2. UserStatus (Статус користувача)**  
 ```
 enum UserStatus
@@ -1104,6 +1195,7 @@ enum UserStatus
 ```
 Використовується в:  
   - User.status  
+
 **3. OrderStatus (Статус замовлення)**  
 ```
 enum OrderStatus
@@ -1122,9 +1214,11 @@ enum OrderStatus
   - PROCESSING → CANCELLED (скасування після оплати)  
   - SHIPPED → DELIVERED (доставка)  
   - SHIPPED → CANCELLED (скасування при доставці - рідко)  
+
 Використовується в:  
   - Order.status  
   - OrderHistory.oldStatus, OrderHistory.newStatus  
+
 **4. PaymentMethod (Спосіб оплати)**  
 ```
 enum PaymentMethod 
@@ -1136,6 +1230,7 @@ enum PaymentMethod
 Використовується в:  
   - Order.paymentMethod  
   - Payment.method  
+
 **5. PaymentStatus (Статус платежу)**  
 ```
 enum PaymentStatus 
@@ -1148,6 +1243,7 @@ enum PaymentStatus
 ```
 Використовується в:  
   - Payment.status  
+
 **6. OutgoingReason (Причина списання)**
 ```
 enum OutgoingReason 
@@ -1161,6 +1257,7 @@ enum OutgoingReason
 ```
 Використовується в:  
   - OutgoingDocument.reason  
+
 **7. PromotionType (Тип знижки)**  
 ```
 enum PromotionType 
@@ -1173,6 +1270,7 @@ enum PromotionType
 Використовується в:  
   - Promotion.type  
   - CreatePromotionDTO.type  
+
 **8. PromotionTarget (Область застосування знижки)**  
 ```
 enum PromotionTarget 
@@ -1186,6 +1284,7 @@ enum PromotionTarget
 Використовується в:  
   - Promotion.targetType  
   - CreatePromotionDTO.targetType  
+
 **9. PromotionAudience (Цільова аудиторія)**  
 ```
 enum PromotionAudience 
@@ -1200,6 +1299,7 @@ enum PromotionAudience
 Використовується в:  
   - Promotion.audienceType  
   - CreatePromotionDTO.audienceType  
+
 **10. StudentStatus (Статус студента)**  
 ```
 enum StudentStatus 
@@ -1214,6 +1314,7 @@ enum StudentStatus
   - User.studentStatus  
   - StudentVerificationDTO.studentStatus  
   - JWT токенах для швидкого доступу до статусу  
+
 Логіка визначення studentStatus при верифікації через University API:  
   - GPA >= 4.5 AND scholarshipStatus = ACTIVE → HIGH\_ACHIEVER  
   - scholarshipStatus = ACTIVE → SCHOLARSHIP  
@@ -1249,6 +1350,7 @@ User (Користувач)
       2. Валідує: isActive, startDate/endDate, usageLimit, minOrderAmount, minQuantity  
       3. Якщо валідний → застосовує поверх автоматичних знижок (стакування)  
       4. Перераховує finalPrice з урахуванням промокоду  
+
 Оформлення замовлення:  
   - CartItem[] → OrderItem[] (копіювання з інформацією про знижки)  
 ```
@@ -1280,6 +1382,7 @@ Order (Замовлення)
       8. Оновлюється Product.Stock (зменшення)  
       9. Очищується Cart користувача  
       10. Надсилається Email з деталізацією знижок  
+
 **2. Складський облік**  
 ```
 Product (Товар)
@@ -1293,6 +1396,7 @@ Product (Товар)
     + При створенні товару Stock = 0  
     + Stock оновлюється через WarehouseService  
     + Всі зміни Stock логуються через документи  
+
 **3. Ієрархія категорій**  
 ```
 Category (Батьківська)
@@ -1352,6 +1456,7 @@ Promotion (Акція/Знижка)
     + Promotion 1:N OutgoingDocument (знижки при списанні)  
     + Promotion N:1 Product (знижки на товар, якщо targetType=PRODUCT)  
     + Promotion N:1 Category (знижки на категорію, якщо targetType=CATEGORY)  
+
 **5. Користувач та його дані**  
 ```
 User
@@ -1448,16 +1553,20 @@ User:
   - email - унікальний в системі  
   - passwordHash - bcrypt з salt rounds = 12  
   - role - default: CUSTOMER  
+
 Product:  
   - price > 0  
   - weight > 0  
   - Унікальність (name, categoryId) - попередження, не помилка  
+
 Order:  
   - orderNumber - генерується автоматично (format: "ORD-YYYYMMDD-XXXXX")  
   - totalAmount >= 100 (мінімальна сума замовлення)  
+
 CartItem:  
   - Унікальний (cartId, productId) - один товар раз у кошику  
   - quantity <= Product.Stock  
+
 **2. Валідація на рівні DTO**  
 - RegisterDTO:  
 ```js
