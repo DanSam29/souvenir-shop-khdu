@@ -24,7 +24,7 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 --
 
 SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '96ab3e1e-d8b5-11f0-87fb-0c7955d6bd01:1-701,
-9caec02e-d83f-11f0-84d6-d45d64b0c160:1-87';
+9caec02e-d83f-11f0-84d6-d45d64b0c160:1-105';
 
 --
 -- Table structure for table `__efmigrationshistory`
@@ -125,9 +125,20 @@ CREATE TABLE `categories` (
   `DisplayOrder` int NOT NULL DEFAULT '0',
   `CreatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `UpdatedAt` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `CreatedBy` int DEFAULT NULL,
+  `UpdatedBy` int DEFAULT NULL,
+  `IsDeleted` tinyint(1) NOT NULL DEFAULT '0',
+  `DeletedAt` timestamp NULL DEFAULT NULL,
+  `DeletedBy` int DEFAULT NULL,
   PRIMARY KEY (`CategoryId`),
   KEY `categories_ibfk_1` (`ParentCategoryId`),
-  CONSTRAINT `categories_ibfk_1` FOREIGN KEY (`ParentCategoryId`) REFERENCES `categories` (`CategoryId`) ON DELETE SET NULL
+  KEY `fk_categories_created_by` (`CreatedBy`),
+  KEY `fk_categories_updated_by` (`UpdatedBy`),
+  KEY `fk_categories_deleted_by` (`DeletedBy`),
+  CONSTRAINT `categories_ibfk_1` FOREIGN KEY (`ParentCategoryId`) REFERENCES `categories` (`CategoryId`) ON DELETE SET NULL,
+  CONSTRAINT `fk_categories_created_by` FOREIGN KEY (`CreatedBy`) REFERENCES `users` (`UserId`),
+  CONSTRAINT `fk_categories_deleted_by` FOREIGN KEY (`DeletedBy`) REFERENCES `users` (`UserId`),
+  CONSTRAINT `fk_categories_updated_by` FOREIGN KEY (`UpdatedBy`) REFERENCES `users` (`UserId`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -137,7 +148,7 @@ CREATE TABLE `categories` (
 
 LOCK TABLES `categories` WRITE;
 /*!40000 ALTER TABLE `categories` DISABLE KEYS */;
-INSERT INTO `categories` VALUES (1,'Одяг','Clothing','Брендований одяг ХДУ',NULL,NULL,1,'2026-02-11 03:50:12','2026-05-06 17:25:04'),(2,'Аксесуари','Accessories','Аксесуари та сувеніри',NULL,NULL,2,'2026-02-11 03:50:12','2026-05-06 17:25:04'),(3,'Канцелярія','Stationery','Канцелярські товари з символікою',NULL,NULL,3,'2026-02-11 03:50:12','2026-05-06 17:25:04'),(4,'Футболки','T-Shirts','Футболки з логотипом ХДУ',NULL,1,1,'2026-02-11 03:50:12','2026-05-06 17:25:04'),(5,'Худі','Hoodies','Толстовки та худі',NULL,1,2,'2026-02-11 03:50:12','2026-05-06 17:25:04'),(6,'Кружки','Mugs','Кружки з символікою',NULL,2,1,'2026-02-11 03:50:12','2026-05-06 17:25:04');
+INSERT INTO `categories` VALUES (1,'Одяг','Clothing','Брендований одяг ХДУ',NULL,NULL,1,'2026-02-11 03:50:12','2026-05-06 17:25:04',NULL,NULL,0,NULL,NULL),(2,'Аксесуари','Accessories','Аксесуари та сувеніри',NULL,NULL,2,'2026-02-11 03:50:12','2026-05-06 17:25:04',NULL,NULL,0,NULL,NULL),(3,'Канцелярія','Stationery','Канцелярські товари з символікою',NULL,NULL,3,'2026-02-11 03:50:12','2026-05-06 17:25:04',NULL,NULL,0,NULL,NULL),(4,'Футболки','T-Shirts','Футболки з логотипом ХДУ',NULL,1,1,'2026-02-11 03:50:12','2026-05-06 17:25:04',NULL,NULL,0,NULL,NULL),(5,'Худі','Hoodies','Толстовки та худі',NULL,1,2,'2026-02-11 03:50:12','2026-05-06 17:25:04',NULL,NULL,0,NULL,NULL),(6,'Кружки','Mugs','Кружки з символікою',NULL,2,1,'2026-02-11 03:50:12','2026-05-06 17:25:04',NULL,NULL,0,NULL,NULL);
 /*!40000 ALTER TABLE `categories` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -159,10 +170,21 @@ CREATE TABLE `companies` (
   `IsActive` tinyint(1) NOT NULL DEFAULT '1',
   `CreatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `UpdatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `CreatedBy` int DEFAULT NULL,
+  `UpdatedBy` int DEFAULT NULL,
+  `IsDeleted` tinyint(1) NOT NULL DEFAULT '0',
+  `DeletedAt` timestamp NULL DEFAULT NULL,
+  `DeletedBy` int DEFAULT NULL,
   PRIMARY KEY (`CompanyId`),
   UNIQUE KEY `Name` (`Name`),
-  UNIQUE KEY `Email` (`Email`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  UNIQUE KEY `Email` (`Email`),
+  KEY `fk_companies_created_by` (`CreatedBy`),
+  KEY `fk_companies_updated_by` (`UpdatedBy`),
+  KEY `fk_companies_deleted_by` (`DeletedBy`),
+  CONSTRAINT `fk_companies_created_by` FOREIGN KEY (`CreatedBy`) REFERENCES `users` (`UserId`),
+  CONSTRAINT `fk_companies_deleted_by` FOREIGN KEY (`DeletedBy`) REFERENCES `users` (`UserId`),
+  CONSTRAINT `fk_companies_updated_by` FOREIGN KEY (`UpdatedBy`) REFERENCES `users` (`UserId`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -171,7 +193,7 @@ CREATE TABLE `companies` (
 
 LOCK TABLES `companies` WRITE;
 /*!40000 ALTER TABLE `companies` DISABLE KEYS */;
-INSERT INTO `companies` VALUES (1,'ТОВ \"Текстиль Плюс\"','Іванов Іван Іванович','+380501234567','textile@example.com','м. Київ, вул. Хрещатик, 1',NULL,1,'2026-02-11 03:50:12','2026-02-11 03:50:12');
+INSERT INTO `companies` VALUES (1,'ТОВ \"Текстиль Плюс\"','Іванов Іван Іванович','+380501234567','textile@example.com','м. Київ, вул. Хрещатик, 1',NULL,1,'2026-02-11 03:50:12','2026-02-11 03:50:12',NULL,NULL,0,NULL,NULL);
 /*!40000 ALTER TABLE `companies` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -193,10 +215,19 @@ CREATE TABLE `incomingdocuments` (
   `CreatedBy` int NOT NULL,
   `Notes` text,
   `CreatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `UpdatedAt` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `UpdatedBy` int DEFAULT NULL,
+  `IsDeleted` tinyint(1) NOT NULL DEFAULT '0',
+  `DeletedAt` timestamp NULL DEFAULT NULL,
+  `DeletedBy` int DEFAULT NULL,
   PRIMARY KEY (`DocumentId`),
   KEY `incomingdocuments_ibfk_1` (`ProductId`),
   KEY `incomingdocuments_ibfk_2` (`CompanyId`),
   KEY `incomingdocuments_ibfk_3` (`CreatedBy`),
+  KEY `fk_inc_docs_updated_by` (`UpdatedBy`),
+  KEY `fk_inc_docs_deleted_by` (`DeletedBy`),
+  CONSTRAINT `fk_inc_docs_deleted_by` FOREIGN KEY (`DeletedBy`) REFERENCES `users` (`UserId`),
+  CONSTRAINT `fk_inc_docs_updated_by` FOREIGN KEY (`UpdatedBy`) REFERENCES `users` (`UserId`),
   CONSTRAINT `incomingdocuments_ibfk_1` FOREIGN KEY (`ProductId`) REFERENCES `products` (`ProductId`) ON DELETE RESTRICT,
   CONSTRAINT `incomingdocuments_ibfk_2` FOREIGN KEY (`CompanyId`) REFERENCES `companies` (`CompanyId`) ON DELETE RESTRICT,
   CONSTRAINT `incomingdocuments_ibfk_3` FOREIGN KEY (`CreatedBy`) REFERENCES `users` (`UserId`) ON DELETE RESTRICT
@@ -335,11 +366,20 @@ CREATE TABLE `outgoingdocuments` (
   `CreatedBy` int DEFAULT NULL,
   `Notes` text,
   `CreatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `UpdatedAt` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `UpdatedBy` int DEFAULT NULL,
+  `IsDeleted` tinyint(1) NOT NULL DEFAULT '0',
+  `DeletedAt` timestamp NULL DEFAULT NULL,
+  `DeletedBy` int DEFAULT NULL,
   PRIMARY KEY (`DocumentId`),
   KEY `outgoingdocuments_ibfk_1` (`ProductId`),
   KEY `outgoingdocuments_ibfk_2` (`OrderId`),
   KEY `outgoingdocuments_ibfk_3` (`CompanyId`),
   KEY `outgoingdocuments_ibfk_5` (`CreatedBy`),
+  KEY `fk_out_docs_updated_by` (`UpdatedBy`),
+  KEY `fk_out_docs_deleted_by` (`DeletedBy`),
+  CONSTRAINT `fk_out_docs_deleted_by` FOREIGN KEY (`DeletedBy`) REFERENCES `users` (`UserId`),
+  CONSTRAINT `fk_out_docs_updated_by` FOREIGN KEY (`UpdatedBy`) REFERENCES `users` (`UserId`),
   CONSTRAINT `outgoingdocuments_ibfk_1` FOREIGN KEY (`ProductId`) REFERENCES `products` (`ProductId`) ON DELETE RESTRICT,
   CONSTRAINT `outgoingdocuments_ibfk_2` FOREIGN KEY (`OrderId`) REFERENCES `orders` (`OrderId`) ON DELETE SET NULL,
   CONSTRAINT `outgoingdocuments_ibfk_3` FOREIGN KEY (`CompanyId`) REFERENCES `companies` (`CompanyId`) ON DELETE RESTRICT,
@@ -353,7 +393,7 @@ CREATE TABLE `outgoingdocuments` (
 
 LOCK TABLES `outgoingdocuments` WRITE;
 /*!40000 ALTER TABLE `outgoingdocuments` DISABLE KEYS */;
-INSERT INTO `outgoingdocuments` VALUES (17,1,1,19,NULL,'Order',450.00,NULL,0.00,450.00,'2026-05-02',3,NULL,'Автоматично створено для замовлення ORD-20260502181811-db78f5','2026-05-02 15:18:12'),(18,1,1,20,NULL,'Order',450.00,NULL,0.00,450.00,'2026-05-03',3,NULL,'Автоматично створено для замовлення ORD-20260503125552-bad644','2026-05-03 09:55:53'),(19,4,1,21,NULL,'Order',800.00,NULL,0.00,800.00,'2026-05-03',3,NULL,'Автоматично створено для замовлення ORD-20260503133230-e2f341','2026-05-03 10:32:30'),(20,1,1,22,NULL,'Order',450.00,NULL,0.00,450.00,'2026-05-03',3,NULL,'Автоматично створено для замовлення ORD-20260503134422-0f30cd','2026-05-03 10:44:23'),(21,2,1,23,NULL,'Order',450.00,NULL,0.00,450.00,'2026-05-03',3,NULL,'Автоматично створено для замовлення ORD-20260503135100-9817c9','2026-05-03 10:51:01'),(22,2,1,24,NULL,'Order',450.00,NULL,0.00,450.00,'2026-05-03',3,NULL,'Автоматично створено для замовлення ORD-20260503165408-fe86f9','2026-05-03 13:54:09'),(23,1,1,25,NULL,'Order',450.00,NULL,22.50,427.50,'2026-05-03',3,NULL,'Автоматично створено для замовлення ORD-20260503180808-5e1736','2026-05-03 15:08:08'),(24,1,1,26,NULL,'Order',450.00,NULL,22.50,427.50,'2026-05-03',3,NULL,'Автоматично створено для замовлення ORD-20260503183239-03bfd1','2026-05-03 15:32:39'),(25,2,1,26,NULL,'Order',450.00,NULL,22.50,427.50,'2026-05-03',3,NULL,'Автоматично створено для замовлення ORD-20260503183239-03bfd1','2026-05-03 15:32:39'),(26,1,1,27,NULL,'Order',450.00,NULL,22.50,427.50,'2026-05-04',3,NULL,'Автоматично створено для замовлення ORD-20260504065435-b23d55','2026-05-04 03:54:36'),(27,1,1,28,NULL,'Order',450.00,NULL,22.50,427.50,'2026-05-04',3,NULL,'Автоматично створено для замовлення ORD-20260504071407-6f5988','2026-05-04 04:14:07'),(28,5,1,29,NULL,'Order',200.00,NULL,10.00,190.00,'2026-05-04',3,NULL,'Автоматично створено для замовлення ORD-20260504072728-69ac76','2026-05-04 04:27:29'),(29,7,1,30,NULL,'Order',95.00,NULL,4.75,90.25,'2026-05-04',3,NULL,'Автоматично створено для замовлення ORD-20260504082145-446014','2026-05-04 05:21:46'),(30,6,1,31,NULL,'Order',450.00,NULL,22.50,427.50,'2026-05-04',3,NULL,'Автоматично створено для замовлення ORD-20260504083549-fc2fe3','2026-05-04 05:35:50'),(31,4,1,32,NULL,'Order',800.00,NULL,40.00,760.00,'2026-05-04',NULL,3,'Автоматично створено для замовлення ORD-20260504110712-08aee8','2026-05-04 08:07:13'),(32,1,1,33,NULL,'Order',450.00,NULL,22.50,427.50,'2026-05-04',NULL,3,'Автоматично створено для замовлення ORD-20260504112355-28aeb4','2026-05-04 08:23:55');
+INSERT INTO `outgoingdocuments` VALUES (17,1,1,19,NULL,'Order',450.00,NULL,0.00,450.00,'2026-05-02',3,NULL,'Автоматично створено для замовлення ORD-20260502181811-db78f5','2026-05-02 15:18:12',NULL,NULL,0,NULL,NULL),(18,1,1,20,NULL,'Order',450.00,NULL,0.00,450.00,'2026-05-03',3,NULL,'Автоматично створено для замовлення ORD-20260503125552-bad644','2026-05-03 09:55:53',NULL,NULL,0,NULL,NULL),(19,4,1,21,NULL,'Order',800.00,NULL,0.00,800.00,'2026-05-03',3,NULL,'Автоматично створено для замовлення ORD-20260503133230-e2f341','2026-05-03 10:32:30',NULL,NULL,0,NULL,NULL),(20,1,1,22,NULL,'Order',450.00,NULL,0.00,450.00,'2026-05-03',3,NULL,'Автоматично створено для замовлення ORD-20260503134422-0f30cd','2026-05-03 10:44:23',NULL,NULL,0,NULL,NULL),(21,2,1,23,NULL,'Order',450.00,NULL,0.00,450.00,'2026-05-03',3,NULL,'Автоматично створено для замовлення ORD-20260503135100-9817c9','2026-05-03 10:51:01',NULL,NULL,0,NULL,NULL),(22,2,1,24,NULL,'Order',450.00,NULL,0.00,450.00,'2026-05-03',3,NULL,'Автоматично створено для замовлення ORD-20260503165408-fe86f9','2026-05-03 13:54:09',NULL,NULL,0,NULL,NULL),(23,1,1,25,NULL,'Order',450.00,NULL,22.50,427.50,'2026-05-03',3,NULL,'Автоматично створено для замовлення ORD-20260503180808-5e1736','2026-05-03 15:08:08',NULL,NULL,0,NULL,NULL),(24,1,1,26,NULL,'Order',450.00,NULL,22.50,427.50,'2026-05-03',3,NULL,'Автоматично створено для замовлення ORD-20260503183239-03bfd1','2026-05-03 15:32:39',NULL,NULL,0,NULL,NULL),(25,2,1,26,NULL,'Order',450.00,NULL,22.50,427.50,'2026-05-03',3,NULL,'Автоматично створено для замовлення ORD-20260503183239-03bfd1','2026-05-03 15:32:39',NULL,NULL,0,NULL,NULL),(26,1,1,27,NULL,'Order',450.00,NULL,22.50,427.50,'2026-05-04',3,NULL,'Автоматично створено для замовлення ORD-20260504065435-b23d55','2026-05-04 03:54:36',NULL,NULL,0,NULL,NULL),(27,1,1,28,NULL,'Order',450.00,NULL,22.50,427.50,'2026-05-04',3,NULL,'Автоматично створено для замовлення ORD-20260504071407-6f5988','2026-05-04 04:14:07',NULL,NULL,0,NULL,NULL),(28,5,1,29,NULL,'Order',200.00,NULL,10.00,190.00,'2026-05-04',3,NULL,'Автоматично створено для замовлення ORD-20260504072728-69ac76','2026-05-04 04:27:29',NULL,NULL,0,NULL,NULL),(29,7,1,30,NULL,'Order',95.00,NULL,4.75,90.25,'2026-05-04',3,NULL,'Автоматично створено для замовлення ORD-20260504082145-446014','2026-05-04 05:21:46',NULL,NULL,0,NULL,NULL),(30,6,1,31,NULL,'Order',450.00,NULL,22.50,427.50,'2026-05-04',3,NULL,'Автоматично створено для замовлення ORD-20260504083549-fc2fe3','2026-05-04 05:35:50',NULL,NULL,0,NULL,NULL),(31,4,1,32,NULL,'Order',800.00,NULL,40.00,760.00,'2026-05-04',NULL,3,'Автоматично створено для замовлення ORD-20260504110712-08aee8','2026-05-04 08:07:13',NULL,NULL,0,NULL,NULL),(32,1,1,33,NULL,'Order',450.00,NULL,22.50,427.50,'2026-05-04',NULL,3,'Автоматично створено для замовлення ORD-20260504112355-28aeb4','2026-05-04 08:23:55',NULL,NULL,0,NULL,NULL);
 /*!40000 ALTER TABLE `outgoingdocuments` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -440,8 +480,19 @@ CREATE TABLE `products` (
   `Stock` int NOT NULL DEFAULT '0',
   `CreatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `UpdatedAt` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `CreatedBy` int DEFAULT NULL,
+  `UpdatedBy` int DEFAULT NULL,
+  `IsDeleted` tinyint(1) NOT NULL DEFAULT '0',
+  `DeletedAt` timestamp NULL DEFAULT NULL,
+  `DeletedBy` int DEFAULT NULL,
   PRIMARY KEY (`ProductId`),
   KEY `products_ibfk_1` (`CategoryId`),
+  KEY `fk_products_created_by` (`CreatedBy`),
+  KEY `fk_products_updated_by` (`UpdatedBy`),
+  KEY `fk_products_deleted_by` (`DeletedBy`),
+  CONSTRAINT `fk_products_created_by` FOREIGN KEY (`CreatedBy`) REFERENCES `users` (`UserId`),
+  CONSTRAINT `fk_products_deleted_by` FOREIGN KEY (`DeletedBy`) REFERENCES `users` (`UserId`),
+  CONSTRAINT `fk_products_updated_by` FOREIGN KEY (`UpdatedBy`) REFERENCES `users` (`UserId`),
   CONSTRAINT `products_ibfk_1` FOREIGN KEY (`CategoryId`) REFERENCES `categories` (`CategoryId`) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -452,7 +503,7 @@ CREATE TABLE `products` (
 
 LOCK TABLES `products` WRITE;
 /*!40000 ALTER TABLE `products` DISABLE KEYS */;
-INSERT INTO `products` VALUES (1,'Футболка ХДУ біла','White T-Shirt','Класична біла футболка','Classic white t-shirt with KSU logo',450.00,0.200,4,7,'2026-02-11 03:59:34','2026-05-06 17:25:04'),(2,'Футболка ХДУ синя','Blue T-Shirt','Синя футболка з гербом','Blue t-shirt with KSU emblem',450.00,0.220,4,8,'2026-02-11 03:59:34','2026-05-06 17:25:04'),(3,'Худі ХДУ чорне','Black Hoodie','Тепле чорне худі','Warm black hoodie with KSU emblem',800.00,0.650,5,0,'2026-02-11 03:59:34','2026-05-06 17:25:04'),(4,'Худі ХДУ сіре','Grey Hoodie','Стильне сіре худі','Stylish grey hoodie with KSU emblem',800.00,0.700,5,6,'2026-02-11 03:59:34','2026-05-06 17:25:04'),(5,'Кружка ХДУ','KSU Mug','Керамічна кружка 350мл','Ceramic mug 350ml',200.00,0.350,6,21,'2026-02-11 03:59:34','2026-05-10 09:53:57'),(6,'Термокружка ХДУ','Thermo Mug','Сталева термокружка 450мл','Steel thermo mug 450ml',450.00,0.280,6,11,'2026-02-11 03:59:34','2026-05-06 17:25:04'),(7,'Блокнот ХДУ','KSU Notebook','Блокнот А5 в клітинку','A5 checkered notebook',95.00,0.250,3,2,'2026-02-11 03:59:34','2026-05-06 17:25:04'),(8,'Ручка ХДУ','KSU Pen','Металева ручка в футлярі','Metal pen in a case',30.00,0.080,3,0,'2026-02-11 03:59:34','2026-05-06 17:25:04');
+INSERT INTO `products` VALUES (1,'Футболка ХДУ біла','White T-Shirt','Класична біла футболка','Classic white t-shirt with KSU logo',450.00,0.200,4,7,'2026-02-11 03:59:34','2026-05-06 17:25:04',NULL,NULL,0,NULL,NULL),(2,'Футболка ХДУ синя','Blue T-Shirt','Синя футболка з гербом','Blue t-shirt with KSU emblem',450.00,0.220,4,8,'2026-02-11 03:59:34','2026-05-06 17:25:04',NULL,NULL,0,NULL,NULL),(3,'Худі ХДУ чорне','Black Hoodie','Тепле чорне худі','Warm black hoodie with KSU emblem',800.00,0.650,5,0,'2026-02-11 03:59:34','2026-05-06 17:25:04',NULL,NULL,0,NULL,NULL),(4,'Худі ХДУ сіре','Grey Hoodie','Стильне сіре худі','Stylish grey hoodie with KSU emblem',800.00,0.700,5,6,'2026-02-11 03:59:34','2026-05-06 17:25:04',NULL,NULL,0,NULL,NULL),(5,'Кружка ХДУ','KSU Mug','Керамічна кружка 350мл','Ceramic mug 350ml',200.00,0.350,6,21,'2026-02-11 03:59:34','2026-05-10 09:53:57',NULL,NULL,0,NULL,NULL),(6,'Термокружка ХДУ','Thermo Mug','Сталева термокружка 450мл','Steel thermo mug 450ml',450.00,0.280,6,11,'2026-02-11 03:59:34','2026-05-06 17:25:04',NULL,NULL,0,NULL,NULL),(7,'Блокнот ХДУ','KSU Notebook','Блокнот А5 в клітинку','A5 checkered notebook',89.99,0.250,3,2,'2026-02-11 03:59:34','2026-05-16 06:54:05',NULL,1,0,NULL,NULL),(8,'Ручка ХДУ','KSU Pen','Металева ручка в футлярі','Metal pen in a case',30.00,0.080,3,0,'2026-02-11 03:59:34','2026-05-06 17:25:04',NULL,NULL,0,NULL,NULL);
 /*!40000 ALTER TABLE `products` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -486,9 +537,17 @@ CREATE TABLE `promotions` (
   `CreatedBy` int NOT NULL,
   `CreatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `UpdatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `UpdatedBy` int DEFAULT NULL,
+  `IsDeleted` tinyint(1) NOT NULL DEFAULT '0',
+  `DeletedAt` timestamp NULL DEFAULT NULL,
+  `DeletedBy` int DEFAULT NULL,
   PRIMARY KEY (`PromotionId`),
   UNIQUE KEY `PromoCode` (`PromoCode`),
   KEY `promotions_ibfk_1` (`CreatedBy`),
+  KEY `fk_promotions_updated_by` (`UpdatedBy`),
+  KEY `fk_promotions_deleted_by` (`DeletedBy`),
+  CONSTRAINT `fk_promotions_deleted_by` FOREIGN KEY (`DeletedBy`) REFERENCES `users` (`UserId`),
+  CONSTRAINT `fk_promotions_updated_by` FOREIGN KEY (`UpdatedBy`) REFERENCES `users` (`UserId`),
   CONSTRAINT `promotions_ibfk_1` FOREIGN KEY (`CreatedBy`) REFERENCES `users` (`UserId`) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -499,7 +558,7 @@ CREATE TABLE `promotions` (
 
 LOCK TABLES `promotions` WRITE;
 /*!40000 ALTER TABLE `promotions` DISABLE KEYS */;
-INSERT INTO `promotions` VALUES (2,'Знижка REGULAR','REGULAR Discount','5% для REGULAR','5% for REGULAR status','PERCENTAGE',5.00,'CART',NULL,'REGULAR',NULL,NULL,NULL,NULL,NULL,10,NULL,0,1,2,'2026-02-11 08:07:08','2026-05-06 18:00:11'),(3,'Знижка SCHOLARSHIP','SCHOLARSHIP Discount','10% для SCHOLARSHIP','10% for SCHOLARSHIP status','PERCENTAGE',10.00,'CART',NULL,'SCHOLARSHIP',NULL,NULL,NULL,NULL,NULL,20,NULL,0,1,2,'2026-02-11 08:07:08','2026-05-06 18:00:11'),(4,'Знижка HIGH_ACHIEVER','HIGH_ACHIEVER Discount','15% для HIGH_ACHIEVER','15% for HIGH_ACHIEVER status','PERCENTAGE',15.00,'CART',NULL,'HIGH_ACHIEVER',NULL,NULL,NULL,NULL,NULL,30,NULL,0,1,2,'2026-02-11 08:07:08','2026-05-06 18:00:11'),(5,'Промокод KSU2026','Promo code KSU2026','5% за промокодом','5% discount by promo code','PERCENTAGE',5.00,'CART',NULL,'ALL',NULL,NULL,'KSU2026',NULL,NULL,5,NULL,0,1,2,'2026-02-11 08:07:08','2026-05-06 18:00:11');
+INSERT INTO `promotions` VALUES (2,'Знижка REGULAR','REGULAR Discount','5% для REGULAR','5% for REGULAR status','PERCENTAGE',5.00,'CART',NULL,'REGULAR',NULL,NULL,NULL,NULL,NULL,10,NULL,0,1,2,'2026-02-11 08:07:08','2026-05-06 18:00:11',NULL,0,NULL,NULL),(3,'Знижка SCHOLARSHIP','SCHOLARSHIP Discount','10% для SCHOLARSHIP','10% for SCHOLARSHIP status','PERCENTAGE',10.00,'CART',NULL,'SCHOLARSHIP',NULL,NULL,NULL,NULL,NULL,20,NULL,0,1,2,'2026-02-11 08:07:08','2026-05-06 18:00:11',NULL,0,NULL,NULL),(4,'Знижка HIGH_ACHIEVER','HIGH_ACHIEVER Discount','15% для HIGH_ACHIEVER','15% for HIGH_ACHIEVER status','PERCENTAGE',15.00,'CART',NULL,'HIGH_ACHIEVER',NULL,NULL,NULL,NULL,NULL,30,NULL,0,1,2,'2026-02-11 08:07:08','2026-05-06 18:00:11',NULL,0,NULL,NULL),(5,'Промокод KSU2026','Promo code KSU2026','5% за промокодом','5% discount by promo code','PERCENTAGE',5.00,'CART',NULL,'ALL',NULL,NULL,'KSU2026',NULL,NULL,5,NULL,0,1,2,'2026-02-11 08:07:08','2026-05-06 18:00:11',NULL,0,NULL,NULL);
 /*!40000 ALTER TABLE `promotions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -586,6 +645,12 @@ CREATE TABLE `users` (
   `StudentVerifiedAt` timestamp NULL DEFAULT NULL,
   `StudentExpiresAt` timestamp NULL DEFAULT NULL,
   `CreatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `CreatedBy` int DEFAULT NULL,
+  `UpdatedAt` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `UpdatedBy` int DEFAULT NULL,
+  `IsDeleted` tinyint(1) NOT NULL DEFAULT '0',
+  `DeletedAt` timestamp NULL DEFAULT NULL,
+  `DeletedBy` int DEFAULT NULL,
   PRIMARY KEY (`UserId`),
   UNIQUE KEY `Email` (`Email`)
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -597,7 +662,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'Адміністратор','Системи','admin@university.ks.ua','$2a$12$q6rMaO/aLNvEvjFPEnqXmOf.qdyw6uOnDMEbuRYb3yXy1DvIUf6Ne','+380501111111','Administrator','NONE',NULL,NULL,NULL,'2026-02-11 03:50:12'),(2,'Менеджер','Магазину','manager@university.ks.ua','$2a$12$1FExVgtZVezAVD.vH7gin.N9Oz2cdfwZPDLViCgWJ4XY0t1D2c/Wq','+380952222222','Manager','NONE',NULL,NULL,NULL,'2026-02-11 03:50:12'),(3,'Олександр','Петренко','petrenko@university.ks.ua','$2a$12$e9iMBQZS7ON.Xbtt/Y8Fuu4YtRD3HEYwkD75eZlRr.1FVl/MQAQI2','+380503333333','Customer','REGULAR',3.50,'2026-02-11 03:50:12','2026-06-11 01:50:12','2026-02-11 03:50:12'),(4,'Марія','Коваленко','kovalenko@university.ks.ua','$2a$12$e9iMBQZS7ON.Xbtt/Y8Fuu4YtRD3HEYwkD75eZlRr.1FVl/MQAQI2','+380954444444','Customer','SCHOLARSHIP',4.20,'2026-02-11 03:50:12','2026-06-11 01:50:12','2026-02-11 03:50:12'),(5,'Дмитро','Шевченко','shevchenko@university.ks.ua','$2a$12$e9iMBQZS7ON.Xbtt/Y8Fuu4YtRD3HEYwkD75eZlRr.1FVl/MQAQI2','+380505555555','Customer','HIGH_ACHIEVER',4.80,'2026-02-11 03:50:12','2026-06-11 01:50:12','2026-02-11 03:50:12'),(6,'Іван','Мельник','melnyk@gmail.com','$2a$12$e9iMBQZS7ON.Xbtt/Y8Fuu4YtRD3HEYwkD75eZlRr.1FVl/MQAQI2','+380956666666','Guest','NONE',NULL,NULL,NULL,'2026-02-11 03:50:12'),(12,'Данило','Самородський','021912@university.kherson.ua','$2a$12$e9iMBQZS7ON.Xbtt/Y8Fuu4YtRD3HEYwkD75eZlRr.1FVl/MQAQI2','+380959193802','Customer','SCHOLARSHIP',4.50,'2026-05-05 10:55:16','2026-09-05 10:55:16','2026-05-05 10:55:15');
+INSERT INTO `users` VALUES (1,'Адміністратор','Системи','admin@university.ks.ua','$2a$12$q6rMaO/aLNvEvjFPEnqXmOf.qdyw6uOnDMEbuRYb3yXy1DvIUf6Ne','+380501111111','Administrator','NONE',NULL,NULL,NULL,'2026-02-11 03:50:12',NULL,NULL,NULL,0,NULL,NULL),(2,'Менеджер','Магазину','manager@university.ks.ua','$2a$12$1FExVgtZVezAVD.vH7gin.N9Oz2cdfwZPDLViCgWJ4XY0t1D2c/Wq','+380952222222','Manager','NONE',NULL,NULL,NULL,'2026-02-11 03:50:12',NULL,NULL,NULL,0,NULL,NULL),(3,'Олександр','Петренко','petrenko@university.ks.ua','$2a$12$e9iMBQZS7ON.Xbtt/Y8Fuu4YtRD3HEYwkD75eZlRr.1FVl/MQAQI2','+380503333333','Customer','REGULAR',3.50,'2026-02-11 03:50:12','2026-06-11 01:50:12','2026-02-11 03:50:12',NULL,'2026-05-16 07:15:29',1,1,'2026-05-16 07:15:29',NULL),(4,'Марія','Коваленко','kovalenko@university.ks.ua','$2a$12$e9iMBQZS7ON.Xbtt/Y8Fuu4YtRD3HEYwkD75eZlRr.1FVl/MQAQI2','+380954444444','Customer','SCHOLARSHIP',4.20,'2026-02-11 03:50:12','2026-06-11 01:50:12','2026-02-11 03:50:12',NULL,NULL,NULL,0,NULL,NULL),(5,'Дмитро','Шевченко','shevchenko@university.ks.ua','$2a$12$e9iMBQZS7ON.Xbtt/Y8Fuu4YtRD3HEYwkD75eZlRr.1FVl/MQAQI2','+380505555555','Customer','HIGH_ACHIEVER',4.80,'2026-02-11 03:50:12','2026-06-11 01:50:12','2026-02-11 03:50:12',NULL,NULL,NULL,0,NULL,NULL),(6,'Іван','Мельник','melnyk@gmail.com','$2a$12$e9iMBQZS7ON.Xbtt/Y8Fuu4YtRD3HEYwkD75eZlRr.1FVl/MQAQI2','+380956666666','Guest','NONE',NULL,NULL,NULL,'2026-02-11 03:50:12',NULL,NULL,NULL,0,NULL,NULL),(12,'Данило','Самородський','021912@university.kherson.ua','$2a$12$e9iMBQZS7ON.Xbtt/Y8Fuu4YtRD3HEYwkD75eZlRr.1FVl/MQAQI2','+380959193802','Customer','SCHOLARSHIP',4.50,'2026-05-05 10:55:16','2026-09-05 10:55:16','2026-05-05 10:55:15',NULL,NULL,NULL,0,NULL,NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
@@ -611,4 +676,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-10 12:56:23
+-- Dump completed on 2026-05-16 14:13:16

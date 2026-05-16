@@ -171,5 +171,20 @@
     "password_error": "Failed to change password",
     "ua": "Ukrainian",
     "en": "English"
+  },
+  "auth": {
+    "login_title": "Login",
+    "email": "Email",
+    "password": "Password",
+    "login_btn": "Login",
+    "logging_in": "Logging in...",
+    "register_prompt": "Don't have an account yet?",
+    "register_link": "Register",
+    "invalid_credentials": "Invalid email or password",
+    "account_blocked": "Your account has been blocked. Please contact the administrator.",
+    "unknown_error": "Authorization error. Please try again later.",
+    "email_invalid": "Invalid email format",
+    "password_too_short": "Password must be at least 8 characters long",
+    "registration_success": "Registration successful! You can now log in."
   }
 }

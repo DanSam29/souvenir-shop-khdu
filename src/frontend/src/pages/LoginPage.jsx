@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import './LoginPage.css';
 
 function LoginPage() {
+  const { t } = useTranslation();
   const location = useLocation();
   const registrationSuccess = location.state?.registrationSuccess;
   
@@ -31,13 +33,13 @@ function LoginPage() {
 
     // Базова валідація
     if (!formData.email.includes('@')) {
-      setError('Невірний формат email');
+      setError(t('auth.email_invalid'));
       setLoading(false);
       return;
     }
 
     if (formData.password.length < 8) {
-      setError('Пароль має містити мінімум 8 символів');
+      setError(t('auth.password_too_short'));
       setLoading(false);
       return;
     }
@@ -50,10 +52,22 @@ function LoginPage() {
       navigate('/');
     } catch (err) {
       console.error('Помилка авторизації:', err);
-      if (err.response?.status === 401) {
-        setError('Невірний email або пароль');
+      
+      const apiResponse = err.response?.data;
+      const errors = apiResponse?.errors || [];
+      const message = apiResponse?.message;
+      
+      // Перевіряємо, чи є код AccountBlocked у списку помилок або в повідомленні
+      if (errors.includes('AccountBlocked') || message === 'AccountBlocked') {
+        setError(t('auth.account_blocked'));
+      } else if (err.response?.status === 401) {
+        setError(t('auth.invalid_credentials'));
+      } else if (message) {
+        setError(message);
+      } else if (errors.length > 0) {
+        setError(errors[0]);
       } else {
-        setError('Помилка авторизації. Спробуйте пізніше.');
+        setError(t('auth.unknown_error'));
       }
     } finally {
       setLoading(false);
@@ -64,7 +78,7 @@ function LoginPage() {
     <div className="login-page">
       <div className="login-container">
         <form onSubmit={handleSubmit} className="login-form">
-          <h2>Вхід в систему</h2>
+          <h2>{t('auth.login_title')}</h2>
 
           {registrationSuccess && (
             <div className="success-message" style={{ 
@@ -76,14 +90,14 @@ function LoginPage() {
               border: '1px solid #b7eb8f',
               textAlign: 'center'
             }}>
-              Реєстрація успішна! Тепер ви можете увійти.
+              {t('auth.registration_success')}
             </div>
           )}
 
           {error && <div className="error-message">{error}</div>}
 
           <div className="form-group">
-            <label htmlFor="email">Email *</label>
+            <label htmlFor="email">{t('auth.email')} *</label>
             <input
               type="email"
               id="email"
@@ -96,7 +110,7 @@ function LoginPage() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Пароль *</label>
+            <label htmlFor="password">{t('auth.password')} *</label>
             <input
               type="password"
               id="password"
@@ -105,19 +119,19 @@ function LoginPage() {
               onChange={handleChange}
               required
               minLength="8"
-              placeholder="Мінімум 8 символів"
+              placeholder={t('auth.password_too_short')}
             />
           </div>
 
           <button type="submit" disabled={loading} className="submit-btn">
-            {loading ? 'Вхід...' : 'Увійти'}
+            {loading ? t('auth.logging_in') : t('auth.login_btn')}
           </button>
 
           <div className="form-footer">
             <p>
-              Ще не маєте облікового запису?{' '}
+              {t('auth.register_prompt')}{' '}
               <Link to="/register" className="link">
-                Зареєструватися
+                {t('auth.register_link')}
               </Link>
             </p>
           </div>

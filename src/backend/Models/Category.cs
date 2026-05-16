@@ -1,10 +1,11 @@
+using KhduSouvenirShop.API.Models.Common;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KhduSouvenirShop.API.Models
 {
     [Table("categories")]
-    public class Category
+    public class Category : BaseEntity
     {
         [Key]
         public int CategoryId { get; set; }
@@ -25,10 +26,6 @@ namespace KhduSouvenirShop.API.Models
 
         [MaxLength(500)]
         public string? DescriptionEn { get; set; }
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        public DateTime? UpdatedAt { get; set; }
 
         // Навігаційні властивості
         [ForeignKey("ParentCategoryId")]

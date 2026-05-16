@@ -6,6 +6,8 @@ using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
 
+using System.Text.Json;
+
 namespace KhduSouvenirShop.API.Controllers
 {
     [Route("api/admin/categories")]
@@ -69,6 +71,30 @@ namespace KhduSouvenirShop.API.Controllers
             };
 
             return CreatedAtAction(nameof(GetById), new { id = category.CategoryId }, ApiResponse<object>.SuccessResult(result, "Категорію створено"));
+        }
+
+        [HttpGet]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetCategories([FromQuery] bool includeDeleted = false)
+        {
+            var query = _context.Categories.IgnoreQueryFilters().Where(c => includeDeleted || !c.IsDeleted).AsQueryable();
+            
+            var categories = await query
+                .OrderBy(c => c.DisplayOrder)
+                .Select(c => new
+                {
+                    c.CategoryId,
+                    c.Name,
+                    c.NameEn,
+                    c.ParentCategoryId,
+                    c.DisplayOrder,
+                    c.IsDeleted,
+                    c.CreatedAt,
+                    c.UpdatedAt
+                })
+                .ToListAsync();
+
+            return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(categories));
         }
 
         [HttpGet("{id}")]
@@ -135,6 +161,87 @@ namespace KhduSouvenirShop.API.Controllers
             InvalidateCache();
 
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Категорію оновлено"));
+        }
+
+        [HttpPatch("{id}")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> PatchCategory(int id, [FromBody] IDictionary<string, JsonElement> updates)
+        {
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null) return NotFound(ApiResponse<object>.FailureResult("Категорію не знайдено"));
+
+            foreach (var update in updates)
+            {
+                var value = update.Value;
+                switch (update.Key.ToLower())
+                {
+                    case "name": category.Name = value.GetString() ?? category.Name; break;
+                    case "nameen": category.NameEn = value.GetString(); break;
+                    case "description": category.Description = value.GetString(); break;
+                    case "displayorder": 
+                        if (value.ValueKind == JsonValueKind.Number) category.DisplayOrder = value.GetInt32();
+                        else if (int.TryParse(value.GetString(), out var o)) category.DisplayOrder = o;
+                        break;
+                    case "parentcategoryid": 
+                        if (value.ValueKind == JsonValueKind.Null) category.ParentCategoryId = null;
+                        else if (value.ValueKind == JsonValueKind.Number) category.ParentCategoryId = value.GetInt32();
+                        else if (int.TryParse(value.GetString(), out var p)) category.ParentCategoryId = p;
+                        break;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            InvalidateCache();
+            return Ok(ApiResponse<object>.SuccessResult(new { }, "Категорію частково оновлено"));
+        }
+
+        [HttpPost("bulk-delete")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> BulkDelete([FromBody] List<int> ids)
+        {
+            var categories = await _context.Categories
+                .Include(c => c.Products)
+                .Include(c => c.SubCategories)
+                .Where(c => ids.Contains(c.CategoryId))
+                .ToListAsync();
+
+            var deletedCount = 0;
+            var skippedCount = 0;
+
+            foreach (var category in categories)
+            {
+                if (category.Products.Count > 0 || category.SubCategories.Count > 0)
+                {
+                    skippedCount++;
+                    continue;
+                }
+                _context.Categories.Remove(category);
+                deletedCount++;
+            }
+
+            await _context.SaveChangesAsync();
+            InvalidateCache();
+
+            return Ok(ApiResponse<object>.SuccessResult(new { deletedCount, skippedCount }, $"Видалено {deletedCount} категорій. Пропущено {skippedCount} (мають товари або підкатегорії)"));
+        }
+
+        [HttpPost("{id}/restore")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> RestoreCategory(int id)
+        {
+            var category = await _context.Categories.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.CategoryId == id);
+            if (category == null) return NotFound(ApiResponse<object>.FailureResult("Категорію не знайдено"));
+
+            category.IsDeleted = false;
+            category.DeletedAt = null;
+            category.DeletedBy = null;
+
+            await _context.SaveChangesAsync();
+            InvalidateCache();
+
+            return Ok(ApiResponse<object>.SuccessResult(new { }, "Категорію відновлено"));
         }
 
         [HttpDelete("{id}")]

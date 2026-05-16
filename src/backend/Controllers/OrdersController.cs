@@ -231,7 +231,7 @@ namespace KhduSouvenirShop.API.Controllers
                         DiscountAmount = oi.DiscountAmount,
                         FinalPrice = oi.FinalPrice,
                         DocumentDate = DateTime.UtcNow,
-                        CreatedByUserId = userId,
+                        CreatedBy = userId,
                         Notes = $"Автоматично створено для замовлення {order.OrderNumber}"
                     };
                     _context.OutgoingDocuments.Add(outgoingDoc);

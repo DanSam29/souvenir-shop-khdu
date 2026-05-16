@@ -437,7 +437,7 @@ namespace KhduSouvenirShop.API.Services
                         DiscountAmount = oi.DiscountAmount,
                         FinalPrice = oi.FinalPrice,
                         DocumentDate = DateTime.UtcNow,
-                        CreatedByUserId = userId,
+                        CreatedBy = userId,
                         Notes = $"Створено автоматично після оплати Stripe {order.OrderNumber}"
                     });
                 }

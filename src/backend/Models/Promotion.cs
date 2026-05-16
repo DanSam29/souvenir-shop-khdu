@@ -1,10 +1,11 @@
+using KhduSouvenirShop.API.Models.Common;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KhduSouvenirShop.API.Models
 {
     [Table("promotions")]
-    public class Promotion
+    public class Promotion : BaseEntity
     {
         [Key]
         public int PromotionId { get; set; }
@@ -60,14 +61,8 @@ namespace KhduSouvenirShop.API.Models
 
         public bool IsActive { get; set; } = true;
 
-        [Column("CreatedBy")]
-        public int CreatedByUserId { get; set; }
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
         // Навігаційна властивість
-        [ForeignKey("CreatedByUserId")]
+        [ForeignKey("CreatedBy")]
         public virtual User? CreatedByUser { get; set; }
     }
 }

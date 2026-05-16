@@ -1,10 +1,11 @@
+using KhduSouvenirShop.API.Models.Common;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KhduSouvenirShop.API.Models
 {
     [Table("users")]
-    public class User
+    public class User : BaseEntity
     {
         [Key]
         public int UserId { get; set; }
@@ -41,8 +42,6 @@ namespace KhduSouvenirShop.API.Models
 
         public DateTime? StudentVerifiedAt { get; set; }
         public DateTime? StudentExpiresAt { get; set; }
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Навігаційні властивості (зв'язки)
         public virtual Cart? Cart { get; set; }

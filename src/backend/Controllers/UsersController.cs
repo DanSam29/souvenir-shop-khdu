@@ -125,12 +125,19 @@ namespace KhduSouvenirShop.API.Controllers
         {
             _logger.LogInformation("Спроба авторизації: {Email}", loginDto.Email);
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
+            // Шукаємо користувача, ігноруючи фільтр видалення, щоб перевірити на блокування
+            var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == loginDto.Email);
 
             if (user == null)
             {
                 _logger.LogWarning("Користувача з email {Email} не знайдено", loginDto.Email);
                 return Unauthorized(ApiResponse<object>.FailureResult("Невірний email або пароль", "Unauthorized"));
+            }
+
+            if (user.IsDeleted)
+            {
+                _logger.LogWarning("Спроба входу в заблокований акаунт: {Email}", loginDto.Email);
+                return BadRequest(ApiResponse<object>.FailureResult("AccountBlocked", "Ваш акаунт заблоковано. Будь ласка, зверніться до адміністратора."));
             }
 
             var isValid = BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password);
@@ -203,28 +210,45 @@ namespace KhduSouvenirShop.API.Controllers
 
         [HttpGet]
         [Authorize(Roles = "Administrator")]
-        public async Task<ActionResult> GetAllUsers([FromQuery] string? search)
+        [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetAllUsers(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? role = null)
         {
             var query = _context.Users.AsQueryable();
 
             if (!string.IsNullOrEmpty(search))
             {
-                query = query.Where(u => u.Email.Contains(search) || u.FirstName.Contains(search) || u.LastName.Contains(search));
+                var s = search.Trim().ToLower();
+                query = query.Where(u => u.Email.ToLower().Contains(s) || u.FirstName.ToLower().Contains(s) || u.LastName.ToLower().Contains(s));
             }
 
-            var users = await query.OrderByDescending(u => u.CreatedAt).ToListAsync();
-            
-            var result = users.Select(u => new {
-                u.UserId,
-                u.Email,
-                u.FirstName,
-                u.LastName,
-                u.Role,
-                u.StudentStatus,
-                u.CreatedAt
-            });
+            if (!string.IsNullOrEmpty(role))
+            {
+                query = query.Where(u => u.Role == role);
+            }
 
-            return Ok(ApiResponse<object>.SuccessResult(result));
+            var count = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(u => u.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(u => new {
+                    u.UserId,
+                    u.Email,
+                    u.FirstName,
+                    u.LastName,
+                    u.Role,
+                    u.StudentStatus,
+                    u.CreatedAt,
+                    u.IsDeleted
+                })
+                .ToListAsync();
+
+            var response = new PagedResponse<object>(items, count, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResponse<object>>.SuccessResult(response));
         }
 
         [HttpPatch("{id}/role")]
@@ -232,7 +256,7 @@ namespace KhduSouvenirShop.API.Controllers
         public async Task<ActionResult> UpdateUserRole(int id, [FromBody] UpdateRoleDto dto)
         {
             var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound();
+            if (user == null) return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено"));
 
             user.Role = dto.Role;
             await _context.SaveChangesAsync();
@@ -241,9 +265,27 @@ namespace KhduSouvenirShop.API.Controllers
 
         [HttpPost("{id}/toggle-block")]
         [Authorize(Roles = "Administrator")]
-        public ActionResult ToggleBlockUser(int id)
+        public async Task<ActionResult> ToggleBlockUser(int id)
         {
-            return Ok(ApiResponse<object>.FailureResult("Блокування користувачів не підтримується", "NotImplemented"));
+            var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.UserId == id);
+            if (user == null) return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено"));
+
+            if (user.IsDeleted)
+            {
+                user.IsDeleted = false;
+                user.DeletedAt = null;
+                user.DeletedBy = null;
+                await _context.SaveChangesAsync();
+                return Ok(ApiResponse<object>.SuccessResult(new { isBlocked = false }, "Користувача розблоковано"));
+            }
+            else
+            {
+                user.IsDeleted = true;
+                user.DeletedAt = DateTime.UtcNow;
+                // DeletedBy will be set in SaveChangesAsync
+                await _context.SaveChangesAsync();
+                return Ok(ApiResponse<object>.SuccessResult(new { isBlocked = true }, "Користувача заблоковано (Soft Delete)"));
+            }
         }
 
         // PUT: api/Users/me

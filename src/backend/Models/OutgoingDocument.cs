@@ -1,10 +1,11 @@
+using KhduSouvenirShop.API.Models.Common;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KhduSouvenirShop.API.Models
 {
     [Table("outgoingdocuments")]
-    public class OutgoingDocument
+    public class OutgoingDocument : BaseEntity
     {
         [Key]
         public int DocumentId { get; set; }
@@ -39,20 +40,16 @@ namespace KhduSouvenirShop.API.Models
         [Column(TypeName = "date")]
         public DateTime DocumentDate { get; set; }
 
-        [Column("CreatedBy")]
-        [ForeignKey("CreatedByUser")]
-        public int? CreatedByUserId { get; set; }
-
         [MaxLength(1000)]
         public string? Notes { get; set; }
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Навігаційні властивості
         public virtual Product? Product { get; set; }
         public virtual Order? Order { get; set; }
         public virtual Company? Company { get; set; }
         public virtual Promotion? AppliedPromotion { get; set; }
+        
+        [ForeignKey("CreatedBy")]
         public virtual User? CreatedByUser { get; set; }
     }
 }

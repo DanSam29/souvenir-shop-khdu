@@ -171,5 +171,20 @@
     "password_error": "Помилка при зміні пароля",
     "ua": "Українська",
     "en": "English"
+  },
+  "auth": {
+    "login_title": "Вхід в систему",
+    "email": "Email",
+    "password": "Пароль",
+    "login_btn": "Увійти",
+    "logging_in": "Вхід...",
+    "register_prompt": "Ще не маєте облікового запису?",
+    "register_link": "Зареєструватися",
+    "invalid_credentials": "Невірний email або пароль",
+    "account_blocked": "Ваш акаунт заблоковано. Будь ласка, зверніться до адміністратора.",
+    "unknown_error": "Помилка авторизації. Спробуйте пізніше.",
+    "email_invalid": "Невірний формат email",
+    "password_too_short": "Пароль має містити мінімум 8 символів",
+    "registration_success": "Реєстрація успішна! Тепер ви можете увійти."
   }
 }

@@ -35,7 +35,12 @@ namespace KhduSouvenirShop.API.Controllers
         // --- Incoming Documents (Прибуткові накладні) ---
 
         [HttpGet("incoming")]
-        public async Task<ActionResult> GetIncomingDocuments([FromQuery] int? productId, [FromQuery] int? companyId)
+        [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetIncomingDocuments(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] int? productId = null, 
+            [FromQuery] int? companyId = null)
         {
             var query = _context.IncomingDocuments
                 .Include(d => d.Product)
@@ -46,14 +51,21 @@ namespace KhduSouvenirShop.API.Controllers
             if (productId.HasValue) query = query.Where(d => d.ProductId == productId);
             if (companyId.HasValue) query = query.Where(d => d.CompanyId == companyId);
 
-            var docs = await query.OrderByDescending(d => d.DocumentDate).ToListAsync();
-            return Ok(ApiResponse<object>.SuccessResult(docs));
+            var count = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(d => d.DocumentDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var response = new PagedResponse<object>(items, count, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResponse<object>>.SuccessResult(response));
         }
 
         [HttpPost("incoming")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
         public async Task<ActionResult> CreateIncomingDocument([FromBody] IncomingDocumentDto dto)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var product = await _context.Products.FindAsync(dto.ProductId);
             var company = await _context.Companies.FindAsync(dto.CompanyId);
 
@@ -71,14 +83,11 @@ namespace KhduSouvenirShop.API.Controllers
                     PurchasePrice = dto.PurchasePrice,
                     CompanyId = dto.CompanyId,
                     DocumentDate = dto.DocumentDate ?? DateTime.UtcNow,
-                    CreatedByUserId = userId,
-                    Notes = dto.Notes,
-                    CreatedAt = DateTime.UtcNow
+                    Notes = dto.Notes
                 };
 
                 _context.IncomingDocuments.Add(doc);
                 product.Stock += dto.Quantity; // Оновлення залишку
-                product.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -98,7 +107,12 @@ namespace KhduSouvenirShop.API.Controllers
         // --- Outgoing Documents (Видаткові накладні) ---
 
         [HttpGet("outgoing")]
-        public async Task<ActionResult> GetOutgoingDocuments([FromQuery] int? productId, [FromQuery] string? reason)
+        [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetOutgoingDocuments(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] int? productId = null, 
+            [FromQuery] string? reason = null)
         {
             var query = _context.OutgoingDocuments
                 .Include(d => d.Product)
@@ -109,14 +123,21 @@ namespace KhduSouvenirShop.API.Controllers
             if (productId.HasValue) query = query.Where(d => d.ProductId == productId);
             if (!string.IsNullOrEmpty(reason)) query = query.Where(d => d.Reason == reason);
 
-            var docs = await query.OrderByDescending(d => d.DocumentDate).ToListAsync();
-            return Ok(ApiResponse<object>.SuccessResult(docs));
+            var count = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(d => d.DocumentDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var response = new PagedResponse<object>(items, count, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResponse<object>>.SuccessResult(response));
         }
 
         [HttpPost("outgoing")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
         public async Task<ActionResult> CreateOutgoingDocument([FromBody] OutgoingDocumentDto dto)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var product = await _context.Products.FindAsync(dto.ProductId);
             if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
 
@@ -136,17 +157,14 @@ namespace KhduSouvenirShop.API.Controllers
                     Quantity = dto.Quantity,
                     Reason = dto.Reason,
                     CompanyId = dto.CompanyId,
-                    OriginalPrice = product.Price, // Для ручних видаткових за замовчуванням ціна з картки товару
+                    OriginalPrice = product.Price, 
                     FinalPrice = product.Price,
                     DocumentDate = dto.DocumentDate ?? DateTime.UtcNow,
-                    CreatedByUserId = userId,
-                    Notes = dto.Notes,
-                    CreatedAt = DateTime.UtcNow
+                    Notes = dto.Notes
                 };
 
                 _context.OutgoingDocuments.Add(doc);
                 product.Stock -= dto.Quantity; // Оновлення залишку
-                product.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();

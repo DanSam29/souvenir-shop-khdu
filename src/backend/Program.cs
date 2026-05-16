@@ -97,6 +97,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+builder.Services.AddHttpContextAccessor();
 
 // Кеш пам'яті для швидких GET-запитів каталогу
 builder.Services.AddMemoryCache();

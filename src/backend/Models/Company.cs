@@ -1,10 +1,11 @@
+using KhduSouvenirShop.API.Models.Common;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KhduSouvenirShop.API.Models
 {
     [Table("companies")]
-    public class Company
+    public class Company : BaseEntity
     {
         [Key]
         public int CompanyId { get; set; }
@@ -29,9 +30,6 @@ namespace KhduSouvenirShop.API.Models
         public string? Notes { get; set; }
 
         public bool IsActive { get; set; } = true;
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         // Навігаційні властивості
         public virtual ICollection<IncomingDocument> IncomingDocuments { get; set; } = new List<IncomingDocument>();
