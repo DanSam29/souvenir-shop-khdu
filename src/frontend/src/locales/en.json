@@ -185,6 +185,14 @@
     "unknown_error": "Authorization error. Please try again later.",
     "email_invalid": "Invalid email format",
     "password_too_short": "Password must be at least 8 characters long",
-    "registration_success": "Registration successful! You can now log in."
+    "registration_success": "Registration successful! You can now log in.",
+    "register_title": "Registration",
+    "first_name": "First Name",
+    "last_name": "Last Name",
+    "phone": "Phone",
+    "register_btn": "Register",
+    "registering": "Registering...",
+    "email_exists": "Email already registered",
+    "password_hint": "At least 8 characters"
   }
 }

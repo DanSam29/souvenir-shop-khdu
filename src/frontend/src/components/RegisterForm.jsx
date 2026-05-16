@@ -5,7 +5,7 @@ import { usersAPI } from '../services/api';
 import './RegisterForm.css';
 
 function RegisterForm() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -31,13 +31,13 @@ function RegisterForm() {
 
     // Базова валідація
     if (!formData.email.includes('@')) {
-      setError('Невірний формат email');
+      setError(t('auth.email_invalid'));
       setLoading(false);
       return;
     }
 
     if (formData.password.length < 8) {
-      setError('Пароль має містити мінімум 8 символів');
+      setError(t('auth.password_too_short'));
       setLoading(false);
       return;
     }
@@ -58,7 +58,7 @@ function RegisterForm() {
       const responseData = err.response?.data;
       
       if (err.response?.status === 409) {
-        setError('Email вже зареєстрований');
+        setError(t('auth.email_exists'));
       } else if (responseData && responseData.errors && responseData.errors.length > 0) {
         // Відображаємо першу помилку з масиву помилок від backend (FluentValidation)
         setError(responseData.errors[0]);
@@ -66,7 +66,7 @@ function RegisterForm() {
         // Відображаємо повідомлення від backend
         setError(responseData.message);
       } else {
-        setError('Помилка реєстрації. Спробуйте пізніше.');
+        setError(t('auth.unknown_error'));
       }
     } finally {
       setLoading(false);
@@ -76,12 +76,12 @@ function RegisterForm() {
   return (
     <div className="register-form-container">
       <form onSubmit={handleSubmit} className="register-form">
-        <h2>Реєстрація</h2>
+        <h2>{t('auth.register_title')}</h2>
 
         {error && <div className="error-message">{error}</div>}
 
         <div className="form-group">
-          <label htmlFor="firstName">Ім'я *</label>
+          <label htmlFor="firstName">{t('auth.first_name')} *</label>
           <input
             type="text"
             id="firstName"
@@ -93,7 +93,7 @@ function RegisterForm() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="lastName">Прізвище *</label>
+          <label htmlFor="lastName">{t('auth.last_name')} *</label>
           <input
             type="text"
             id="lastName"
@@ -105,7 +105,7 @@ function RegisterForm() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="email">Email *</label>
+          <label htmlFor="email">{t('auth.email')} *</label>
           <input
             type="email"
             id="email"
@@ -118,7 +118,7 @@ function RegisterForm() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="password">Пароль *</label>
+          <label htmlFor="password">{t('auth.password')} *</label>
           <input
             type="password"
             id="password"
@@ -128,11 +128,11 @@ function RegisterForm() {
             required
             minLength="8"
           />
-          <small>Мінімум 8 символів</small>
+          <small>{t('auth.password_hint')}</small>
         </div>
 
         <div className="form-group">
-          <label htmlFor="phone">Телефон</label>
+          <label htmlFor="phone">{t('auth.phone')}</label>
           <input
             type="tel"
             id="phone"
@@ -144,7 +144,7 @@ function RegisterForm() {
         </div>
 
         <button type="submit" disabled={loading} className="submit-btn">
-          {loading ? 'Реєстрація...' : 'Зареєструватися'}
+          {loading ? t('auth.registering') : t('auth.register_btn')}
         </button>
       </form>
     </div>

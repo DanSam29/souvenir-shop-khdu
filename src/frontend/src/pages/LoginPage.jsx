@@ -119,7 +119,7 @@ function LoginPage() {
               onChange={handleChange}
               required
               minLength="8"
-              placeholder={t('auth.password_too_short')}
+              placeholder={t('auth.password')}
             />
           </div>
 

@@ -185,6 +185,14 @@
     "unknown_error": "Помилка авторизації. Спробуйте пізніше.",
     "email_invalid": "Невірний формат email",
     "password_too_short": "Пароль має містити мінімум 8 символів",
-    "registration_success": "Реєстрація успішна! Тепер ви можете увійти."
+    "registration_success": "Реєстрація успішна! Тепер ви можете увійти.",
+    "register_title": "Реєстрація",
+    "first_name": "Ім'я",
+    "last_name": "Прізвище",
+    "phone": "Телефон",
+    "register_btn": "Зареєструватися",
+    "registering": "Реєстрація...",
+    "email_exists": "Email вже зареєстрований",
+    "password_hint": "Мінімум 8 символів"
   }
 }
