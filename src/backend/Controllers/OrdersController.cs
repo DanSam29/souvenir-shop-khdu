@@ -557,6 +557,42 @@ namespace KhduSouvenirShop.API.Controllers
 
         // --- Admin Methods ---
 
+        [HttpGet("all")]
+        [Authorize(Roles = "Administrator,Manager")]
+        [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetAllOrders(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? status = null)
+        {
+            var query = _context.Orders
+                .Include(o => o.User)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(status))
+                query = query.Where(o => o.Status == status);
+
+            var count = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(o => o.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(o => new
+                {
+                    o.OrderId,
+                    o.OrderNumber,
+                    o.Status,
+                    o.TotalAmount,
+                    o.CreatedAt,
+                    userName = o.User.FirstName + " " + o.User.LastName,
+                    userEmail = o.User.Email
+                })
+                .ToListAsync();
+
+            var response = new PagedResponse<object>(items, count, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResponse<object>>.SuccessResult(response));
+        }
+
         [HttpPatch("{id}/status")]
         [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> UpdateOrderStatus(int id, [FromBody] UpdateStatusDto dto)

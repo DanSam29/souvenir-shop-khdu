@@ -5,20 +5,31 @@ import { ordersAPI } from '../services/api';
 function AdminOrdersPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
+  const [pagination, setPagination] = useState({ pageNumber: 1, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
-    loadOrders();
+    loadOrders(1);
   }, []);
 
-  const loadOrders = async () => {
+  const loadOrders = async (page = 1) => {
     try {
       setLoading(true);
-      const res = await ordersAPI.getAll();
-      setOrders(res.data);
+      const res = await ordersAPI.getAll({ pageNumber: page, pageSize: 10 });
+      // Після впровадження Етапу 14 бекенд повертає об'єкт з Items
+      if (res.data && res.data.items) {
+        setOrders(res.data.items);
+        setPagination({
+          pageNumber: res.data.pageNumber,
+          totalPages: res.data.totalPages
+        });
+      } else {
+        setOrders(res.data || []);
+      }
     } catch (err) {
       console.error(err);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -97,6 +108,28 @@ function AdminOrdersPage() {
           ))}
         </tbody>
       </table>
+
+      {pagination.totalPages > 1 && (
+        <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center', gap: 10 }}>
+          <button 
+            onClick={() => loadOrders(pagination.pageNumber - 1)} 
+            disabled={pagination.pageNumber === 1 || loading}
+            style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: pagination.pageNumber === 1 ? 'not-allowed' : 'pointer' }}
+          >
+            ← Попередня
+          </button>
+          <span style={{ alignSelf: 'center' }}>
+            Сторінка {pagination.pageNumber} з {pagination.totalPages}
+          </span>
+          <button 
+            onClick={() => loadOrders(pagination.pageNumber + 1)} 
+            disabled={pagination.pageNumber === pagination.totalPages || loading}
+            style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: pagination.pageNumber === pagination.totalPages ? 'not-allowed' : 'pointer' }}
+          >
+            Наступна →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

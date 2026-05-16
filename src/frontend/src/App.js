@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/Header';
@@ -23,6 +23,9 @@ import CategoriesAdmin from './pages/admin/CategoriesAdmin';
 import ProductsAdmin from './pages/admin/ProductsAdmin';
 import CompaniesAdmin from './pages/admin/CompaniesAdmin';
 import AccessDenied from './pages/AccessDenied';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import Returns from './pages/Returns';
+import Contacts from './pages/Contacts';
 import logo from './assets/khdu-logo.png';
 import './App.css';
 
@@ -93,6 +96,10 @@ function App() {
               <Route path="/checkout/success" element={<PaymentSuccessPage />} />
               <Route path="/checkout/cancel" element={<PaymentCancelPage />} />
               
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/returns" element={<Returns />} />
+              <Route path="/contacts" element={<Contacts />} />
+              
               {/* Перенаправлення для неіснуючих сторінок */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
@@ -117,6 +124,12 @@ function App() {
                   <h4>{t('common.addresses')}</h4>
                   <p><strong>{t('order.legal_address')}:</strong><br />{t('order.legal_street')},<br />{t('checkout.city_prefix')} {t('order.legal_city')}, 73003</p>
                   <p><strong>{t('order.actual_address')}:</strong><br />{t('order.actual_street')},<br />{t('checkout.city_prefix')} {t('order.actual_city')}, 76018</p>
+                </div>
+                <div className="footer-section">
+                  <h4>{t('footer.info_links') || 'Інформація'}</h4>
+                  <p><Link to="/privacy-policy">{t('legal.privacy_policy')}</Link></p>
+                  <p><Link to="/returns">{t('legal.returns')}</Link></p>
+                  <p><Link to="/contacts">{t('legal.contacts')}</Link></p>
                 </div>
               </div>
             </div>

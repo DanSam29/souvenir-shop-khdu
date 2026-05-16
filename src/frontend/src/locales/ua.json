@@ -112,7 +112,8 @@
   "footer": {
     "app_name_full": "ХДУ Сувеніри",
     "university_full": "Херсонський державний університет",
-    "copyright": "Всі права захищено."
+    "copyright": "Всі права захищено.",
+    "info_links": "Інформація"
   },
   "order": {
     "title": "Замовлення",
@@ -194,5 +195,11 @@
     "registering": "Реєстрація...",
     "email_exists": "Email вже зареєстрований",
     "password_hint": "Мінімум 8 символів"
+  },
+  "legal": {
+    "privacy_policy": "Політика конфіденційності",
+    "returns": "Умови повернення",
+    "contacts": "Контакти",
+    "delivery_info": "Інформація про доставку"
   }
 }

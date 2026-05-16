@@ -112,7 +112,8 @@
   "footer": {
     "app_name_full": "KSU Souvenirs",
     "university_full": "Kherson State University",
-    "copyright": "All rights reserved."
+    "copyright": "All rights reserved.",
+    "info_links": "Information"
   },
   "order": {
     "title": "Order",
@@ -194,5 +195,11 @@
     "registering": "Registering...",
     "email_exists": "Email already registered",
     "password_hint": "At least 8 characters"
+  },
+  "legal": {
+    "privacy_policy": "Privacy Policy",
+    "returns": "Return Policy",
+    "contacts": "Contacts",
+    "delivery_info": "Delivery Information"
   }
 }

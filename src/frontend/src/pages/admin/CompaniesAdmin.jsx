@@ -23,10 +23,17 @@ function CompaniesAdmin() {
 
   const loadCompanies = async () => {
     try {
+      setLoading(true);
       const res = await companiesAPI.getAll();
-      setCompanies(res.data);
+      // Після впровадження Етапу 14 бекенд повертає об'єкт з Items
+      if (res.data && res.data.items) {
+        setCompanies(res.data.items);
+      } else {
+        setCompanies(res.data || []);
+      }
     } catch (err) {
       console.error('Не вдалося завантажити компанії', err);
+      setCompanies([]);
     } finally {
       setLoading(false);
     }

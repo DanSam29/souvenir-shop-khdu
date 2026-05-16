@@ -31,8 +31,8 @@ function AdminDashboard() {
         };
 
         setStats({
-          orders: oRes.data.length,
-          users: uRes.data.length,
+          orders: oRes.data.items ? oRes.data.totalItems : oRes.data.length,
+          users: uRes.data.items ? uRes.data.totalItems : uRes.data.length,
           stock: sRes.data.length,
           categories: countCategories(cRes.data)
         });

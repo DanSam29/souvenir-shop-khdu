@@ -137,7 +137,7 @@ export const ordersAPI = {
   getOrders: () => api.get('/Orders/my'),
   getOrder: (id) => api.get(`/Orders/${id}`),
   // Адмінські методи
-  getAll: (params) => api.get('/Orders/admin', { params }),
+  getAll: (params) => api.get('/Orders/all', { params }),
   updateStatus: (id, data) => api.patch(`/Orders/${id}/status`, data),
   cancel: (id, reason) => api.post(`/Orders/${id}/cancel`, reason),
 };
