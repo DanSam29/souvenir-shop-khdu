@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Базова URL твого backend API
-const API_BASE_URL = 'http://localhost:5225/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5225/api';
 
 // Створюємо axios instance з базовою конфігурацією
 const api = axios.create({

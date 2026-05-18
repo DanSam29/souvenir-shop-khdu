@@ -1,0 +1,167 @@
+2026-05-18 12:16:54.258 +03:00 [INF] Сервер запущено!
+2026-05-18 12:16:54.369 +03:00 [INF] User profile is available. Using 'C:\Users\Danchik\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2026-05-18 12:16:54.530 +03:00 [INF] Now listening on: http://localhost:5225
+2026-05-18 12:16:54.533 +03:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-05-18 12:16:54.535 +03:00 [INF] Hosting environment: Development
+2026-05-18 12:16:54.536 +03:00 [INF] Content root path: C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend
+2026-05-18 12:20:11.907 +03:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5225/api/Categories - null null
+2026-05-18 12:20:11.907 +03:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5225/api/Categories - null null
+2026-05-18 12:20:11.907 +03:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5225/api/Users/me - null null
+2026-05-18 12:20:11.907 +03:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5225/api/Products - null null
+2026-05-18 12:20:11.907 +03:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5225/api/Products - null null
+2026-05-18 12:20:11.907 +03:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5225/api/Users/me - null null
+2026-05-18 12:20:11.991 +03:00 [WRN] Failed to determine the https port for redirect.
+2026-05-18 12:20:11.997 +03:00 [INF] CORS policy execution successful.
+2026-05-18 12:20:11.997 +03:00 [INF] CORS policy execution successful.
+2026-05-18 12:20:11.997 +03:00 [INF] CORS policy execution successful.
+2026-05-18 12:20:11.997 +03:00 [INF] CORS policy execution successful.
+2026-05-18 12:20:11.997 +03:00 [INF] CORS policy execution successful.
+2026-05-18 12:20:11.997 +03:00 [INF] CORS policy execution successful.
+2026-05-18 12:20:12.012 +03:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5225/api/Products - 204 null null 107.7981ms
+2026-05-18 12:20:12.012 +03:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5225/api/Users/me - 204 null null 107.6864ms
+2026-05-18 12:20:12.012 +03:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5225/api/Categories - 204 null null 107.8197ms
+2026-05-18 12:20:12.012 +03:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5225/api/Products - 204 null null 107.6804ms
+2026-05-18 12:20:12.012 +03:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5225/api/Users/me - 204 null null 107.7441ms
+2026-05-18 12:20:12.012 +03:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5225/api/Categories - 204 null null 107.7359ms
+2026-05-18 12:20:12.024 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Products - null null
+2026-05-18 12:20:12.044 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Users/me - null null
+2026-05-18 12:20:12.051 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Categories - null null
+2026-05-18 12:20:12.066 +03:00 [INF] CORS policy execution successful.
+2026-05-18 12:20:12.066 +03:00 [INF] CORS policy execution successful.
+2026-05-18 12:20:12.066 +03:00 [INF] CORS policy execution successful.
+2026-05-18 12:20:12.271 +03:00 [INF] Failed to validate the token.
+Microsoft.IdentityModel.Tokens.SecurityTokenExpiredException: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '10.05.2026 17:57:17', Current time (UTC): '18.05.2026 9:20:12'.
+   at Microsoft.IdentityModel.Tokens.ValidatorUtilities.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.Tokens.Validators.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateTokenPayloadAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateJWSAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+2026-05-18 12:20:12.271 +03:00 [INF] Failed to validate the token.
+Microsoft.IdentityModel.Tokens.SecurityTokenExpiredException: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '10.05.2026 17:57:17', Current time (UTC): '18.05.2026 9:20:12'.
+   at Microsoft.IdentityModel.Tokens.ValidatorUtilities.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.Tokens.Validators.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateTokenPayloadAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateJWSAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+2026-05-18 12:20:12.271 +03:00 [INF] Failed to validate the token.
+Microsoft.IdentityModel.Tokens.SecurityTokenExpiredException: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '10.05.2026 17:57:17', Current time (UTC): '18.05.2026 9:20:12'.
+   at Microsoft.IdentityModel.Tokens.ValidatorUtilities.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.Tokens.Validators.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateTokenPayloadAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateJWSAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+2026-05-18 12:20:12.295 +03:00 [INF] Bearer was not authenticated. Failure message: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '10.05.2026 17:57:17', Current time (UTC): '18.05.2026 9:20:12'.
+2026-05-18 12:20:12.295 +03:00 [INF] Bearer was not authenticated. Failure message: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '10.05.2026 17:57:17', Current time (UTC): '18.05.2026 9:20:12'.
+2026-05-18 12:20:12.298 +03:00 [INF] Bearer was not authenticated. Failure message: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '10.05.2026 17:57:17', Current time (UTC): '18.05.2026 9:20:12'.
+2026-05-18 12:20:12.306 +03:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API)'
+2026-05-18 12:20:12.306 +03:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API)'
+2026-05-18 12:20:12.308 +03:00 [INF] Authorization failed. These requirements were not met:
+DenyAnonymousAuthorizationRequirement: Requires an authenticated user.
+2026-05-18 12:20:12.319 +03:00 [INF] AuthenticationScheme: Bearer was challenged.
+2026-05-18 12:20:12.322 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Users/me - 401 0 null 278.4088ms
+2026-05-18 12:20:12.331 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Users/me - null null
+2026-05-18 12:20:12.337 +03:00 [INF] CORS policy execution successful.
+2026-05-18 12:20:12.341 +03:00 [INF] Route matched with {action = "GetCategories", controller = "Categories"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetCategories() on controller KhduSouvenirShop.API.Controllers.CategoriesController (KhduSouvenirShop.API).
+2026-05-18 12:20:12.342 +03:00 [INF] Failed to validate the token.
+Microsoft.IdentityModel.Tokens.SecurityTokenExpiredException: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '10.05.2026 17:57:17', Current time (UTC): '18.05.2026 9:20:12'.
+   at Microsoft.IdentityModel.Tokens.ValidatorUtilities.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.Tokens.Validators.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateTokenPayloadAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateJWSAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+2026-05-18 12:20:12.343 +03:00 [INF] Route matched with {action = "GetProducts", controller = "Products"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetProducts(System.Nullable`1[System.Int32], System.String, System.String, System.Nullable`1[System.Decimal], System.Nullable`1[System.Decimal]) on controller KhduSouvenirShop.API.Controllers.ProductsController (KhduSouvenirShop.API).
+2026-05-18 12:20:12.351 +03:00 [INF] Bearer was not authenticated. Failure message: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '10.05.2026 17:57:17', Current time (UTC): '18.05.2026 9:20:12'.
+2026-05-18 12:20:12.361 +03:00 [INF] Authorization failed. These requirements were not met:
+DenyAnonymousAuthorizationRequirement: Requires an authenticated user.
+2026-05-18 12:20:12.364 +03:00 [INF] AuthenticationScheme: Bearer was challenged.
+2026-05-18 12:20:12.367 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Users/me - 401 0 null 36.8794ms
+2026-05-18 12:20:13.640 +03:00 [INF] Запит на отримання товарів з фільтрами
+2026-05-18 12:20:14.787 +03:00 [WRN] Entity 'User' has a global query filter defined and is the required end of a relationship with the entity 'Cart'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-05-18 12:20:14.791 +03:00 [WRN] Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'CartItem'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-05-18 12:20:14.794 +03:00 [WRN] Entity 'User' has a global query filter defined and is the required end of a relationship with the entity 'Order'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-05-18 12:20:14.797 +03:00 [WRN] Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'OrderItem'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-05-18 12:20:14.801 +03:00 [WRN] Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'ProductImage'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-05-18 12:20:14.804 +03:00 [WRN] Entity 'Promotion' has a global query filter defined and is the required end of a relationship with the entity 'UserPromotion'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-05-18 12:20:15.874 +03:00 [INF] Executed DbCommand (35ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `p`.`ProductId`, `p`.`CategoryId`, `p`.`CreatedAt`, `p`.`CreatedBy`, `p`.`DeletedAt`, `p`.`DeletedBy`, `p`.`Description`, `p`.`DescriptionEn`, `p`.`IsDeleted`, `p`.`Name`, `p`.`NameEn`, `p`.`Price`, `p`.`Stock`, `p`.`UpdatedAt`, `p`.`UpdatedBy`, `p`.`Weight`, `t`.`CategoryId`, `t`.`CreatedAt`, `t`.`CreatedBy`, `t`.`DeletedAt`, `t`.`DeletedBy`, `t`.`Description`, `t`.`DescriptionEn`, `t`.`DisplayOrder`, `t`.`IsDeleted`, `t`.`Name`, `t`.`NameEn`, `t`.`ParentCategoryId`, `t`.`UpdatedAt`, `t`.`UpdatedBy`, `p0`.`ImageId`, `p0`.`DisplayOrder`, `p0`.`ImageURL`, `p0`.`IsPrimary`, `p0`.`ProductId`
+FROM `products` AS `p`
+INNER JOIN (
+    SELECT `c`.`CategoryId`, `c`.`CreatedAt`, `c`.`CreatedBy`, `c`.`DeletedAt`, `c`.`DeletedBy`, `c`.`Description`, `c`.`DescriptionEn`, `c`.`DisplayOrder`, `c`.`IsDeleted`, `c`.`Name`, `c`.`NameEn`, `c`.`ParentCategoryId`, `c`.`UpdatedAt`, `c`.`UpdatedBy`
+    FROM `categories` AS `c`
+    WHERE NOT (`c`.`IsDeleted`)
+) AS `t` ON `p`.`CategoryId` = `t`.`CategoryId`
+LEFT JOIN `productimages` AS `p0` ON `p`.`ProductId` = `p0`.`ProductId`
+WHERE NOT (`p`.`IsDeleted`)
+ORDER BY `p`.`CreatedAt` DESC, `p`.`ProductId`, `t`.`CategoryId`
+2026-05-18 12:20:15.874 +03:00 [INF] Executed DbCommand (35ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `c`.`CategoryId`, `c`.`CreatedAt`, `c`.`CreatedBy`, `c`.`DeletedAt`, `c`.`DeletedBy`, `c`.`Description`, `c`.`DescriptionEn`, `c`.`DisplayOrder`, `c`.`IsDeleted`, `c`.`Name`, `c`.`NameEn`, `c`.`ParentCategoryId`, `c`.`UpdatedAt`, `c`.`UpdatedBy`
+FROM `categories` AS `c`
+WHERE NOT (`c`.`IsDeleted`)
+ORDER BY `c`.`DisplayOrder`
+2026-05-18 12:20:16.050 +03:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-05-18 12:20:16.114 +03:00 [INF] Executed action KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API) in 3762.1298ms
+2026-05-18 12:20:16.118 +03:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API)'
+2026-05-18 12:20:16.133 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Categories - 499 null application/json; charset=utf-8 4082.7691ms
+2026-05-18 12:20:16.163 +03:00 [INF] Executed DbCommand (58ms) [Parameters=[@__now_0='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+SELECT `p`.`PromotionId`, `p`.`AudienceType`, `p`.`CreatedAt`, `p`.`CreatedBy`, `p`.`CurrentUsage`, `p`.`DeletedAt`, `p`.`DeletedBy`, `p`.`Description`, `p`.`DescriptionEn`, `p`.`EndDate`, `p`.`IsActive`, `p`.`IsDeleted`, `p`.`MinOrderAmount`, `p`.`MinQuantity`, `p`.`Name`, `p`.`NameEn`, `p`.`Priority`, `p`.`PromoCode`, `p`.`StartDate`, `p`.`TargetId`, `p`.`TargetType`, `p`.`Type`, `p`.`UpdatedAt`, `p`.`UpdatedBy`, `p`.`UsageLimit`, `p`.`Value`
+FROM `promotions` AS `p`
+WHERE NOT (`p`.`IsDeleted`) AND (((`p`.`IsActive` AND (`p`.`PromoCode` IS NULL OR (`p`.`PromoCode` = ''))) AND (`p`.`StartDate` IS NULL OR (`p`.`StartDate` <= @__now_0))) AND (`p`.`EndDate` IS NULL OR (`p`.`EndDate` >= @__now_0)))
+2026-05-18 12:20:16.278 +03:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Collections.Generic.IEnumerable`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-05-18 12:20:16.314 +03:00 [INF] Executed action KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API) in 3958.8973ms
+2026-05-18 12:20:16.318 +03:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API)'
+2026-05-18 12:20:16.320 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Products - 499 null application/json; charset=utf-8 4295.9267ms
+2026-05-18 12:20:22.050 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Products - null null
+2026-05-18 12:20:22.053 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Categories - null null
+2026-05-18 12:20:22.055 +03:00 [INF] CORS policy execution successful.
+2026-05-18 12:20:22.061 +03:00 [INF] CORS policy execution successful.
+2026-05-18 12:20:22.063 +03:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API)'
+2026-05-18 12:20:22.065 +03:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API)'
+2026-05-18 12:20:22.067 +03:00 [INF] Route matched with {action = "GetProducts", controller = "Products"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetProducts(System.Nullable`1[System.Int32], System.String, System.String, System.Nullable`1[System.Decimal], System.Nullable`1[System.Decimal]) on controller KhduSouvenirShop.API.Controllers.ProductsController (KhduSouvenirShop.API).
+2026-05-18 12:20:22.069 +03:00 [INF] Route matched with {action = "GetCategories", controller = "Categories"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetCategories() on controller KhduSouvenirShop.API.Controllers.CategoriesController (KhduSouvenirShop.API).
+2026-05-18 12:20:22.078 +03:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-05-18 12:20:22.079 +03:00 [INF] Запит на отримання товарів з фільтрами
+2026-05-18 12:20:22.082 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Categories - null null
+2026-05-18 12:20:22.081 +03:00 [INF] Executed action KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API) in 4.2286ms
+2026-05-18 12:20:22.082 +03:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Collections.Generic.IEnumerable`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-05-18 12:20:22.086 +03:00 [INF] CORS policy execution successful.
+2026-05-18 12:20:22.089 +03:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API)'
+2026-05-18 12:20:22.092 +03:00 [INF] Executed action KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API) in 19.8115ms
+2026-05-18 12:20:22.094 +03:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API)'
+2026-05-18 12:20:22.096 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Categories - 200 null application/json; charset=utf-8 42.6929ms
+2026-05-18 12:20:22.096 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Products - null null
+2026-05-18 12:20:22.098 +03:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API)'
+2026-05-18 12:20:22.100 +03:00 [INF] Route matched with {action = "GetCategories", controller = "Categories"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetCategories() on controller KhduSouvenirShop.API.Controllers.CategoriesController (KhduSouvenirShop.API).
+2026-05-18 12:20:22.110 +03:00 [INF] CORS policy execution successful.
+2026-05-18 12:20:22.112 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Products - 200 null application/json; charset=utf-8 62.5513ms
+2026-05-18 12:20:22.117 +03:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-05-18 12:20:22.117 +03:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API)'
+2026-05-18 12:20:22.126 +03:00 [INF] Executed action KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API) in 10.4484ms
+2026-05-18 12:20:22.128 +03:00 [INF] Route matched with {action = "GetProducts", controller = "Products"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetProducts(System.Nullable`1[System.Int32], System.String, System.String, System.Nullable`1[System.Decimal], System.Nullable`1[System.Decimal]) on controller KhduSouvenirShop.API.Controllers.ProductsController (KhduSouvenirShop.API).
+2026-05-18 12:20:22.130 +03:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API)'
+2026-05-18 12:20:22.133 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/images/products/tshirt-blue-front.jpg - null null
+2026-05-18 12:20:22.133 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/images/products/tshirt-white-front.jpg - null null
+2026-05-18 12:20:22.133 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/images/products/hoodie-black-front.jpg - null null
+2026-05-18 12:20:22.133 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/images/products/hoodie-grey-front.jpg - null null
+2026-05-18 12:20:22.136 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Categories - 200 null application/json; charset=utf-8 54.0938ms
+2026-05-18 12:20:22.138 +03:00 [INF] Запит на отримання товарів з фільтрами
+2026-05-18 12:20:22.138 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/images/products/mug-ceramic-white.jpg - null null
+2026-05-18 12:20:22.163 +03:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Collections.Generic.IEnumerable`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-05-18 12:20:22.171 +03:00 [INF] Executed action KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API) in 36.6499ms
+2026-05-18 12:20:22.176 +03:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API)'
+2026-05-18 12:20:22.178 +03:00 [INF] Sending file. Request path: '/images/products/tshirt-white-front.jpg'. Physical path: 'C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\wwwroot\images\products\tshirt-white-front.jpg'
+2026-05-18 12:20:22.178 +03:00 [INF] Sending file. Request path: '/images/products/hoodie-grey-front.jpg'. Physical path: 'C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\wwwroot\images\products\hoodie-grey-front.jpg'
+2026-05-18 12:20:22.178 +03:00 [INF] Sending file. Request path: '/images/products/tshirt-blue-front.jpg'. Physical path: 'C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\wwwroot\images\products\tshirt-blue-front.jpg'
+2026-05-18 12:20:22.179 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Products - 200 null application/json; charset=utf-8 82.9419ms
+2026-05-18 12:20:22.181 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/images/products/tshirt-white-front.jpg - 200 175295 image/jpeg 48.3267ms
+2026-05-18 12:20:22.178 +03:00 [INF] Sending file. Request path: '/images/products/hoodie-black-front.jpg'. Physical path: 'C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\wwwroot\images\products\hoodie-black-front.jpg'
+2026-05-18 12:20:22.183 +03:00 [INF] Sending file. Request path: '/images/products/mug-ceramic-white.jpg'. Physical path: 'C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\wwwroot\images\products\mug-ceramic-white.jpg'
+2026-05-18 12:20:22.184 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/images/products/hoodie-grey-front.jpg - 200 239151 image/jpeg 50.5876ms
+2026-05-18 12:20:22.187 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/images/products/tshirt-blue-front.jpg - 200 433461 image/jpeg 54.2267ms
+2026-05-18 12:20:22.200 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/images/products/mug-thermo-steel.jpg - null null
+2026-05-18 12:20:22.203 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/images/products/hoodie-black-front.jpg - 200 336243 image/jpeg 69.3162ms
+2026-05-18 12:20:22.205 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/images/products/mug-ceramic-white.jpg - 200 25715 image/jpeg 66.8995ms
+2026-05-18 12:20:22.213 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/images/products/pen-metal.jpg - null null
+2026-05-18 12:20:22.232 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/images/products/notebook-a5.jpg - null null
+2026-05-18 12:20:22.244 +03:00 [INF] Sending file. Request path: '/images/products/mug-thermo-steel.jpg'. Physical path: 'C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\wwwroot\images\products\mug-thermo-steel.jpg'
+2026-05-18 12:20:22.250 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/images/products/mug-thermo-steel.jpg - 200 51390 image/jpeg 50.723ms
+2026-05-18 12:20:22.260 +03:00 [INF] Sending file. Request path: '/images/products/pen-metal.jpg'. Physical path: 'C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\wwwroot\images\products\pen-metal.jpg'
+2026-05-18 12:20:22.263 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/images/products/pen-metal.jpg - 200 38682 image/jpeg 49.8075ms
+2026-05-18 12:20:22.265 +03:00 [INF] Sending file. Request path: '/images/products/notebook-a5.jpg'. Physical path: 'C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\wwwroot\images\products\notebook-a5.jpg'
+2026-05-18 12:20:22.272 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/images/products/notebook-a5.jpg - 200 36524 image/jpeg 39.6879ms
+2026-05-18 12:21:34.484 +03:00 [INF] Application is shutting down...
