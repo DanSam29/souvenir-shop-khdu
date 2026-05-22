@@ -877,6 +877,11 @@ Testing:
       + studentExpiresAt: DateTime (nullable)
       + createdAt: DateTime
       + updatedAt: DateTime
+      + createdBy: int (FK to Users)
+      + updatedBy: int (FK to Users)
+      + isDeleted: bool
+      + deletedAt: DateTime (nullable)
+      + deletedBy: int (FK to Users, nullable)
   - Методи:
       + register()
       + login()
@@ -891,12 +896,19 @@ Testing:
   - Поля:
       + id: int (PK)
       + name: string
+      + nameEn: string (nullable)
       + description: text
+      + descriptionEn: text (nullable)
       + price: decimal
       + weight: decimal
       + categoryId: int (FK)
       + createdAt: DateTime
       + updatedAt: DateTime
+      + createdBy: int (FK to Users)
+      + updatedBy: int (FK to Users)
+      + isDeleted: bool
+      + deletedAt: DateTime (nullable)
+      + deletedBy: int (FK to Users, nullable)
       Обчислювані поля:
       + stock (розраховується через WarehouseModule)
   - Методи:
@@ -927,7 +939,9 @@ Testing:
   - Поля:
       + id: int (PK)
       + name: string(200)
+      + nameEn: string(200) (nullable)
       + description: text
+      + descriptionEn: text (nullable)
       + type: PromotionType (enum: PERCENTAGE/FIXED\_AMOUNT/SPECIAL\_PRICE)
       + value: decimal(10,2)
       + targetType: PromotionTarget (enum: PRODUCT/CATEGORY/CART/SHIPPING)
@@ -943,6 +957,10 @@ Testing:
       + currentUsage: int (default: 0)
       + isActive: bool (default: true)
       + createdBy: int (FK)
+      + updatedBy: int (FK to Users)
+      + isDeleted: bool
+      + deletedAt: DateTime (nullable)
+      + deletedBy: int (FK to Users, nullable)
       + createdAt: DateTime
       + updatedAt: DateTime
   - Обчислювані поля:
@@ -970,6 +988,11 @@ Testing:
       + isActive: bool
       + createdAt: DateTime
       + updatedAt: DateTime
+      + createdBy: int (FK to Users)
+      + updatedBy: int (FK to Users)
+      + isDeleted: bool
+      + deletedAt: DateTime (nullable)
+      + deletedBy: int (FK to Users, nullable)
   - Методи:
       + create()
       + update()

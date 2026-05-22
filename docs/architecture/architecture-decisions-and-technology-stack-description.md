@@ -108,7 +108,7 @@
 
 | Технологія | Версія | Призначення |
 |------------|--------|-------------|
-| React | 18.x | Основний UI фреймворк для SPA |
+| React | 19.x | Основний UI фреймворк для SPA |
 | React Router | 6.x | Маршрутизація сторінок |
 | Axios | 1.x | HTTP клієнт для REST API |
 | React Admin | 4.x | Адміністративна панель |
@@ -324,7 +324,7 @@ Levels:
   - Створення/видалення складських документів  
   - Спроби несанкціонованого доступу  
   - Створення, редагування, деактивація акцій та знижок  
-  - Застосування знижок при оформленні замовлення (originalPrice, appliedPromotionId, discountAmount, finalPrice)  
+  - Застосування знижок при оформленні замовлення (OriginalPrice, AppliedPromotionId, DiscountAmount, FinalPrice)  
   - Використання промокодів (код, користувач, результат валідації)  
   - Верифікація студентів через University API (email, результат, studentStatus, GPA)  
   - Призначення студентських знижок  
@@ -447,7 +447,7 @@ Promotion (Акція/Знижка):
   - Базова інформація: id, name, description  
   - Тип та значення: type (PERCENTAGE/FIXED\_AMOUNT/SPECIAL\_PRICE), value  
   - Область застосування: targetType (PRODUCT/CATEGORY/CART/SHIPPING), targetId  
-  - Цільова аудиторія: audienceType (ALL/STUDENTS/STAFF/ALUMNI/CUSTOM)  
+  - Цільова аудиторія: audienceType (ALL/STUDENTS/STAFF/ALUMNI/CUSTOM/NONE/REGULAR/SCHOLARSHIP/HIGH_ACHIEVER)  
   - Часові рамки: startDate, endDate  
   - Промокод: promoCode (unique, nullable)  
   - Умови: minOrderAmount, minQuantity  
@@ -465,12 +465,12 @@ User (розширення):
   - Верифікація: studentVerifiedAt, studentExpiresAt  
 
 OrderItem (розширення):  
-  - Ціни: originalPrice, finalPrice  
-  - Знижка: appliedPromotionId, discountAmount  
+  - Ціни: OriginalPrice, FinalPrice  
+  - Знижка: AppliedPromotionId, DiscountAmount  
 
 OutgoingDocument (розширення):  
-  - Ціни: originalPrice, finalPrice (для Reason=ORDER)  
-  - Знижка: appliedPromotionId, discountAmount (для Reason=ORDER)
+  - Ціни: OriginalPrice, FinalPrice (для Reason=Order)  
+  - Знижка: AppliedPromotionId, DiscountAmount (для Reason=Order)
 ### 10.2. Бізнес-логіка застосування знижок
 **Крок 1: Збір доступних знижок**  
 GetApplicablePromotions(userId, cartItems):  
@@ -501,7 +501,7 @@ ValidatePromoCode(code, userId, cartItems):
 **Крок 3: Розрахунок фінальних цін зі стакуванням**  
 CalculateFinalPrices(cartItems, promotions, promoCode): 
 FOR EACH item IN cartItems:  
-1. originalPrice = item.Product.Price  
+1. OriginalPrice = item.Product.Price  
 2. Відфільтрувати promotions які застосовуються до цього item:  
     - targetType = PRODUCT AND targetId = item.ProductId
     - targetType = CATEGORY AND targetId = item.Product.CategoryId
@@ -509,29 +509,29 @@ FOR EACH item IN cartItems:
     - promoCode (якщо введено)
 3. Відсортувати за пріоритетом:  
     - Priority 1: Персональні (audienceType = CUSTOM)  
-    - Priority 2: Студентські (audienceType = STUDENTS)  
+    - Priority 2: Студентські (audienceType = STUDENTS/REGULAR/SCHOLARSHIP/HIGH_ACHIEVER)  
     - Priority 3: Товарні/Категорійні  
     - Priority 4: Загальні (audienceType = ALL)  
     - Priority 5: Промокод  
    Якщо однаковий тип → сортувати за полем priority (DESC)
 4. Застосувати знижку з найвищим пріоритетом:
    IF promotion.type = PERCENTAGE:
-       discount = originalPrice \* (promotion.value / 100)
+       discount = OriginalPrice \* (promotion.value / 100)
    ELSE IF promotion.type = FIXED\_AMOUNT:
        discount = promotion.value
    ELSE IF promotion.type = SPECIAL\_PRICE:
-       discount = originalPrice - promotion.value
-5. finalPrice = originalPrice - discount  
-6. appliedPromotionId = promotion.id  
+       discount = OriginalPrice - promotion.value
+5. FinalPrice = OriginalPrice - discount  
+6. AppliedPromotionId = promotion.id  
 7. Якщо введено промокод і він дає більшу знижку:  
     - Перерахувати discount з промокодом  
-    - Оновити finalPrice, appliedPromotionId  
-8. Зберегти: originalPrice, appliedPromotionId, discountAmount, finalPrice  
+    - Оновити FinalPrice, AppliedPromotionId  
+8. Зберегти: OriginalPrice, AppliedPromotionId, DiscountAmount, FinalPrice  
 RETURN items з розрахованими цінами  
 
 **Крок 4: Збереження інформації про знижки**  
 При створенні замовлення:  
-1. OrderItems зберігають: originalPrice, appliedPromotionId, discountAmount, finalPrice  
+1. OrderItems зберігають: OriginalPrice, AppliedPromotionId, DiscountAmount, FinalPrice  
 2. Promotions.currentUsage++  
 3. UserPromotions.usedCount++ (якщо персональна знижка)  
 4. OutgoingDocuments копіюють дані зі знижками з OrderItems
@@ -601,8 +601,8 @@ University API недоступний:
   - Якщо не вдалося → переведення в ручну верифікацію  
 
 Стакування знижок призводить до від'ємної ціни:  
-  - Обмеження: finalPrice >= 0  
-  - Якщо finalPrice < 0 → finalPrice = 0, discountAmount = originalPrice  
+  - Обмеження: FinalPrice >= 0  
+  - Якщо FinalPrice < 0 → FinalPrice = 0, DiscountAmount = OriginalPrice  
 
 Промокод не відповідає умовам:  
   - Перевірка minOrderAmount, minQuantity  

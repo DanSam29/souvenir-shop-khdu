@@ -59,7 +59,16 @@ if (Фірми немає в списку?) then (Так)
         :Показати помилки;
         stop
     else (Так)
-        :Створити запис в таблиці Companies;
+        :Створити запис в таблиці Companies:
+        - Name
+        - ContactPerson
+        - Phone
+        - Email
+        - Address
+        - Notes
+        - CreatedAt
+        - UpdatedAt
+        - IsDeleted = false;
         :Повернутися до форми накладної;
         :Автоматично обрати нову фірму;
     endif
@@ -160,6 +169,10 @@ fork
     - DocumentDate
     - CreatedAt
     - CreatedBy (Менеджер)
+    - CreatedByUserId
+    - UpdatedAt
+    - UpdatedBy
+    - IsDeleted = false
     - Notes;
 fork again
     :Оновити поле Products.Stock:

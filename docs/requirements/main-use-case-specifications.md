@@ -40,7 +40,7 @@
 7. Система надсилає запит на Backend API
 8. Backend перевіряє унікальність Email в базі даних
 9. Backend хешує пароль за допомогою bcrypt
-10. Backend створює новий запис користувача в таблиці Users з полями: FirstName, LastName, Email, PasswordHash, Phone, CreatedAt
+10. Backend створює новий запис користувача в таблиці Users з полями: FirstName, LastName, Email, Password, Phone, CreatedAt
 11. Backend призначає роль "Користувач"
 12. Backend створює порожній особистий кабінет
 13. Backend перевіряє, чи email належить до домену університету (@ksu.edu.ua)
@@ -180,8 +180,8 @@
 
 **Постумови (успішний сценарій)**
   - Замовлення створено в базі даних
-  - Статус замовлення встановлено ("Обробляється" для оплати онлайн або "Очікує оплати при отриманні")
-  - Створено OrderItems з повною інформацією про знижки (originalPrice, appliedPromotionId, discountAmount, finalPrice)
+  - Статус замовлення встановлено ("Processing" для оплати онлайн або "Processing" для оплати при отриманні)
+  - Створено OrderItems з повною інформацією про знижки (OriginalPrice, AppliedPromotionId, DiscountAmount, FinalPrice)
   - Автоматично створено видаткові накладні через WarehouseService
   - Товари зарезервовано на складі (зменшено Stock)
   - Для онлайн оплати - платіж оброблено через Stripe
@@ -228,9 +228,9 @@
   Для оплати карткою онлайн:  
 26. Користувач натискає "Підтвердити замовлення"
 27. Backend (OrderService) отримує дані замовлення з Frontend
-28. Backend (PromotionService) розраховує фінальні ціни для кожного товару: originalPrice (базова ціна), appliedPromotionId (ID найвигіднішої знижки або промокоду), discountAmount (сума знижки), finalPrice (ціна після знижки)
-29. Backend створює запис замовлення в БД (status: "Очікує оплати")
-30. Backend створює OrderItems з повною інформацією про знижки (productId, quantity, originalPrice, appliedPromotionId, discountAmount, finalPrice)
+28. Backend (PromotionService) розраховує фінальні ціни для кожного товару: OriginalPrice (базова ціна), AppliedPromotionId (ID найвигіднішої знижки або промокоду), DiscountAmount (сума знижки), FinalPrice (ціна після знижки)
+29. Backend створює запис замовлення в БД (status: "Processing")
+30. Backend створює OrderItems з повною інформацією про знижки (ProductId, Quantity, OriginalPrice, AppliedPromotionId, DiscountAmount, FinalPrice)
 31. Backend створює видаткові накладні через WarehouseService (автоматично зменшує Stock)
 32. Backend генерує сесію оплати в Stripe через API
 33. Система перенаправляє користувача на сторінку Stripe
@@ -239,8 +239,8 @@
 36. Stripe повертає статус успішної оплати через webhook
 37. Backend отримує webhook від Stripe
 38. Backend перевіряє підпис webhook (webhook signature)
-39. Backend оновлює статус замовлення на "Обробляється"
-40. Backend оновлює статус платежу на "Оплачено"
+39. Backend оновлює статус замовлення на "Processing"
+40. Backend оновлює статус платежу на "Completed"
 41. Backend додає запис у таблицю Payments
 42. Backend додає запис у таблицю OrderHistory
 43. Backend надсилає Email-підтвердження користувачу з деталізацією: Номер замовлення, Список товарів, Вартість товарів (без знижок), Застосовані знижки (деталізація по кожній), Вартість доставки, Підсумок оплачено
@@ -252,10 +252,10 @@
   <li>Користувач натискає "Підтвердити замовлення"</li>
   <li>Backend (OrderService) отримує дані замовлення з Frontend</li>
   <li>Backend (PromotionService) розраховує фінальні ціни для кожного товару</li>
-  <li>Backend створює запис замовлення в БД (status: "Очікує оплати при отриманні")</li>
+  <li>Backend створює запис замовлення в БД (status: "Processing")</li>
   <li>Backend створює OrderItems з повною інформацією про знижки</li>
   <li>Backend створює видаткові накладні через WarehouseService (автоматично зменшує Stock)</li>
-  <li>Backend створює запис в таблиці Payments (status: "Очікує оплати при отриманні", method: "Cash on Delivery")</li>
+  <li>Backend створює запис в таблиці Payments (status: "Pending", method: "CashOnDelivery")</li>
   <li>Backend додає запис у таблицю OrderHistory</li>
   <li>Якщо використано промокод - Backend оновлює Promotions.currentUsage++</li>
   <li>Backend додає запис в UserPromotions (якщо персональна знижка)</li>
@@ -585,7 +585,7 @@
 21. Backend перевіряє права доступу Менеджера
 22. Backend перевіряє, чи існує товар в БД
 23. Backend розпочинає транзакцію БД
-24. Backend створює запис в таблиці IncomingDocuments: ProductId, Quantity, PurchasePrice, CompanyId, DocumentDate, CreatedAt, CreatedBy (Менеджер), Notes
+24. Backend створює запис в таблиці IncomingDocuments: ProductId, Quantity, PurchasePrice, CompanyId, DocumentDate, CreatedAt, CreatedBy, Notes
 25. Backend оновлює поле Products.Stock: Stock = Stock + Quantity
 26. Backend додає запис в audit log для аудиту
 27. Backend фіксує транзакцію
@@ -718,8 +718,8 @@
    1) WarehouseService отримує ProductId та Quantity
    2) WarehouseService перевіряє поточний Stock товару
    3) WarehouseService отримує дані про знижки з OrderItems для цього товару
-   4) WarehouseService створює запис в таблиці OutgoingDocuments: ProductId, Quantity, OrderId, CompanyId = null, Reason = "Order", originalPrice (з OrderItem), appliedPromotionId (з OrderItem, nullable), discountAmount (з OrderItem), finalPrice (з OrderItem), DocumentDate = поточна дата, CreatedAt, CreatedBy = null (автоматично), Notes = "Автоматичне списання для замовлення №[OrderId]"
-   5) WarehouseService оновлює Products.Stock: Stock = Stock - Quantity
+   4) WarehouseService створює запис в таблиці OutgoingDocuments: ProductId, Quantity, OrderId, CompanyId = null, Reason = "Order", OriginalPrice (з OrderItem), AppliedPromotionId (з OrderItem, nullable), DiscountAmount (з OrderItem), FinalPrice (з OrderItem), DocumentDate = поточна дата, CreatedAt, CreatedBy = null (автоматично), Notes = "Автоматичне списання для замовлення №[OrderId]"
+    5) WarehouseService оновлює Products.Stock: Stock = Stock - Quantity
    6) WarehouseService логує створення видаткової накладної в Serilog
 9. WarehouseService повертає успішний результат в OrderService
 10. OrderService продовжує обробку замовлення (створення сесії оплати Stripe або встановлення статусу "Очікує оплати при отриманні")
@@ -790,9 +790,8 @@
   - Статус замовлення оновлено в таблиці Orders
   - Запис про зміну статусу додано в таблицю OrderHistory
   - Email-сповіщення надіслано користувачу
-  - Якщо статус "Скасовано":
+  - Якщо статус "Cancelled":
       + Товари повернуто на склад (збільшено Stock)
-      + Створено запис в OrderCancellations з причиною
       + Email містить причину скасування
 
 **Основний сценарій (Success Path)**
@@ -803,10 +802,10 @@
 5. Система завантажує дані замовлення з БД
 6. Система відображає детальну інформацію: Номер замовлення, Дата створення, Користувач (ім'я, email, телефон), Список товарів, Загальна сума, Спосіб доставки та адреса, Поточний статус, Історія змін статусів
 7. Адміністратор натискає кнопку "Змінити статус"
-8. Система відображає випадаючий список доступних статусів: Обробляється, Відправлено, Доставлено, Скасовано
+8. Система відображає випадаючий список доступних статусів: Processing, Shipped, Delivered, Cancelled
 9. Адміністратор вибирає новий статус
 10. Система перевіряє, чи дозволений перехід від старого статусу до нового
-11. Якщо новий статус = "Скасовано":
+11. Якщо новий статус = "Cancelled":
     1) Система показує попередження "Ви впевнені? Товари будуть повернені на склад"
     2) Система відображає поле "Причина скасування"
     3) Адміністратор вводить причину скасування
@@ -818,12 +817,11 @@
 16. Backend перевіряє права доступу Адміністратора
 17. Backend перевіряє, чи замовлення існує в БД
 18. Backend перевіряє поточний статус замовлення
-19. Якщо статус = "Скасовано":
-    1) Backend оновлює статус на "Скасовано"
+19. Якщо статус = "Cancelled":
+    1) Backend оновлює статус на "Cancelled"
     2) Backend повертає товари на склад (збільшує Stock для кожного товару)
-    3) Backend створює запис в таблиці OrderCancellations з причиною
-    4) Backend додає запис в таблицю OrderHistory
-    5) Backend підготовує Email з причиною скасування
+    3) Backend додає запис в таблицю OrderHistory
+    4) Backend підготовує Email з причиною скасування
 20. Якщо інший статус:
     1) Backend оновлює поле Status в таблиці Orders
     2) Backend додає запис в таблицю OrderHistory: OldStatus, NewStatus, ChangedBy, Comment, Timestamp
@@ -962,7 +960,7 @@
 26. Система відображає KPI картки: Загальна кількість замовлень, Загальний дохід, Середній чек, Зміна відносно попереднього періоду (%)
 27. Система будує графік динаміки продажів (Line chart): Вісь X - період, Вісь Y - дохід
 28. Система будує pie chart розподілу за способами оплати (Card Online, Cash on Delivery)
-29. Система будує bar chart розподілу за статусами (Pending Payment, Processing, Shipped, Delivered, Cancelled)
+29. Система будує bar chart розподілу за статусами (Processing, Shipped, Delivered, Cancelled)
 30. Система відображає таблицю топ-10 товарів: Назва товару, Кількість продажів, Дохід, Частка у загальному доході (%)
 31. Менеджер/Адміністратор переглядає звіт
 32. За бажанням - менеджер/адміністратор змінює параметри та натискає "Оновити звіт" (повернення до кроку 14)

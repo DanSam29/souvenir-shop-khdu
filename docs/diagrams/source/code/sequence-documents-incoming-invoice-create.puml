@@ -133,7 +133,9 @@ else Фірма нова
             address: "м. Київ, вул. Хрещатик, 1",
             notes: "...",
             isActive: true,
-            createdAt: NOW()
+            createdAt: NOW(),
+            updatedAt: NOW(),
+            isDeleted: false
         }
     end note
     DB --> WarehouseSvc: companyId = 3
@@ -251,7 +253,10 @@ else Права достатні
                     documentDate: "2024-12-29",
                     notes: "Перша партія...",
                     createdAt: NOW(),
-                    createdBy: managerId
+                    createdBy: managerId,
+                    createdByUserId: managerId,
+                    updatedAt: NULL,
+                    isDeleted: false
                 }
             end note
             DB --> WarehouseSvc: documentId = 42

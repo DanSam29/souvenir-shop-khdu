@@ -10,15 +10,15 @@ state Pending {
     Pend : do / [Якщо CashOnDelivery] Очікувати доставку
 }
 
-Pending --> Paid : [Card] Stripe webhook: checkout.session.completed
-Pending --> Paid : [CashOnDelivery] Адміністратор підтверджує оплату при доставці
+Pending --> Completed : [Card] Stripe webhook: checkout.session.completed
+Pending --> Completed : [CashOnDelivery] Адміністратор підтверджує оплату при доставці
 Pending --> Failed : [Card] Stripe webhook: payment_intent.payment_failed
 Pending --> Failed : Користувач закриває сторінку Stripe без оплати
 
-state Paid {
+state Completed {
     state "Оплачено" as P
     [*] --> P
-    P : entry / Оновити Order.status = "PROCESSING"
+    P : entry / Оновити Order.status = "Processing"
     P : entry / Додати запис в OrderHistory
     P : entry / Надіслати Email-підтвердження
     P : entry / [Card] Зберегти stripePaymentIntentId
@@ -27,25 +27,25 @@ state Paid {
 state Failed {
     state "Помилка оплати" as Fail
     [*] --> Fail
-    Fail : entry / Оновити Order.status = "CANCELLED"
+    Fail : entry / Оновити Order.status = "Cancelled"
     Fail : entry / Видалити OutgoingDocuments
     Fail : entry / Повернути Stock
     Fail : entry / Логувати помилку в Serilog
     Fail : entry / Надіслати Email про невдалу оплату
 }
 
-Paid --> Refunded : Адміністратор скасовує замовлення після оплати
+Completed --> Refunded : Адміністратор скасовує замовлення після оплати
 
 state Refunded {
     state "Повернено кошти" as Ref
     [*] --> Ref
     Ref : entry / Ініціювати refund через Stripe API
-    Ref : entry / Оновити Order.status = "CANCELLED"
+    Ref : entry / Оновити Order.status = "Cancelled"
     Ref : entry / Додати запис в OrderHistory
     Ref : entry / Надіслати Email про повернення коштів
 }
 
-Paid --> [*] : [CashOnDelivery] Замовлення доставлено
+Completed --> [*] : [CashOnDelivery] Замовлення доставлено
 Refunded --> [*]
 Failed --> [*]
 
@@ -55,7 +55,7 @@ note right of Pending
     Для CashOnDelivery - очікує підтвердження доставки.
 end note
 
-note right of Paid
+note right of Completed
     Успішна оплата.
     Для Card - гроші списано з картки.
     Для CashOnDelivery - гроші отримано при доставці.

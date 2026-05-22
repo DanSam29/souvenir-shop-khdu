@@ -80,7 +80,9 @@ else (Ні)
     - Email
     - PasswordHash
     - Phone
-    -CreatedAt;
+    - CreatedAt
+    - UpdatedAt
+    - IsDeleted = false;
     :Призначити роль "Користувач";
     :Створити порожній особистий кабінет;
     :Перевірити чи email належить до домену університету (@ksu.edu.ua);

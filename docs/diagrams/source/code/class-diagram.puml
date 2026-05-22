@@ -27,6 +27,11 @@ package "Domain Models" <<Rectangle>>
         + studentExpiresAt: DateTime
         + createdAt: DateTime
         + updatedAt: DateTime
+        + createdBy: int
+        + updatedBy: int
+        + isDeleted: bool
+        + deletedAt: DateTime
+        + deletedBy: int
         --
         + register(): void
         + login(): string
@@ -66,12 +71,20 @@ package "Domain Models" <<Rectangle>>
     {
         + id: int
         + name: string
+        + nameEn: string
         + description: string
+        + descriptionEn: string
         + price: decimal
         + weight: decimal
         + categoryId: int
+        + stock: int
         + createdAt: DateTime
         + updatedAt: DateTime
+        + createdBy: int
+        + updatedBy: int
+        + isDeleted: bool
+        + deletedAt: DateTime
+        + deletedBy: int
         --
         + create(): void
         + update(): void
@@ -84,9 +97,18 @@ package "Domain Models" <<Rectangle>>
     {
         + id: int
         + name: string
+        + nameEn: string
+        + description: string
+        + descriptionEn: string
         + parentId: int
-        + order: int
+        + displayOrder: int
         + createdAt: DateTime
+        + updatedAt: DateTime
+        + createdBy: int
+        + updatedBy: int
+        + isDeleted: bool
+        + deletedAt: DateTime
+        + deletedBy: int
         --
         + create(): void
         + update(): void
@@ -101,7 +123,7 @@ package "Domain Models" <<Rectangle>>
         + productId: int
         + imageUrl: string
         + isPrimary: bool
-        + order: int
+        + displayOrder: int
         --
         + upload(): void
         + delete(): void
@@ -194,11 +216,12 @@ package "Domain Models" <<Rectangle>>
         + id: int
         + orderId: int
         + amount: decimal
-        + currency: string
         + method: PaymentMethod
         + status: PaymentStatus
-        - stripeSessionId: string
-        - stripePaymentIntentId: string
+        + transactionId: string
+        + stripeSessionId: string
+        + stripePaymentIntentId: string
+        + idempotencyKey: string
         + createdAt: DateTime
         + updatedAt: DateTime
         --
@@ -225,14 +248,13 @@ package "Domain Models" <<Rectangle>>
     {
         + id: int
         + orderId: int
-        + userId: int
         + city: string
         + cityRef: string
         + warehouse: string
         + warehouseRef: string
-        + phone: string
+        + recipientName: string
+        + recipientPhone: string
         + trackingNumber: string
-        + isDefault: bool
         --
         + save(): void
         + calculateCost(): decimal
@@ -249,6 +271,12 @@ package "Domain Models" <<Rectangle>>
         + notes: string
         + createdAt: DateTime
         + createdBy: int
+        + createdByUserId: int
+        + updatedAt: DateTime
+        + updatedBy: int
+        + isDeleted: bool
+        + deletedAt: DateTime
+        + deletedBy: int
         --
         + create(): void
         + updateStock(): void
@@ -270,6 +298,12 @@ package "Domain Models" <<Rectangle>>
         + documentDate: Date
         + createdAt: DateTime
         + createdBy: int
+        + createdByUserId: int
+        + updatedAt: DateTime
+        + updatedBy: int
+        + isDeleted: bool
+        + deletedAt: DateTime
+        + deletedBy: int
         --
         + create(): void
         + updateStock(): void
@@ -320,6 +354,11 @@ package "Domain Models" <<Rectangle>>
         + isActive: bool
         + createdAt: DateTime
         + updatedAt: DateTime
+        + createdBy: int
+        + updatedBy: int
+        + isDeleted: bool
+        + deletedAt: DateTime
+        + deletedBy: int
         --
         + create(): void
         + update(): void
@@ -331,7 +370,9 @@ package "Domain Models" <<Rectangle>>
     {
         + id: int
         + name: string
+        + nameEn: string
         + description: string
+        + descriptionEn: string
         + type: PromotionType
         + value: decimal
         + targetType: PromotionTarget
@@ -349,6 +390,10 @@ package "Domain Models" <<Rectangle>>
         + createdBy: int
         + createdAt: DateTime
         + updatedAt: DateTime
+        + updatedBy: int
+        + isDeleted: bool
+        + deletedAt: DateTime
+        + deletedBy: int
         --
         + create(): void
         + update(): void

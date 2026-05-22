@@ -45,14 +45,13 @@ state Delivered {
     [*] --> Deliv
     Deliv : entry / Додати запис в OrderHistory
     Deliv : entry / Надіслати Email про доставку
-    Deliv : entry / [Якщо оплата при отриманні] Оновити Payment.status = "PAID"
+    Deliv : entry / [Якщо оплата при отриманні] Оновити Payment.status = "Completed"
 }
 
 state Cancelled {
     state "Скасовано" as Cancel
     [*] --> Cancel
-    Cancel : entry / Додати запис in OrderHistory
-    Cancel : entry / Створити запис в OrderCancellations
+    Cancel : entry / Додати запис в OrderHistory
     Cancel : entry / Видалити видаткові накладні
     Cancel : entry / Повернути товари на склад (збільшити Stock)
     Cancel : entry / [Якщо оплачено] Ініціювати refund через Stripe

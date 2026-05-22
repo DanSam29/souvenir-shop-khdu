@@ -5,17 +5,17 @@
 |------------|-----------|----------|-------|-------------|----------------|
 | Frontend | CatalogModule | `/api/products` | GET | `?page=1&limit=20&sort=price&order=asc` | `{products: [{id, name, price, weight, imageUrl, stock}], total, pages}` |
 | Frontend | CatalogModule | `/api/products/search` | GET | `?query=футболка&category=clothing` | `{products: [{id, name, price, imageUrl}], total}` |
-| Frontend | CatalogModule | `/api/products/{id}` | GET | - | `{id, name, description, price, weight, categoryId, images: [{url, isPrimary}], stock}` |
-| Frontend | CatalogModule | `/api/categories` | GET | - | `{categories: [{id, name, parentId, productCount}]}` |
+| Frontend | CatalogModule | `/api/products/{id}` | GET | - | `{id, name, nameEn, description, descriptionEn, price, weight, categoryId, images: [{url, isPrimary, displayOrder}], stock}` |
+| Frontend | CatalogModule | `/api/categories` | GET | - | `{categories: [{id, name, nameEn, description, descriptionEn, parentId, displayOrder}]}` |
 | Frontend | CatalogModule | `/api/categories/{id}/products` | GET | `?page=1&limit=20` | `{products: [...], total, categoryName}` |
 ### 1.2. Адміністративні інтерфейси (для Менеджера)
 | Відправник | Отримувач | Endpoint | Метод | Дані запиту | Дані відповіді |
 |------------|-----------|----------|-------|-------------|----------------|
-| Admin Panel | CatalogModule | `/api/admin/products` | POST | `{name, description, price, weight, categoryId, images: [File]}` | `{id, name, message: "Товар створено", imageUrls: [...]}` |
-| Admin Panel | CatalogModule | `/api/admin/products/{id}` | PUT | `{name, description, price, weight, categoryId}` | `{id, message: "Товар оновлено"}` |
+| Admin Panel | CatalogModule | `/api/admin/products` | POST | `{name, nameEn, description, descriptionEn, price, weight, categoryId, images: [File]}` | `{id, name, message: "Товар створено", imageUrls: [...]}` |
+| Admin Panel | CatalogModule | `/api/admin/products/{id}` | PUT | `{name, nameEn, description, descriptionEn, price, weight, categoryId}` | `{id, message: "Товар оновлено"}` |
 | Admin Panel | CatalogModule | `/api/admin/products/{id}`  | DELETE | - | `{message: "Товар видалено"}` |
-| Admin Panel | CatalogModule | `/api/admin/categories` | POST | `{name, parentId}` | `{id, name, message: "Категорію створено"}` |
-| Admin Panel | CatalogModule | `/api/admin/categories/{id}` | PUT | `{name, parentId}` | `{id, message: "Категорію оновлено"}` |
+| Admin Panel | CatalogModule | `/api/admin/categories` | POST | `{name, nameEn, description, descriptionEn, parentId, displayOrder}` | `{id, name, message: "Категорію створено"}` |
+| Admin Panel | CatalogModule | `/api/admin/categories/{id}` | PUT | `{name, nameEn, description, descriptionEn, parentId, displayOrder}` | `{id, message: "Категорію оновлено"}` |
 | Admin Panel | CatalogModule | `/api/admin/categories/{id}` | DELETE | - | `{message: "Категорію видалено"}` |
 ### 1.3. Внутрішні інтерфейси (між модулями)
 | Відправник | Отримувач | Endpoint/Метод | Тип | Дані запиту | Дані відповіді |
@@ -41,7 +41,7 @@
 ### 3.1. Публічні інтерфейси
 | Відправник | Отримувач | Endpoint | Метод | Дані запиту | Дані відповіді |
 |------------|-----------|----------|-------|-------------|----------------|
-| Frontend | OrderModule | `/api/orders` | POST | `{items: [{productId, quantity}], shippingAddress: {city, warehouse}, paymentMethod: "card/cod", promoCode: string(optional)}}` | `{orderId, totalAmount, status, paymentUrl (if card) , appliedDiscounts: [{promotionId, name, discountAmount}]}` |
+| Frontend | OrderModule | `/api/orders` | POST | `{items: [{productId, quantity}], shippingAddress: {city, cityRef, warehouse, warehouseRef, recipientName, recipientPhone}, paymentMethod: "card/cod", promoCode: string(optional)}}` | `{orderId, totalAmount, status, paymentUrl (if card) , appliedDiscounts: [{promotionId, name, discountAmount}]}` |
 | Frontend | OrderModule | `/api/orders/history` | GET | `?page=1&limit=10` | `{orders: [{id, date, total, status, items}], total}` |
 | Frontend | OrderModule | `/api/orders/{id}` | GET | - | `{id, orderNumber, date, status, items: [...], shipping: {...}, payment: {...}}` |
 | Frontend | OrderModule | `/api/orders/{id}/track` | GET | - | `{orderId, currentStatus, statusHistory: [{status, date, comment}], trackingNumber}` |
@@ -66,7 +66,7 @@
 ### 4.1. Публічні інтерфейси
 | Відправник | Отримувач | Endpoint | Метод | Дані запиту | Дані відповіді |
 |------------|-----------|----------|-------|-------------|----------------|
-| Frontend | PaymentModule | `/api/payments/create-session` | POST | `{orderId: int, amount: decimal, currency: "UAH"}` | `{sessionId, paymentUrl, expiresAt}` |
+| Frontend | PaymentModule | `/api/payments/create-session` | POST | `{orderId: int, amount: decimal}` | `{sessionId, paymentUrl, expiresAt}` |
 | Frontend | PaymentModule | `/api/payments/{id}/status` | GET | - | `{paymentId, status: "paid/pending/failed", method, amount}` |
 ### 4.2. Webhook інтерфейси
 | Відправник | Отримувач | Endpoint | Метод | Дані запиту | Дані відповіді |
@@ -103,8 +103,8 @@
 | Frontend | UserModule | `/api/users/profile` | GET | - | `{id, firstName, lastName, email, phone, createdAt}` |
 | Frontend | UserModule | `/api/users/profile` | PUT | `{firstName, lastName, phone}` | `{message: "Профіль оновлено"}` |
 | Frontend | UserModule | `/api/users/change-password` | POST | `{currentPassword, newPassword}` | `{message: "Пароль змінено"}` |
-| Frontend | UserModule | `/api/users/addresses` | GET | - | `{addresses: [{id, city, warehouse, phone, isDefault}]}` |
-| Frontend | UserModule | `/api/users/addresses` | POST | `{city, warehouse, phone, isDefault}` | `{addressId, message: "Адресу додано"}` |
+| Frontend | UserModule | `/api/users/addresses` | GET | - | `{addresses: [{id, city, cityRef, warehouse, warehouseRef, recipientName, recipientPhone}]}` |
+| Frontend | UserModule | `/api/users/addresses` | POST | `{city, cityRef, warehouse, warehouseRef, recipientName, recipientPhone}` | `{addressId, message: "Адресу додано"}` |
 | Frontend | UserModule | `/api/users/addresses/{id}` | DELETE | - | `{message: "Адресу видалено"}` |
 | Frontend | UserModule | `/api/users/verify-student` | POST | - | `{success: bool, message: "Верифікація розпочата", studentStatus: enum (якщо успішно), gpa: decimal, promotions: [{...}]} АБО {success: false, error: "University API недоступний"}` |
 | Frontend | UserModule | `/api/users/student-status` | GET | - | `{studentStatus: enum, gpa: decimal, studentVerifiedAt: DateTime, studentExpiresAt: DateTime, daysUntilExpiry: int}` |
@@ -180,10 +180,10 @@
 ### 9.2. Адміністративні інтерфейси (для Менеджера)
 | Відправник | Отримувач | Endpoint | Метод | Дані запиту | Дані відповіді |
 |------------|-----------|----------|-------|-------------|----------------|
-| Admin Panel | PromotionModule | `/api/admin/promotions` | GET | `?isActive=true&page=1& limit=20&type& audienceType` | `{promotions: [{id, name, type, value, targetType, audienceType, startDate, endDate, promoCode, currentUsage, usageLimit, isActive, createdBy}], total, pages}` |
-| Admin Panel | PromotionModule | `/api/admin/promotions/{id}` | GET | - | `{id, name, description, type, value, targetType, targetId, audienceType, startDate, endDate, promoCode, minOrderAmount, minQuantity, priority, usageLimit, currentUsage, isActive, createdBy, createdAt}` |
-| Admin Panel | PromotionModule | `/api/admin/promotions` | POST | `{name, description, type, value, targetType, targetId, audienceType, startDate, endDate, promoCode, minOrderAmount, minQuantity, priority, usageLimit}` | `{id, message: "Акцію створено", promotion: {...}}` |
-| Admin Panel | PromotionModule | `/api/admin/promotions/{id}` | PUT | `{name, description, type, value, targetType, targetId, audienceType, startDate, endDate, promoCode, minOrderAmount, minQuantity, priority, usageLimit, isActive}` | `{id, message: "Акцію оновлено"}` |
+| Admin Panel | PromotionModule | `/api/admin/promotions` | GET | `?isActive=true&page=1& limit=20&type& audienceType` | `{promotions: [{id, name, nameEn, type, value, targetType, audienceType, startDate, endDate, promoCode, currentUsage, usageLimit, isActive, createdBy}], total, pages}` |
+| Admin Panel | PromotionModule | `/api/admin/promotions/{id}` | GET | - | `{id, name, nameEn, description, descriptionEn, type, value, targetType, targetId, audienceType, startDate, endDate, promoCode, minOrderAmount, minQuantity, priority, usageLimit, currentUsage, isActive, createdBy, createdAt}` |
+| Admin Panel | PromotionModule | `/api/admin/promotions` | POST | `{name, nameEn, description, descriptionEn, type, value, targetType, targetId, audienceType, startDate, endDate, promoCode, minOrderAmount, minQuantity, priority, usageLimit}` | `{id, name, message: "Акцію створено", promotion: {...}}` |
+| Admin Panel | PromotionModule | `/api/admin/promotions/{id}` | PUT | `{name, nameEn, description, descriptionEn, type, value, targetType, targetId, audienceType, startDate, endDate, promoCode, minOrderAmount, minQuantity, priority, usageLimit, isActive}` | `{id, message: "Акцію оновлено"}` |
 | Admin Panel | PromotionModule | `/api/admin/promotions/{id}` | DELETE | - | `{message: "Акцію видалено"}` |
 | Admin Panel | PromotionModule | `/api/admin/promotions/{id}/deactivate` | POST | - | `{message: "Акцію деактивовано", isActive: false}` |
 | Admin Panel | PromotionModule | `/api/admin/promotions/assign` | POST | `{userId: 5, promotionId: 12}` | `{message: "Знижку призначено користувачу"}` |

@@ -7,20 +7,20 @@ state Created {
     state AutoCreated <<choice>>
     state ManualCreated <<choice>>
   
-    [*] --> AutoCreated : [Reason = ORDER] Автоматично при замовленні
-    [*] --> ManualCreated : [Reason != ORDER] Вручну менеджером
+    [*] --> AutoCreated : [Reason = Order] Автоматично при замовленні
+    [*] --> ManualCreated : [Reason != Order] Вручну менеджером
   
     AutoCreated --> Cr : Система створює через WarehouseService
     note left: CompanyId = NULL для замовлень
 
     ManualCreated --> Cr : Менеджер/Адмін створює через форму
     note left
-        CompanyId обов'язковий якщо Reason = RETURN
+        CompanyId обов'язковий якщо Reason = Return
         CompanyId = NULL для інших причин
     end note  
 
     Cr : entry / INSERT INTO OutgoingDocuments
-    Cr : entry / (з companyId якщо reason=RETURN)
+    Cr : entry / (з companyId якщо reason=Return)
     Cr : entry / UPDATE Products SET Stock = Stock - quantity
     Cr : entry / Логувати в Serilog
     Cr : entry / Додати запис в AuditLog
@@ -59,8 +59,8 @@ Completed --> [*]
 note right of Created
     Створюється автоматично при замовленні (companyId=NULL)
     або вручну менеджером для списання:
-    - DAMAGED, LOST, INVENTORY (companyId=NULL)
-    - RETURN (companyId ОБОВ'ЯЗКОВИЙ - повернення фірмі)
+    - Damaged, Lost, Inventory (companyId=NULL)
+    - Return (companyId ОБОВ'ЯЗКОВИЙ - повернення фірмі)
 end note
 
 note right of Active

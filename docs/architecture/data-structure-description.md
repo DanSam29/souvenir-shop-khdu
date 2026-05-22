@@ -24,7 +24,12 @@
 | studentVerifiedAt | DateTime | Ні | Дата верифікації через University API |
 | studentExpiresAt | DateTime | Ні | Дата закінчення студентського статусу |
 | createdAt | DateTime | Так | Дата реєстрації |
-| updatedAt | DateTime | Так | Дата останнього оновлення |
+| updatedAt | DateTime | Ні | Дата останнього оновлення |
+| createdBy | int | Ні | FK до Users (хто створив) |
+| updatedBy | int | Ні | FK до Users (хто оновив) |
+| isDeleted | bool | Так | Чи видалено (м’яке видалення) |
+| deletedAt | DateTime | Ні | Дата видалення |
+| deletedBy | int | Ні | FK до Users (хто видалив) |
 
 Методи:  
   - register() - реєстрація нового користувача  
@@ -48,13 +53,20 @@
 | Поле | Тип | Обов’язкове | Опис |
 |------|-----|-------------|------|
 | id | int | Так | Первинний ключ |
-| name | string(200) | Так | Назва товару |
-| description | text | Так | Опис товару |
+| name | string(200) | Так | Назва товару (UA) |
+| nameEn | string(200) | Ні | Назва товару (EN) |
+| description | text | Так | Опис товару (UA) |
+| descriptionEn | text | Ні | Опис товару (EN) |
 | price | decimal(10,2) | Так | Ціна в гривнях |
 | weight | decimal(10,3) | Так | Вага в кг (для розрахунку доставки) |
 | categoryId | int | Так | FK до Categories |
 | createdAt | DateTime | Так | Дата створення |
-| updatedAt | DateTime | Так | Дата оновлення |
+| updatedAt | DateTime | Ні | Дата оновлення |
+| createdBy | int | Ні | FK до Users (хто створив) |
+| updatedBy | int | Ні | FK до Users (хто оновив) |
+| isDeleted | bool | Так | Чи видалено (м’яке видалення) |
+| deletedAt | DateTime | Ні | Дата видалення |
+| deletedBy | int | Ні | FK до Users (хто видалив) |
 
 Обчислювані поля:  
   - stock - поточний залишок на складі (розраховується через WarehouseModule на основі IncomingDocuments та OutgoingDocuments)  
@@ -81,10 +93,19 @@
 | Поле | Тип | Обов’язкове | Опис |
 |------|-----|-------------|------|
 | id | int | Так | Первинний ключ |
-| name | string(100) | Так | Назва категорії |
+| name | string(100) | Так | Назва категорії (UA) |
+| nameEn | string(100) | Ні | Назва категорії (EN) |
+| description | string(500) | Ні | Опис категорії (UA) |
+| descriptionEn | string(500) | Ні | Опис категорії (EN) |
 | parentId | int | Ні | FK до батьківської категорії (self-reference) |
-| order | int | Так | Порядок відображення (default: 0) |
+| displayOrder | int | Так | Порядок відображення (default: 0) |
 | createdAt | DateTime | Так | Дата створення |
+| updatedAt | DateTime | Ні | Дата оновлення |
+| createdBy | int | Ні | FK до Users (хто створив) |
+| updatedBy | int | Ні | FK до Users (хто оновив) |
+| isDeleted | bool | Так | Чи видалено (м’яке видалення) |
+| deletedAt | DateTime | Ні | Дата видалення |
+| deletedBy | int | Ні | FK до Users (хто видалив) |
 
 Методи:  
   - create() - створення категорії  
@@ -107,7 +128,7 @@
 | productId | int | Так | FK до Products |
 | imageUrl | string(500) | Так | URL зображення в MinIO Storage |
 | isPrimary | bool | Так | Головне зображення (default: false) |
-| order | int | Так | Порядок відображення (default: 0) |
+| displayOrder | int | Так | Порядок відображення (default: 0) |
 
 Методи:  
   - upload() - завантаження зображення в MinIO  
@@ -175,7 +196,7 @@
 | shippingCost | decimal(10,2) | Так | Вартість доставки |
 | paymentMethod | PaymentMethod | Так | Спосіб оплати (enum) |
 | createdAt | DateTime | Так | Дата створення |
-| updatedAt | DateTime | Так | Дата оновлення |
+| updatedAt | DateTime | Ні | Дата оновлення |
 
 Методи:  
   - create() - створення замовлення  
@@ -246,13 +267,14 @@
 | id | int | Так | Первинний ключ |
 | orderId | int | Так | FK до Orders (унікальний) |
 | amount | decimal(10,2) | Так | Сума платежу |
-| currency | string(3) | Так | Валюта (UAH) |
 | method | PaymentMethod | Так | Спосіб оплати (enum) |
 | status | PaymentStatus | Так | Статус платежу (enum) |
+| transactionId | string(255) | Ні | ID транзакції Stripe |
 | stripeSessionId | string(255) | Ні | ID сесії Stripe |
-| stripePaymentIntentId | string(255) | Ні | ID транзакції Stripe |
+| stripePaymentIntentId | string(255) | Ні | ID платежу Stripe |
+| idempotencyKey | string(100) | Ні | Ключ ідемпотентності |
 | createdAt | DateTime | Так | Дата створення |
-| updatedAt | DateTime | Так | Дата оновлення |
+| updatedAt | DateTime | Ні | Дата оновлення |
 
 Методи:  
   - createSession() - створення платіжної сесії Stripe  
@@ -269,15 +291,14 @@
 | Поле | Тип | Обов’язкове | Опис |
 |------|-----|-------------|------|
 | id | int | Так | Первинний ключ |
-| orderId | int | Ні | FK до Orders (для доставки замовлення) |
-| userId | int | Ні | FK до Users (для збереженої адреси) |
+| orderId | int | Так | FK до Orders |
 | city | string(100) | Так | Населений пункт |
-| cityRef | string(100) | Так | Ref міста Nova Poshta |
-| warehouse | string(100) | Так | Номер відділення |
-| warehouseRef | string(100) | Так | Ref відділення Nova Poshta |
-| phone | string(20) | Так | Контактний телефон |
+| cityRef | string(100) | Ні | Ref міста Nova Poshta |
+| warehouse | string(500) | Так | Відділення |
+| warehouseRef | string(100) | Ні | Ref відділення Nova Poshta |
+| recipientName | string(100) | Так | Ім’я отримувача |
+| recipientPhone | string(20) | Так | Телефон отримувача |
 | trackingNumber | string(100) | Ні | ТТН Nova Poshta |
-| isDefault | bool | Так | Адреса за замовчуванням (default: false) |
 
 Методи:  
   - save() - збереження адреси  
@@ -302,6 +323,12 @@
 | notes | text | Ні | Примітки |
 | createdAt | DateTime | Так | Дата створення запису |
 | createdBy | int | Так | FK до Users (менеджер) |
+| createdByUserId | int | Ні | FK до Users (власник запису) |
+| updatedAt | DateTime | Ні | Дата оновлення |
+| updatedBy | int | Ні | FK до Users (хто оновив) |
+| isDeleted | bool | Так | Чи видалено (м’яке видалення) |
+| deletedAt | DateTime | Ні | Дата видалення |
+| deletedBy | int | Ні | FK до Users (хто видалив) |
 
 Методи:  
   - create() - створення накладної  
@@ -331,7 +358,13 @@
 | notes | text | Ні | Примітки |
 | documentDate | Date | Так | Дата документа |
 | createdAt | DateTime | Так | Дата створення |
-| createdBy | int | Ні | FK до Users (NULL для автоматичних) |
+| updatedAt | DateTime | Ні | Дата оновлення |
+| createdBy | int | Ні | FK до Users (менеджер або NULL для авто) |
+| createdByUserId | int | Ні | FK до Users (власник запису) |
+| updatedBy | int | Ні | FK до Users (хто оновив) |
+| isDeleted | bool | Так | Чи видалено (м’яке видалення) |
+| deletedAt | DateTime | Ні | Дата видалення |
+| deletedBy | int | Ні | FK до Users (хто видалив) |
 
 Правила валідації:  
   - companyId обов\'язковий, якщо reason = RETURN (повернення товару постачальнику)  
@@ -358,8 +391,10 @@
 | Поле | Тип | Обов’язкове | Опис |
 |------|-----|-------------|------|
 | id | int | Так | Первинний ключ, auto-increment |
-| name | string(200) | Так | Назва акції |
-| description | text | Ні | Опис акції |
+| name | string(200) | Так | Назва акції (UA) |
+| nameEn | string(200) | Ні | Назва акції (EN) |
+| description | text | Ні | Опис акції (UA) |
+| descriptionEn | text | Ні | Опис акції (EN) |
 | type | PromotionType | Так | Тип знижки (enum) |
 | value | decimal(10,2) | Так | Значення знижки (%, грн або ціна) |
 | targetType | PromotionTarget | Так | Область застосування (enum) |
@@ -377,6 +412,10 @@
 | createdBy | int | Так | FK до Users (менеджер) |
 | createdAt | DateTime | Так | Дата створення |
 | updatedAt | DateTime | Так | Дата оновлення |
+| updatedBy | int | Ні | FK до Users (хто оновив) |
+| isDeleted | bool | Так | Чи видалено (м’яке видалення) |
+| deletedAt | DateTime | Ні | Дата видалення |
+| deletedBy | int | Ні | FK до Users (хто видалив) |
 
 Методи:  
   - create() - створення нової акції  
@@ -434,6 +473,11 @@
 | isActive | bool | Так | Чи активна фірма (default: true) |
 | createdAt | DateTime | Так | Дата створення |
 | updatedAt | DateTime | Так | Дата останнього оновлення |
+| createdBy | int | Ні | FK до Users (хто створив) |
+| updatedBy | int | Ні | FK до Users (хто оновив) |
+| isDeleted | bool | Так | Чи видалено (м’яке видалення) |
+| deletedAt | DateTime | Ні | Дата видалення |
+| deletedBy | int | Ні | FK до Users (хто видалив) |
 
 Методи:  
   - create() - створення нової фірми  
@@ -1450,12 +1494,12 @@ Promotion (Акція/Знижка)
   7. appliedPromotionId = promotion.id  
   RETURN items з розрахованими цінами  
 - Зв'язки:  
-    + Promotion 1:N UserPromotion (персональні призначення)  
-    + User 1:N UserPromotion (користувачі з персональними знижками)  
-    + Promotion 1:N OrderItem (знижки в замовленнях)  
-    + Promotion 1:N OutgoingDocument (знижки при списанні)  
-    + Promotion N:1 Product (знижки на товар, якщо targetType=PRODUCT)  
-    + Promotion N:1 Category (знижки на категорію, якщо targetType=CATEGORY)  
+    + Promotions 1:N UserPromotions (персональні призначення)  
+    + Users 1:N UserPromotions (користувачі з персональними знижками)  
+    + Promotions 1:N OrderItems (знижки в замовленнях)  
+    + Promotions 1:N OutgoingDocuments (знижки при списанні)  
+    + Promotions N:1 Products (знижки на товар, якщо targetType=PRODUCT)  
+    + Promotions N:1 Categories (знижки на категорію, якщо targetType=CATEGORY)  
 
 **5. Користувач та його дані**  
 ```

@@ -98,11 +98,18 @@ endif
 fork
     :Створити запис в таблиці Products:
     - Name
+    - NameEn
     - Description
+    - DescriptionEn
     - Price
     - Weight
     - CategoryId
-    - CreatedAt;
+    - Stock = 0
+    - CreatedAt
+    - UpdatedAt
+    - CreatedBy
+    - UpdatedBy
+    - IsDeleted = false;
   
 note right: Stock не створюється,\nкількість буде 0 до першої прибуткової накладної
 
@@ -111,7 +118,7 @@ fork again
     - ProductId
     - ImageURL
     - IsPrimary
-    - Order;
+    - DisplayOrder;
 
 fork again
     :Менеджер може встановити базову знижку для товару (опціонально);

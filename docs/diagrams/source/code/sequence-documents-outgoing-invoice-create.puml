@@ -83,7 +83,9 @@ note right
         orderNumber: "ORD-20241229-00123",
         status: "PENDING_PAYMENT",
         totalAmount: 1750.00,
-        createdAt: NOW()
+        shippingCost: 75.00,
+        createdAt: NOW(),
+        updatedAt: NULL
     }
 end note
 DB --> OrderSvc: orderId = 123
@@ -163,7 +165,11 @@ loop Для кожного товару в замовленні
                 notes: "Автоматичне списання для замовлення №ORD-20241229-00123",
                 documentDate: CURRENT_DATE,
                 createdAt: NOW(),
-                createdBy: NULL
+                createdBy: NULL,
+                createdByUserId: NULL,
+                updatedAt: NULL,
+                updatedBy: NULL,
+                isDeleted: false
             }
         end note
         DB --> WarehouseSvc: documentId = 85

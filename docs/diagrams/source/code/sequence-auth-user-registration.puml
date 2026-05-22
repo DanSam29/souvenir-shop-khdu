@@ -140,7 +140,9 @@ else Валідація пройдена
                 phone: "+380501234567",
                 role: "CUSTOMER",
                 status: "ACTIVE",
-                createdAt: NOW()
+                createdAt: NOW(),
+                updatedAt: NULL,
+                isDeleted: false
             }
         end note
         DB --> AuthSvc: userId = 42

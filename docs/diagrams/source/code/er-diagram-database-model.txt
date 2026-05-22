@@ -15,6 +15,12 @@ Table Users {
   StudentVerifiedAt timestamp [null, note: 'Дата верифікації студентського статусу через University API']
   StudentExpiresAt timestamp [null, note: 'Дата закінчення студентського статусу (кінець семестру)']
   CreatedAt timestamp [default: `now()`, not null]
+  CreatedBy int [null, ref: > Users.UserId]
+  UpdatedAt timestamp [null]
+  UpdatedBy int [null, ref: > Users.UserId]
+  IsDeleted boolean [not null, default: false]
+  DeletedAt timestamp [null]
+  DeletedBy int [null, ref: > Users.UserId]
   
   Indexes {
     Email [unique]
@@ -33,8 +39,18 @@ Table Users {
 Table Categories {
   CategoryId int [pk, increment]
   Name varchar(100) [not null]
+  NameEn varchar(100) [null]
+  Description varchar(500) [null]
+  DescriptionEn varchar(500) [null]
   ParentCategoryId int [null, ref: > Categories.CategoryId, note: 'FK для ієрархії категорій']
-  Order int [default: 0, note: 'Порядок відображення']
+  DisplayOrder int [default: 0, note: 'Порядок відображення']
+  CreatedAt timestamp [default: `now()`, not null]
+  UpdatedAt timestamp [null]
+  CreatedBy int [null, ref: > Users.UserId]
+  UpdatedBy int [null, ref: > Users.UserId]
+  IsDeleted boolean [not null, default: false]
+  DeletedAt timestamp [null]
+  DeletedBy int [null, ref: > Users.UserId]
   
   Indexes {
     Name
@@ -47,12 +63,20 @@ Table Categories {
 Table Products {
   ProductId int [pk, increment]
   Name varchar(200) [not null]
+  NameEn varchar(200) [null]
   Description text [not null]
+  DescriptionEn text [null]
   Price decimal(10,2) [not null, note: 'Ціна в грн']
   Weight decimal(10,3) [not null, note: 'Вага в кг для розрахунку доставки']
   CategoryId int [not null, ref: > Categories.CategoryId]
   Stock int [not null, default: 0, note: 'Поточний залишок на складі (розраховується автоматично)']
   CreatedAt timestamp [default: `now()`, not null]
+  UpdatedAt timestamp [null]
+  CreatedBy int [null, ref: > Users.UserId]
+  UpdatedBy int [null, ref: > Users.UserId]
+  IsDeleted boolean [not null, default: false]
+  DeletedAt timestamp [null]
+  DeletedBy int [null, ref: > Users.UserId]
   
   Indexes {
     Name
@@ -69,7 +93,7 @@ Table ProductImages {
   ProductId int [not null, ref: > Products.ProductId]
   ImageURL varchar(500) [not null, note: 'URL зображення в MinIO Storage']
   IsPrimary boolean [default: false, note: 'Головне зображення товару']
-  Order int [default: 0, note: 'Порядок відображення']
+  DisplayOrder int [default: 0, note: 'Порядок відображення']
   
   Indexes {
     ProductId
@@ -119,7 +143,9 @@ Table Orders {
   OrderNumber varchar(50) [unique, not null, note: 'Унікальний номер замовлення для клієнта']
   Status enum('Processing', 'Shipped', 'Delivered', 'Cancelled') [not null, default: 'Processing']
   TotalAmount decimal(10,2) [not null, note: 'Загальна сума (товари + доставка)']
+  ShippingCost decimal(10,2) [not null, default: 0, note: 'Вартість доставки']
   CreatedAt timestamp [default: `now()`, not null]
+  UpdatedAt timestamp [null]
   
   Indexes {
     UserId
@@ -175,9 +201,11 @@ Table Shipping {
   ShippingId int [pk, increment]
   OrderId int [unique, not null, ref: > Orders.OrderId, note: 'Один запис доставки на замовлення']
   City varchar(100) [not null, note: 'Населений пункт Nova Poshta']
-  WarehouseNumber varchar(50) [not null, note: 'Номер відділення Nova Poshta']
-  Phone varchar(20) [not null]
-  DeliveryCost decimal(10,2) [not null, note: 'Вартість доставки з Nova Poshta API']
+  CityRef varchar(100) [null, note: 'Ref населеного пункту']
+  WarehouseNumber varchar(500) [not null, note: 'Номер/Назва відділення Nova Poshta']
+  WarehouseRef varchar(100) [null, note: 'Ref відділення']
+  RecipientName varchar(100) [not null, note: 'Ім’я отримувача']
+  RecipientPhone varchar(20) [not null, note: 'Телефон отримувача']
   TrackingNumber varchar(100) [null, note: 'ТТН Nova Poshta']
   
   Indexes {
@@ -199,6 +227,10 @@ Table Payments {
   Status enum('Pending', 'Completed', 'Failed', 'Refunded') [not null, default: 'Pending']
   TransactionId varchar(255) [null, note: 'ID транзакції Stripe']
   CreatedAt timestamp [default: `now()`, not null]
+  UpdatedAt timestamp [null]
+  StripeSessionId varchar(255) [null]
+  StripePaymentIntentId varchar(255) [null]
+  IdempotencyKey varchar(100) [null]
   
   Indexes {
     OrderId [unique]
@@ -220,9 +252,15 @@ Table IncomingDocuments {
   PurchasePrice decimal(10,2) [not null, note: 'Закупівельна ціна за одиницю']
   CompanyId int [not null, ref: > Companies.CompanyId, note: 'Фірма-постачальник']
   DocumentDate date [not null]
+  CreatedByUserId int [null, ref: > Users.UserId]
   CreatedBy int [not null, ref: > Users.UserId, note: 'Менеджер, який створив накладну']
   Notes text [null]
   CreatedAt timestamp [default: `now()`, not null]
+  UpdatedAt timestamp [null]
+  UpdatedBy int [null, ref: > Users.UserId]
+  IsDeleted boolean [not null, default: false]
+  DeletedAt timestamp [null]
+  DeletedBy int [null, ref: > Users.UserId]
   
   Indexes {
     ProductId
@@ -246,9 +284,15 @@ Table OutgoingDocuments {
   DiscountAmount decimal(10,2) [null, note: 'Сума знижки в грн (тільки для Reason=Order)']
   FinalPrice decimal(10,2) [null, note: 'Фінальна ціна після знижки (тільки для Reason=Order)']
   DocumentDate date [not null]
+  CreatedByUserId int [null, ref: > Users.UserId]
   CreatedBy int [null, ref: > Users.UserId, note: 'Менеджер/Адміністратор або NULL (авто)']
   Notes text [null]
   CreatedAt timestamp [default: `now()`, not null]
+  UpdatedAt timestamp [null]
+  UpdatedBy int [null, ref: > Users.UserId]
+  IsDeleted boolean [not null, default: false]
+  DeletedAt timestamp [null]
+  DeletedBy int [null, ref: > Users.UserId]
   
   Indexes {
     ProductId
@@ -277,6 +321,11 @@ Table Companies {
   IsActive boolean [not null, default: true, note: 'Чи активна фірма']
   CreatedAt timestamp [default: `now()`, not null]
   UpdatedAt timestamp [default: `now()`, not null]
+  CreatedBy int [null, ref: > Users.UserId]
+  UpdatedBy int [null, ref: > Users.UserId]
+  IsDeleted boolean [not null, default: false]
+  DeletedAt timestamp [null]
+  DeletedBy int [null, ref: > Users.UserId]
   
   Indexes {
     Name [unique]
@@ -294,7 +343,9 @@ Table Companies {
 Table Promotions {
   PromotionId int [pk, increment, note: 'Первинний ключ акції/знижки']
   Name varchar(200) [not null, note: 'Назва акції']
+  NameEn varchar(200) [null]
   Description text [null, note: 'Опис акції']
+  DescriptionEn text [null]
   Type enum('PERCENTAGE', 'FIXED_AMOUNT', 'SPECIAL_PRICE') [not null, note: 'Тип знижки: відсоток, фіксована сума, спеціальна ціна']
   Value decimal(10,2) [not null, note: 'Значення знижки (%, грн або спеціальна ціна)']
   TargetType enum('PRODUCT', 'CATEGORY', 'CART', 'SHIPPING') [not null, note: 'Область застосування']
@@ -312,6 +363,10 @@ Table Promotions {
   CreatedBy int [not null, ref: > Users.UserId, note: 'Менеджер, який створив акцію']
   CreatedAt timestamp [default: `now()`, not null]
   UpdatedAt timestamp [default: `now()`, not null]
+  UpdatedBy int [null, ref: > Users.UserId]
+  IsDeleted boolean [not null, default: false]
+  DeletedAt timestamp [null]
+  DeletedBy int [null, ref: > Users.UserId]
   
   Indexes {
     Name
@@ -351,43 +406,43 @@ Table UserPromotions {
 // ========================================
 
 // Користувачі
-// User 1:1 Cart
-// User 1:N Orders
-// User 1:N IncomingDocuments (створені менеджером)
-// User 1:N OutgoingDocuments (створені менеджером)
-// User 1:N OrderHistory
-// User 1:N UserPromotions (персональні знижки)
-// User 1:N Promotions (створені менеджером)
+// Users 1:1 Cart
+// Users 1:N Orders
+// Users 1:N IncomingDocuments (створені менеджером)
+// Users 1:N OutgoingDocuments (створені менеджером)
+// Users 1:N OrderHistory
+// Users 1:N UserPromotions (персональні знижки)
+// Users 1:N Promotions (створені менеджером)
 
 // Каталог
-// Category 1:N Products
-// Category 1:N Categories (рекурсивна для ієрархії)
-// Product 1:N ProductImages
-// Category 1:N Promotions (знижки на категорію, якщо TargetType=CATEGORY)
-// Product 1:N Promotions (знижки на товар, якщо TargetType=PRODUCT)
+// Categories 1:N Products
+// Categories 1:N Categories (рекурсивна для ієрархії)
+// Products 1:N ProductImages
+// Categories 1:N Promotions (знижки на категорію, якщо TargetType=CATEGORY)
+// Products 1:N Promotions (знижки на товар, якщо TargetType=PRODUCT)
 
 // Кошик
 // Cart 1:N CartItems (композиція)
-// Product 1:N CartItems
+// Products 1:N CartItems
 
 // Замовлення
-// Order 1:N OrderItems (композиція)
-// Order 1:1 Shipping
-// Order 1:1 Payment
-// Order 1:N OrderHistory
-// Order 1:N OutgoingDocuments (автоматично при замовленні)
-// Product 1:N OrderItems
-// Promotion 1:N OrderItems (знижка застосована до товару в замовленні)
+// Orders 1:N OrderItems (композиція)
+// Orders 1:1 Shipping
+// Orders 1:1 Payments
+// Orders 1:N OrderHistory
+// Orders 1:N OutgoingDocuments (автоматично при замовленні)
+// Products 1:N OrderItems
+// Promotions 1:N OrderItems (знижка застосована до товару в замовленні)
 
 // Складський облік
-// Product 1:N IncomingDocuments
-// Product 1:N OutgoingDocuments
-// Company 1:N IncomingDocuments (фірма надає товари)
-// Company 1:N OutgoingDocuments (фірма приймає повернення)
-// Promotion 1:N OutgoingDocuments (знижка застосована при списанні для замовлення)
+// Products 1:N IncomingDocuments
+// Products 1:N OutgoingDocuments
+// Companies 1:N IncomingDocuments (фірма надає товари)
+// Companies 1:N OutgoingDocuments (фірма приймає повернення)
+// Promotions 1:N OutgoingDocuments (знижка застосована при списанні для замовлення)
 
 // Акції та знижки
-// Promotion 1:N UserPromotions (many-to-many через проміжну таблицю)
-// User 1:N UserPromotions (many-to-many через проміжну таблицю)
-// Promotion 1:N OrderItems (застосовані знижки в замовленнях)
-// Promotion 1:N OutgoingDocuments (застосовані знижки при списанні)
+// Promotions 1:N UserPromotions (many-to-many через проміжну таблицю)
+// Users 1:N UserPromotions (many-to-many через проміжну таблицю)
+// Promotions 1:N OrderItems (застосовані знижки в замовленнях)
+// Promotions 1:N OutgoingDocuments (застосовані знижки при списанні)

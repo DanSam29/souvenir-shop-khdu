@@ -138,32 +138,32 @@ if (Спосіб оплати?) then (Карткою онлайн)
     :Отримати дані замовлення з Frontend;
 
     :PromotionService → розрахувати фінальні ціни для кожного товару:
-    - originalPrice (базова ціна товару)
-    - appliedPromotionId (ID найвигіднішої знижки або промокоду)
-    - discountAmount (сума знижки в грн)
-    - finalPrice (ціна після знижки);
+    - OriginalPrice (базова ціна товару)
+    - AppliedPromotionId (ID найвигіднішої знижки або промокоду)
+    - DiscountAmount (сума знижки в грн)
+    - FinalPrice (ціна після знижки);
 
     note right
         Для кожного товару зберігаємо:
-        - originalPrice: Products.price
-        - appliedPromotionId: ID з Promotions (найвигідніша знижка)
-        - discountAmount: originalPrice - finalPrice
-        - finalPrice: ціна після застосування знижки
+        - OriginalPrice: Products.price
+        - AppliedPromotionId: ID з Promotions (найвигідніша знижка)
+        - DiscountAmount: OriginalPrice - FinalPrice
+        - FinalPrice: ціна після застосування знижки
   
         Якщо стакування:
-        - appliedPromotionId = ID промокоду (вищий пріоритет)
-        - discountAmount = сума всіх знижок
+        - AppliedPromotionId = ID промокоду (вищий пріоритет)
+        - DiscountAmount = сума всіх знижок
     end note
 
     fork
-        :Створити запис замовлення в БД (status: "Очікує оплати");
+        :Створити запис замовлення в БД (status: "Processing");
     fork again
         :Створити OrderItems з повною інформацією про знижки:
-        - productId, quantity
-        - originalPrice
-        - appliedPromotionId
-        - discountAmount
-        - finalPrice;
+        - ProductId, Quantity
+        - OriginalPrice
+        - AppliedPromotionId
+        - DiscountAmount
+        - FinalPrice;
     fork again
         :Створити видаткові накладні через WarehouseService (автоматично зменшує Stock);
   
@@ -221,9 +221,9 @@ if (Спосіб оплати?) then (Карткою онлайн)
         stop
     else (Так)
         fork
-            :Оновити статус замовлення на "Обробляється";
+            :Оновити статус замовлення на "Processing";
         fork again
-            :Оновити статус платежу на "Оплачено";
+            :Оновити статус платежу на "Completed";
         fork again
             :Додати запис у таблицю Payments;
         fork again
@@ -263,24 +263,24 @@ else (Оплата при отриманні)
     :Отримати дані замовлення з Frontend;
 
     :PromotionService → розрахувати фінальні ціни для кожного товару:
-    - originalPrice
-    - appliedPromotionId
-    - discountAmount
-    - finalPrice;
+    - OriginalPrice
+    - AppliedPromotionId
+    - DiscountAmount
+    - FinalPrice;
 
     fork
-        :Створити запис замовлення в БД (status: "Очікує оплати при отриманні");
+        :Створити запис замовлення в БД (status: "Processing");
     fork again
         :Створити OrderItems з повною інформацією про знижки:
-        - productId, quantity
-        - originalPrice
-        - appliedPromotionId
-        - discountAmount
-        - finalPrice;
+        - ProductId, Quantity
+        - OriginalPrice
+        - AppliedPromotionId
+        - DiscountAmount
+        - FinalPrice;
     fork again
         :Створити видаткові накладні через WarehouseService (автоматично зменшує Stock);
     fork again
-        :Створити запис в таблиці Payments (status: "Очікує оплати при отриманні", method: "Cash on Delivery");
+        :Створити запис в таблиці Payments (status: "Pending", method: "CashOnDelivery");
     fork again
         :Додати запис у таблицю OrderHistory;
     fork again

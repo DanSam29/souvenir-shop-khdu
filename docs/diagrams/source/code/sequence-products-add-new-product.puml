@@ -68,7 +68,9 @@ note right
     Content-Type: multipart/form-data
     {
         name: "Футболка ХДУ",
+        nameEn: "KSU T-shirt",
         description: "...",
+        descriptionEn: "...",
         price: 450.00,
         weight: 0.250,
         categoryId: 3,
@@ -144,12 +146,16 @@ else Роль достатня
         note right
             {
                 name: "Футболка ХДУ",
+                nameEn: "KSU T-shirt",
                 description: "...",
+                descriptionEn: "...",
                 price: 450.00,
                 weight: 0.250,
                 categoryId: 3,
                 stock: 0,
-                createdAt: NOW()
+                createdAt: NOW(),
+                updatedAt: NULL,
+                isDeleted: false
             }
         end note
         DB --> ProductSvc: productId = 42
@@ -161,7 +167,7 @@ else Роль достатня
                     productId: 42,
                     imageUrl: "https://...",
                     isPrimary: (index == 0),
-                    order: index
+                    displayOrder: index
                 }
             end note
             DB --> ProductSvc: imageId

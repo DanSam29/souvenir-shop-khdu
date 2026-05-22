@@ -42,24 +42,28 @@ partition "Для кожного товару в замовленні" {
         - OrderId
         - CompanyId = null
         - Reason = "Order"
-        - originalPrice (з OrderItem)
-        - appliedPromotionId (з OrderItem, nullable)
-        - discountAmount (з OrderItem)
-        - finalPrice (з OrderItem)
+        - OriginalPrice (з OrderItem)
+        - AppliedPromotionId (з OrderItem, nullable)
+        - DiscountAmount (з OrderItem)
+        - FinalPrice (з OrderItem)
         - DocumentDate = поточна дата
         - CreatedAt
         - CreatedBy = null (автоматично)
+        - CreatedByUserId = null
+        - UpdatedAt
+        - UpdatedBy
+        - IsDeleted = false
         - Notes = "Автоматичне списання для замовлення №[OrderId]";
 
         note right
             Інформація про знижки копіюється з OrderItems:
-            - originalPrice: базова ціна товару
-            - appliedPromotionId: ID застосованої знижки/промокоду
-            - discountAmount: сума знижки
-            - finalPrice: фінальна ціна після знижки
+            - OriginalPrice: базова ціна товару
+            - AppliedPromotionId: ID застосованої знижки/промокоду
+            - DiscountAmount: сума знижки
+            - FinalPrice: фінальна ціна після знижки
 
             CompanyId NULL для автоматичних списань.
-            CompanyId обов'язковий тільки для reason=RETURN
+            CompanyId обов'язковий тільки для Reason = Return
         end note
     
         :Оновити Products.Stock:
@@ -78,7 +82,7 @@ if (Спосіб оплати?) then (Карткою онлайн)
     :Створити сесію оплати в Stripe;
     :Перенаправити на Stripe;
 else (При отриманні)
-    :Встановити статус "Очікує оплати при отриманні";
+    :Встановити статус "Processing";
     :Надіслати Email-підтвердження;
 endif
 
@@ -104,21 +108,21 @@ endif
 :Відобразити підтвердження замовлення;
 
 note right
-    Видаткові накладні з reason=ORDER (автоматичне списання):
+    Видаткові накладні з Reason = Order (автоматичне списання):
     - Створюються автоматично при оформленні замовлення
-    - companyId = NULL
+    - CompanyId = NULL
     - Зберігають інформацію про знижки з OrderItems
   
-    Видаткові накладні з reason=RETURN (повернення постачальнику):
+    Видаткові накладні з Reason = Return (повернення постачальнику):
     - Створюються ВРУЧНУ менеджером через окрему форму
-    - companyId ОБОВ'ЯЗКОВИЙ (фірма, якій повертається товар)
-    - originalPrice, appliedPromotionId, discountAmount = NULL
-    - finalPrice = ціна повернення
+    - CompanyId ОБОВ'ЯЗКОВИЙ (фірма, якій повертається товар)
+    - OriginalPrice, AppliedPromotionId, DiscountAmount = NULL
+    - FinalPrice = ціна повернення
   
-    Для інших причин (DAMAGED, LOST, INVENTORY):
-    - companyId = NULL
-    - originalPrice, appliedPromotionId, discountAmount = NULL
-    - finalPrice = ціна списання (може дорівнювати originalPrice товару)
+    Для інших причин (Damaged, Lost, Inventory):
+    - CompanyId = NULL
+    - OriginalPrice, AppliedPromotionId, DiscountAmount = NULL
+    - FinalPrice = ціна списання (може дорівнювати OriginalPrice товару)
 end note
 
 stop
