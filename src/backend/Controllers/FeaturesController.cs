@@ -8,12 +8,10 @@ namespace KhduSouvenirShop.API.Controllers
     public class FeaturesController : ControllerBase
     {
         private readonly IConfiguration _configuration;
-
         public FeaturesController(IConfiguration configuration)
         {
             _configuration = configuration;
         }
-
         [HttpGet("status")]
         public ActionResult GetPublicStatus()
         {
@@ -23,7 +21,6 @@ namespace KhduSouvenirShop.API.Controllers
                 novaPoshtaEnabled = _configuration.GetValue<bool>("Features:NovaPoshtaEnabled"),
                 universityEnabled = _configuration.GetValue<bool>("Features:UniversityEnabled")
             };
-
             return Ok(ApiResponse<object>.SuccessResult(status));
         }
     }

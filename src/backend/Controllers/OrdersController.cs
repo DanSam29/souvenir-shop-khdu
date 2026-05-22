@@ -22,7 +22,6 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly KhduSouvenirShop.API.Services.IEmailService _emailService;
         private readonly IConfiguration _configuration;
         private readonly IMemoryCache _cache;
-
         public OrdersController(
             AppDbContext context, 
             ILogger<OrdersController> logger, 
@@ -42,14 +41,12 @@ namespace KhduSouvenirShop.API.Controllers
             _configuration = configuration;
             _cache = cache;
         }
-
         private void InvalidateCache()
         {
             var currentVersion = _cache.Get<int>("Products_Cache_Version");
             _cache.Set("Products_Cache_Version", currentVersion + 1);
             _cache.Remove("Public_Products_All");
         }
-
         [HttpPost("checkout")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
@@ -61,21 +58,17 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-
             var cart = await _context.Carts
                 .Include(c => c.CartItems)
                     .ThenInclude(ci => ci.Product)
                 .FirstOrDefaultAsync(c => c.UserId == userId);
-
             if (cart == null || cart.CartItems.Count == 0)
             {
                 return BadRequest(ApiResponse<object>.FailureResult("Кошик порожній", "BadRequest"));
             }
-
             var user = await _context.Users.FindAsync(userId);
             string studentStatus = user?.StudentStatus ?? "NONE";
             var userPromotions = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
-
             foreach (var item in cart.CartItems)
             {
                 if (item.Product.Stock < item.Quantity)
@@ -83,23 +76,18 @@ namespace KhduSouvenirShop.API.Controllers
                     return BadRequest(ApiResponse<object>.FailureResult($"Недостатньо товару '{item.Product.Name}' на складі. Доступно: {item.Product.Stock}", "BadRequest"));
                 }
             }
-
             using var transaction = await _context.Database.BeginTransactionAsync();
-
             try
             {
                 var originalSubtotal = cart.CartItems.Sum(ci => ci.Product.Price * ci.Quantity);
                 var totalAfterUserPromosForShipping = cart.CartItems.Sum(ci => _promotionService.GetPriceAfterPromotions(ci.Product, userPromotions) * ci.Quantity);
                 var totalWeight = cart.CartItems.Sum(ci => ci.Product.Weight * ci.Quantity);
-                
                 decimal shippingCost = 0;
                 if (!string.IsNullOrEmpty(dto.CityRef) && _configuration.GetValue<bool>("Features:NovaPoshtaEnabled"))
                 {
                     shippingCost = await _novaPoshtaService.CalculateDeliveryCostAsync(dto.CityRef, totalWeight, totalAfterUserPromosForShipping);
                 }
-
                 var orderNumber = $"ORD-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..6]}";
-
                 var order = new Order
                 {
                     UserId = userId,
@@ -109,10 +97,8 @@ namespace KhduSouvenirShop.API.Controllers
                     ShippingCost = shippingCost,
                     CreatedAt = DateTime.UtcNow
                 };
-
                 _context.Orders.Add(order);
                 await _context.SaveChangesAsync();
-
                 var shipping = new Shipping
                 {
                     OrderId = order.OrderId,
@@ -124,9 +110,7 @@ namespace KhduSouvenirShop.API.Controllers
                     RecipientPhone = dto.RecipientPhone,
                     TrackingNumber = null
                 };
-
                 _context.Shippings.Add(shipping);
-
                 var payment = new Payment
                 {
                     OrderId = order.OrderId,
@@ -135,18 +119,14 @@ namespace KhduSouvenirShop.API.Controllers
                     Status = "Pending",
                     CreatedAt = DateTime.UtcNow
                 };
-
                 _context.Payments.Add(payment);
-
                 var orderItems = new List<OrderItem>();
                 decimal totalAfterUserPromos = 0;
                 foreach (var item in cart.CartItems)
                 {
                     item.Product.Stock -= item.Quantity;
-
                     var priceAfterUserPromos = _promotionService.GetPriceAfterPromotions(item.Product, userPromotions);
                     var userDiscountPerUnit = item.Product.Price - priceAfterUserPromos;
-
                     var orderItem = new OrderItem
                     {
                         OrderId = order.OrderId,
@@ -156,14 +136,11 @@ namespace KhduSouvenirShop.API.Controllers
                         DiscountAmount = userDiscountPerUnit * item.Quantity,
                         FinalPrice = priceAfterUserPromos
                     };
-
                     orderItems.Add(orderItem);
                     totalAfterUserPromos += priceAfterUserPromos * item.Quantity;
                 }
-
                 decimal totalDiscount = originalSubtotal - totalAfterUserPromos;
                 decimal finalTotal = totalAfterUserPromos;
-
                 if (!string.IsNullOrWhiteSpace(dto.PromoCode))
                 {
                     var now = DateTime.UtcNow;
@@ -174,7 +151,6 @@ namespace KhduSouvenirShop.API.Controllers
                             (p.StartDate == null || p.StartDate <= now) &&
                             (p.EndDate == null || p.EndDate >= now) &&
                             (p.UsageLimit == null || p.CurrentUsage < p.UsageLimit));
-
                     if (promo != null)
                     {
                         if (promo.Type == "PERCENTAGE")
@@ -206,20 +182,16 @@ namespace KhduSouvenirShop.API.Controllers
                                 totalDiscount += itemDiscountTotal;
                             }
                         }
-
                         finalTotal = Math.Max(0, finalTotal - (totalDiscount - (originalSubtotal - totalAfterUserPromos)));
                         promo.CurrentUsage += 1;
                     }
                 }
-
                 finalTotal = Math.Max(0, orderItems.Sum(oi => oi.FinalPrice * oi.Quantity));
                 order.TotalAmount = finalTotal + shippingCost;
                 payment.Amount = order.TotalAmount;
-
                 foreach (var oi in orderItems)
                 {
                     _context.OrderItems.Add(oi);
-
                     var outgoingDoc = new OutgoingDocument
                     {
                         ProductId = oi.ProductId,
@@ -236,29 +208,22 @@ namespace KhduSouvenirShop.API.Controllers
                     };
                     _context.OutgoingDocuments.Add(outgoingDoc);
                 }
-
                 _context.CartItems.RemoveRange(cart.CartItems);
-
                 await _context.SaveChangesAsync();
                 InvalidateCache();
-
                 // Відправка листа-підтвердження для накладеного платежу
                 if (payment.Method == "CashOnDelivery")
                 {
                     await _emailService.SendOrderConfirmationAsync(user!.Email, order.OrderNumber, "ua");
                 }
-
                 if (payment.Method == "Card")
                 {
                     var successUrl = _configuration["Stripe:SuccessUrl"] ?? "http://localhost:3000/checkout/success";
                     var cancelUrl = _configuration["Stripe:CancelUrl"] ?? "http://localhost:3000/checkout/cancel";
-                    
                     var session = await _paymentService.CreateCheckoutSessionAsync(order, successUrl, cancelUrl);
                     paymentUrl = session.Url;
                 }
-
                 await transaction.CommitAsync();
-
                 var result = new
                 {
                     orderId = order.OrderId,
@@ -269,7 +234,6 @@ namespace KhduSouvenirShop.API.Controllers
                     createdAt = order.CreatedAt,
                     paymentUrl = paymentUrl
                 };
-
                 return Ok(ApiResponse<object>.SuccessResult(result, "Замовлення оформлено"));
             }
             catch (Exception ex)
@@ -279,7 +243,6 @@ namespace KhduSouvenirShop.API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<object>.FailureResult("Не вдалося оформити замовлення", "InternalServerError"));
             }
         }
-
         [HttpPost("calculate")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
@@ -290,21 +253,17 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-
             var cart = await _context.Carts
                 .Include(c => c.CartItems)
                     .ThenInclude(ci => ci.Product)
                 .FirstOrDefaultAsync(c => c.UserId == userId);
-
             if (cart == null || cart.CartItems.Count == 0)
             {
                 return BadRequest(ApiResponse<object>.FailureResult("Кошик порожній", "BadRequest"));
             }
-
             var user = await _context.Users.FindAsync(userId);
             string studentStatus = user?.StudentStatus ?? "NONE";
             var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
-
             var items = cart.CartItems.Select(ci => new
             {
                 productId = ci.ProductId,
@@ -316,13 +275,10 @@ namespace KhduSouvenirShop.API.Controllers
                 priceAfterUserPromos = _promotionService.GetPriceAfterPromotions(ci.Product, promos),
                 finalPrice = _promotionService.GetPriceAfterPromotions(ci.Product, promos) // Початково до промокоду
             }).ToList();
-
             decimal subtotal = items.Sum(i => i.originalPrice * i.quantity);
             decimal totalAfterUserPromos = items.Sum(i => i.priceAfterUserPromos * i.quantity);
-
             decimal totalDiscount = subtotal - totalAfterUserPromos;
             decimal totalAmount = totalAfterUserPromos;
-
             if (!string.IsNullOrWhiteSpace(dto.PromoCode))
             {
                 var now = DateTime.UtcNow;
@@ -333,14 +289,12 @@ namespace KhduSouvenirShop.API.Controllers
                         (p.StartDate == null || p.StartDate <= now) &&
                         (p.EndDate == null || p.EndDate >= now) &&
                         (p.UsageLimit == null || p.CurrentUsage < p.UsageLimit));
-
                 if (promo != null)
                 {
                     if (promo.Type == "PERCENTAGE")
                     {
                         var percent = Math.Clamp((double)promo.Value, 0, 100);
-                        
-                        // Оновлюємо ціну кожного товару
+                        // Оновлення ціни кожного товару
                         items = items.Select(i => new {
                             i.productId,
                             i.name,
@@ -351,7 +305,6 @@ namespace KhduSouvenirShop.API.Controllers
                             i.priceAfterUserPromos,
                             finalPrice = Math.Round(i.finalPrice * (decimal)(1 - percent / 100.0), 2)
                         }).ToList();
-
                         totalAmount = items.Sum(i => i.finalPrice * i.quantity);
                         totalDiscount = subtotal - totalAmount;
                     }
@@ -359,8 +312,7 @@ namespace KhduSouvenirShop.API.Controllers
                     {
                         var fixedAmount = Math.Max(0, promo.Value);
                         var appliedTotal = Math.Min(fixedAmount, totalAmount);
-                        
-                        // Розподіляємо фіксовану знижку пропорційно
+                        // Розподіл фіксованої знижки пропорційно
                         items = items.Select(i => {
                             var itemSubtotal = i.finalPrice * i.quantity;
                             var share = totalAmount > 0 ? itemSubtotal / totalAmount : 0;
@@ -377,13 +329,11 @@ namespace KhduSouvenirShop.API.Controllers
                                 finalPrice = Math.Max(0, i.finalPrice - perUnitDiscount)
                             };
                         }).ToList();
-
                         totalAmount = items.Sum(i => i.finalPrice * i.quantity);
                         totalDiscount = subtotal - totalAmount;
                     }
                 }
             }
-
             var result = new
             {
                 subtotal = subtotal,
@@ -391,10 +341,8 @@ namespace KhduSouvenirShop.API.Controllers
                 totalAmount = totalAmount,
                 items = items
             };
-
             return Ok(ApiResponse<object>.SuccessResult(result));
         }
-
         [HttpGet("my")]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status200OK)]
         public async Task<ActionResult> GetMyOrders()
@@ -404,7 +352,6 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-
             var orders = await _context.Orders
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
@@ -412,7 +359,6 @@ namespace KhduSouvenirShop.API.Controllers
                 .Where(o => o.UserId == userId)
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
-
             var result = orders.Select(o => new
             {
                 orderId = o.OrderId,
@@ -436,10 +382,8 @@ namespace KhduSouvenirShop.API.Controllers
                     price = oi.FinalPrice
                 })
             });
-
             return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(result));
         }
-
         [HttpGet("verify-payment")]
         public async Task<ActionResult> VerifyPayment([FromQuery] string sessionId)
         {
@@ -459,7 +403,6 @@ namespace KhduSouvenirShop.API.Controllers
                 return BadRequest(ApiResponse<object>.FailureResult(ex.Message));
             }
         }
-
         [HttpGet("admin")]
         [Authorize(Roles = "Administrator,Manager")] // Змінено Admin → Administrator
         public async Task<ActionResult> GetAllOrders([FromQuery] string? status)
@@ -472,9 +415,7 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 query = query.Where(o => o.Status == status);
             }
-
             var orders = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
-            
             var result = orders.Select(o => new {
                 o.OrderId,
                 o.OrderNumber,
@@ -484,10 +425,8 @@ namespace KhduSouvenirShop.API.Controllers
                 userName = $"{o.User.FirstName} {o.User.LastName}",
                 userEmail = o.User.Email
             });
-
             return Ok(ApiResponse<object>.SuccessResult(result));
         }
-
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -498,7 +437,6 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-
             var order = await _context.Orders
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
@@ -510,16 +448,13 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return NotFound(ApiResponse<object>.FailureResult("Замовлення не знайдено", "NotFound"));
             }
-
-            // Перевірка прав: або власник, або адмін/менеджер
+            // Перевірка прав: або власник замовлення, або адмін/менеджер
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
             bool isPrivileged = userRole == "Administrator" || userRole == "Manager";
-
             if (order.UserId != userId && !isPrivileged)
             {
                 return Forbid();
             }
-
             var result = new
             {
                 orderId = order.OrderId,
@@ -551,12 +486,9 @@ namespace KhduSouvenirShop.API.Controllers
                     price = oi.FinalPrice
                 })
             };
-
             return Ok(ApiResponse<object>.SuccessResult(result));
         }
-
-        // --- Admin Methods ---
-
+        // Методи управління замовленнями для адміністраторів (доступ до всіх замовлень та зміна статусів)
         [HttpGet("all")]
         [Authorize(Roles = "Administrator,Manager")]
         [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
@@ -568,10 +500,8 @@ namespace KhduSouvenirShop.API.Controllers
             var query = _context.Orders
                 .Include(o => o.User)
                 .AsQueryable();
-
             if (!string.IsNullOrEmpty(status))
                 query = query.Where(o => o.Status == status);
-
             var count = await query.CountAsync();
             var items = await query
                 .OrderByDescending(o => o.CreatedAt)
@@ -588,11 +518,9 @@ namespace KhduSouvenirShop.API.Controllers
                     userEmail = o.User.Email
                 })
                 .ToListAsync();
-
             var response = new PagedResponse<object>(items, count, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResponse<object>>.SuccessResult(response));
         }
-
         [HttpPatch("{id}/status")]
         [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> UpdateOrderStatus(int id, [FromBody] UpdateStatusDto dto)
@@ -602,8 +530,7 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-
-            // Якщо змінюємо статус на Cancelled — використовуємо спеціальну логіку з поверненням товару
+            // Якщо смінено статус замовлення на Cancelled - використання специальної логіки з поверненням товару
             if (dto.Status == "Cancelled")
             {
                 var cancelResult = await _paymentService.RefundPaymentAsync(id, dto.Comment);
@@ -617,25 +544,20 @@ namespace KhduSouvenirShop.API.Controllers
                 }
                 return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення скасовано"));
             }
-
             var order = await _context.Orders
                 .Include(o => o.Payment)
                 .FirstOrDefaultAsync(o => o.OrderId == id);
-
             if (order == null)
             {
                 return NotFound(ApiResponse<object>.FailureResult("Замовлення не знайдено", "NotFound"));
             }
-
             var oldStatus = order.Status;
             order.Status = dto.Status;
-
             // Логіка для COD (Накладений платіж)
             if (order.Status == "Delivered" && order.Payment != null && order.Payment.Method == "CashOnDelivery")
             {
                 order.Payment.Status = "Completed";
             }
-
             if (dto.Status == "Shipped" && !string.IsNullOrEmpty(dto.TrackingNumber))
             {
                 var shipping = await _context.Shippings.FirstOrDefaultAsync(s => s.OrderId == id);
@@ -644,7 +566,6 @@ namespace KhduSouvenirShop.API.Controllers
                     shipping.TrackingNumber = dto.TrackingNumber;
                 }
             }
-
             _context.OrderHistories.Add(new OrderHistory
             {
                 OrderId = order.OrderId,
@@ -654,42 +575,35 @@ namespace KhduSouvenirShop.API.Controllers
                 Comment = dto.Comment ?? $"Статус змінено адміністратором. { (dto.TrackingNumber != null ? "ТТН: " + dto.TrackingNumber : "") }",
                 Timestamp = DateTime.UtcNow
             });
-
             await _context.SaveChangesAsync();
             InvalidateCache();
-
             return Ok(ApiResponse<object>.SuccessResult(new { orderId = order.OrderId, status = order.Status }, "Статус замовлення оновлено"));
         }
-
         [HttpPost("{id}/cancel")]
         [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> CancelOrder(int id, [FromBody] string? reason)
         {
-            // Спочатку перевіримо, чи замовлення взагалі існує
+            // Перевірка, чи замовлення взагалі існує
             var order = await _context.Orders.FindAsync(id);
             if (order == null) return NotFound(ApiResponse<object>.FailureResult("Замовлення не знайдено", "NotFound"));
             if (order.Status == "Cancelled") return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення вже скасоване"));
-
-            // Спочатку спробуємо зробити refund через Stripe, якщо оплата Completed
+            // Спроба зробити refund через Stripe, якщо оплата Completed
             var refundResult = await _paymentService.RefundPaymentAsync(id, reason);
             if (refundResult)
             {
                 InvalidateCache();
                 return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення скасовано, кошти повернуто"));
             }
-            
-            // Інакше — просто скасовуємо замовлення та повертаємо товар (використовуємо готовий метод з PaymentService)
+            // Інакше - скасування замовлення та повернення товару (готовий метод з PaymentService)
             var result = await _paymentService.CancelOrderAndRestoreStock(id, reason ?? "Скасовано адміністратором");
             if (!result)
             {
                 return StatusCode(500, ApiResponse<object>.FailureResult("Не вдалося скасувати замовлення", "InternalServerError"));
             }
-
             InvalidateCache();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення скасовано"));
         }
     }
-
     public class CheckoutDto
     {
         public string RecipientName { get; set; } = string.Empty;
@@ -701,13 +615,11 @@ namespace KhduSouvenirShop.API.Controllers
         public string? PaymentMethod { get; set; }
         public string? PromoCode { get; set; }
     }
-
     public class CalculateDto
     {
         public string? PromoCode { get; set; }
         public string? CityRef { get; set; }
     }
-
     public class UpdateStatusDto
     {
         public string Status { get; set; } = string.Empty;

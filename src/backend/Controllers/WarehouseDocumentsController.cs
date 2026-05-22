@@ -17,23 +17,19 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly AppDbContext _context;
         private readonly ILogger<WarehouseDocumentsController> _logger;
         private readonly IMemoryCache _cache;
-
         public WarehouseDocumentsController(AppDbContext context, ILogger<WarehouseDocumentsController> logger, IMemoryCache cache)
         {
             _context = context;
             _logger = logger;
             _cache = cache;
         }
-
         private void InvalidateCache()
         {
             var currentVersion = _cache.Get<int>("Products_Cache_Version");
             _cache.Set("Products_Cache_Version", currentVersion + 1);
             _cache.Remove("Public_Products_All");
         }
-
-        // --- Incoming Documents (Прибуткові накладні) ---
-
+        // Робота з прибутковими накладними (надходження товарів на склад від постачальників)
         [HttpGet("incoming")]
         [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
         public async Task<ActionResult> GetIncomingDocuments(
@@ -47,32 +43,26 @@ namespace KhduSouvenirShop.API.Controllers
                 .Include(d => d.Company)
                 .Include(d => d.CreatedByUser)
                 .AsQueryable();
-
             if (productId.HasValue) query = query.Where(d => d.ProductId == productId);
             if (companyId.HasValue) query = query.Where(d => d.CompanyId == companyId);
-
             var count = await query.CountAsync();
             var items = await query
                 .OrderByDescending(d => d.DocumentDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
-
             var response = new PagedResponse<object>(items, count, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResponse<object>>.SuccessResult(response));
         }
-
         [HttpPost("incoming")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
         public async Task<ActionResult> CreateIncomingDocument([FromBody] IncomingDocumentDto dto)
         {
             var product = await _context.Products.FindAsync(dto.ProductId);
             var company = await _context.Companies.FindAsync(dto.CompanyId);
-
             if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
             if (company == null) return NotFound(ApiResponse<object>.FailureResult("Компанію не знайдено", "NotFound"));
             if (!company.IsActive) return BadRequest(ApiResponse<object>.FailureResult("Компанія деактивована", "BadRequest"));
-
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -85,15 +75,11 @@ namespace KhduSouvenirShop.API.Controllers
                     DocumentDate = dto.DocumentDate ?? DateTime.UtcNow,
                     Notes = dto.Notes
                 };
-
                 _context.IncomingDocuments.Add(doc);
                 product.Stock += dto.Quantity; // Оновлення залишку
-
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
-
                 InvalidateCache();
-
                 return Ok(ApiResponse<object>.SuccessResult(doc, "Прибуткову накладну створено"));
             }
             catch (Exception ex)
@@ -103,9 +89,7 @@ namespace KhduSouvenirShop.API.Controllers
                 return StatusCode(500, ApiResponse<object>.FailureResult("Не вдалося створити документ", "InternalServerError"));
             }
         }
-
-        // --- Outgoing Documents (Видаткові накладні) ---
-
+        // Робота з видатковими накладними (списання товарів зі складу або повернення постачальнику)
         [HttpGet("outgoing")]
         [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
         public async Task<ActionResult> GetOutgoingDocuments(
@@ -119,35 +103,28 @@ namespace KhduSouvenirShop.API.Controllers
                 .Include(d => d.Company)
                 .Include(d => d.CreatedByUser)
                 .AsQueryable();
-
             if (productId.HasValue) query = query.Where(d => d.ProductId == productId);
             if (!string.IsNullOrEmpty(reason)) query = query.Where(d => d.Reason == reason);
-
             var count = await query.CountAsync();
             var items = await query
                 .OrderByDescending(d => d.DocumentDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
-
             var response = new PagedResponse<object>(items, count, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResponse<object>>.SuccessResult(response));
         }
-
         [HttpPost("outgoing")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
         public async Task<ActionResult> CreateOutgoingDocument([FromBody] OutgoingDocumentDto dto)
         {
             var product = await _context.Products.FindAsync(dto.ProductId);
             if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
-
             if (product.Stock < dto.Quantity)
                 return BadRequest(ApiResponse<object>.FailureResult($"Недостатньо товару на складі. Доступно: {product.Stock}", "BadRequest"));
-
             // Валідація правил reason з плану
             if (dto.Reason == "RETURN" && !dto.CompanyId.HasValue)
                 return BadRequest(ApiResponse<object>.FailureResult("Для повернення (RETURN) обов'язково вказати компанію", "ValidationError"));
-
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -162,15 +139,11 @@ namespace KhduSouvenirShop.API.Controllers
                     DocumentDate = dto.DocumentDate ?? DateTime.UtcNow,
                     Notes = dto.Notes
                 };
-
                 _context.OutgoingDocuments.Add(doc);
                 product.Stock -= dto.Quantity; // Оновлення залишку
-
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
-
                 InvalidateCache();
-
                 return Ok(ApiResponse<object>.SuccessResult(doc, "Видаткову накладну створено"));
             }
             catch (Exception ex)
@@ -180,7 +153,6 @@ namespace KhduSouvenirShop.API.Controllers
                 return StatusCode(500, ApiResponse<object>.FailureResult("Не вдалося створити документ", "InternalServerError"));
             }
         }
-
         [HttpGet("stock")]
         public async Task<ActionResult> GetCurrentStock()
         {
@@ -194,11 +166,9 @@ namespace KhduSouvenirShop.API.Controllers
                     totalOutgoing = _context.OutgoingDocuments.Where(od => od.ProductId == p.ProductId).Sum(od => od.Quantity)
                 })
                 .ToListAsync();
-
             return Ok(ApiResponse<object>.SuccessResult(stock));
         }
     }
-
     public class IncomingDocumentDto
     {
         public int ProductId { get; set; }
@@ -208,7 +178,6 @@ namespace KhduSouvenirShop.API.Controllers
         public DateTime? DocumentDate { get; set; }
         public string? Notes { get; set; }
     }
-
     public class OutgoingDocumentDto
     {
         public int ProductId { get; set; }

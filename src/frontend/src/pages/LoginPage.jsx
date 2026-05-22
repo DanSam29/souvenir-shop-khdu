@@ -8,56 +8,46 @@ function LoginPage() {
   const { t } = useTranslation();
   const location = useLocation();
   const registrationSuccess = location.state?.registrationSuccess;
-  
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  
   const { login } = useAuth();
   const navigate = useNavigate();
-
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
     // Базова валідація
     if (!formData.email.includes('@')) {
       setError(t('auth.email_invalid'));
       setLoading(false);
       return;
     }
-
     if (formData.password.length < 8) {
       setError(t('auth.password_too_short'));
       setLoading(false);
       return;
     }
-
     try {
       await login(formData.email, formData.password);
       console.log('Авторизація успішна!');
-      
       // Перенаправлення на головну сторінку
       navigate('/');
     } catch (err) {
       console.error('Помилка авторизації:', err);
-      
       const apiResponse = err.response?.data;
       const errors = apiResponse?.errors || [];
       const message = apiResponse?.message;
-      
-      // Перевіряємо, чи є код AccountBlocked у списку помилок або в повідомленні
+      // Перевірка, чи є код AccountBlocked у списку помилок або в повідомленні
       if (errors.includes('AccountBlocked') || message === 'AccountBlocked') {
         setError(t('auth.account_blocked'));
       } else if (err.response?.status === 401) {
@@ -73,13 +63,11 @@ function LoginPage() {
       setLoading(false);
     }
   };
-
   return (
     <div className="login-page">
       <div className="login-container">
         <form onSubmit={handleSubmit} className="login-form">
           <h2>{t('auth.login_title')}</h2>
-
           {registrationSuccess && (
             <div className="success-message" style={{ 
               backgroundColor: '#e6ffed', 
@@ -93,9 +81,7 @@ function LoginPage() {
               {t('auth.registration_success')}
             </div>
           )}
-
           {error && <div className="error-message">{error}</div>}
-
           <div className="form-group">
             <label htmlFor="email">{t('auth.email')} *</label>
             <input
@@ -108,7 +94,6 @@ function LoginPage() {
               placeholder="example@ksu.edu.ua"
             />
           </div>
-
           <div className="form-group">
             <label htmlFor="password">{t('auth.password')} *</label>
             <input
@@ -122,11 +107,9 @@ function LoginPage() {
               placeholder={t('auth.password')}
             />
           </div>
-
           <button type="submit" disabled={loading} className="submit-btn">
             {loading ? t('auth.logging_in') : t('auth.login_btn')}
           </button>
-
           <div className="form-footer">
             <p>
               {t('auth.register_prompt')}{' '}

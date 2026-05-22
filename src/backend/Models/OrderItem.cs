@@ -8,34 +8,25 @@ namespace KhduSouvenirShop.API.Models
     {
         [Key]
         public int OrderItemId { get; set; }
-
         [Required]
         public int OrderId { get; set; }
-
         [Required]
         public int ProductId { get; set; }
-
         [Required]
         public int Quantity { get; set; }
-
         [Required]
         [Column(TypeName = "decimal(10,2)")]
         public decimal OriginalPrice { get; set; }
-
         public int? AppliedPromotionId { get; set; }
-
         [Required]
         [Column(TypeName = "decimal(10,2)")]
         public decimal DiscountAmount { get; set; } = 0;
-
         [Required]
         [Column(TypeName = "decimal(10,2)")]
         public decimal FinalPrice { get; set; }
-
         // Навігаційні властивості
         [ForeignKey("OrderId")]
         public virtual Order Order { get; set; } = null!;
-
         [ForeignKey("ProductId")]
         public virtual Product Product { get; set; } = null!;
     }

@@ -16,32 +16,27 @@ function RegisterForm() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
     // Базова валідація
     if (!formData.email.includes('@')) {
       setError(t('auth.email_invalid'));
       setLoading(false);
       return;
     }
-
     if (formData.password.length < 8) {
       setError(t('auth.password_too_short'));
       setLoading(false);
       return;
     }
-
     try {
       const payload = {
         ...formData,
@@ -49,21 +44,18 @@ function RegisterForm() {
       };
       const response = await usersAPI.register(payload);
       console.log('Реєстрація успішна:', response);
-      
       // Перенаправлення на сторінку входу з повідомленням про успіх
       navigate('/login', { state: { registrationSuccess: true } });
     } catch (err) {
       console.error('Помилка реєстрації:', err);
-      
       const responseData = err.response?.data;
-      
       if (err.response?.status === 409) {
         setError(t('auth.email_exists'));
       } else if (responseData && responseData.errors && responseData.errors.length > 0) {
-        // Відображаємо першу помилку з масиву помилок від backend (FluentValidation)
+        // Відображення першої помилки з масиву помилок від backend (FluentValidation)
         setError(responseData.errors[0]);
       } else if (responseData && responseData.message) {
-        // Відображаємо повідомлення від backend
+        // Відображення повідомлення від backend
         setError(responseData.message);
       } else {
         setError(t('auth.unknown_error'));
@@ -72,14 +64,11 @@ function RegisterForm() {
       setLoading(false);
     }
   };
-
   return (
     <div className="register-form-container">
       <form onSubmit={handleSubmit} className="register-form">
         <h2>{t('auth.register_title')}</h2>
-
         {error && <div className="error-message">{error}</div>}
-
         <div className="form-group">
           <label htmlFor="firstName">{t('auth.first_name')} *</label>
           <input
@@ -91,7 +80,6 @@ function RegisterForm() {
             required
           />
         </div>
-
         <div className="form-group">
           <label htmlFor="lastName">{t('auth.last_name')} *</label>
           <input
@@ -103,7 +91,6 @@ function RegisterForm() {
             required
           />
         </div>
-
         <div className="form-group">
           <label htmlFor="email">{t('auth.email')} *</label>
           <input
@@ -116,7 +103,6 @@ function RegisterForm() {
             placeholder="example@ksu.edu.ua"
           />
         </div>
-
         <div className="form-group">
           <label htmlFor="password">{t('auth.password')} *</label>
           <input
@@ -130,7 +116,6 @@ function RegisterForm() {
           />
           <small>{t('auth.password_hint')}</small>
         </div>
-
         <div className="form-group">
           <label htmlFor="phone">{t('auth.phone')}</label>
           <input
@@ -142,7 +127,6 @@ function RegisterForm() {
             placeholder="+380501234567"
           />
         </div>
-
         <button type="submit" disabled={loading} className="submit-btn">
           {loading ? t('auth.registering') : t('auth.register_btn')}
         </button>

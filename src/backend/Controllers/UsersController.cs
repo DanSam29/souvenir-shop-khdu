@@ -26,7 +26,6 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly IConfiguration _configuration = configuration;
         private readonly KhduSouvenirShop.API.Services.IUniversityService _universityService = universityService;
         private readonly KhduSouvenirShop.API.Services.IEmailService _emailService = emailService;
-
         // POST: api/Users/register
         [HttpPost("register")]
         [EnableRateLimiting("AuthPolicy")]
@@ -36,20 +35,16 @@ namespace KhduSouvenirShop.API.Controllers
         public async Task<ActionResult> RegisterUser([FromBody] RegisterDto registerDto)
         {
             _logger.LogInformation("Спроба реєстрації користувача: {Email}", registerDto.Email);
-
             // Перевірка на наявність email
             var existingUser = await _context.Users
                 .FirstOrDefaultAsync(u => u.Email == registerDto.Email);
-
             if (existingUser != null)
             {
                 _logger.LogWarning("Email {Email} вже зареєстрований", registerDto.Email);
                 return Conflict(ApiResponse<object>.FailureResult("Цей Email вже зареєстрований", "Conflict"));
             }
-
             // Хешування паролю
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password, workFactor: 12);
-
             // Створення користувача
             var newUser = new User
             {
@@ -61,13 +56,11 @@ namespace KhduSouvenirShop.API.Controllers
                 Role = "Customer",
                 CreatedAt = DateTime.UtcNow
             };
-
-            // Логіка: Встановлення студентського статусу за доменом email
+            // Встановлення студентського статусу за доменом email
             var isUniEnabled = _configuration.GetValue<bool>("Features:UniversityEnabled");
             var emailLower = newUser.Email.ToLowerInvariant();
             var allowedDomains = _configuration.GetSection("University:AllowedDomains").Get<string[]>() ?? 
                                  ["ksu.edu.ua", "student.ksu.edu.ua"];
-
             if (isUniEnabled && allowedDomains.Any(domain => emailLower.EndsWith("@" + domain)))
             {
                 var studentInfo = await _universityService.GetStudentInfoAsync(newUser.Email!);
@@ -77,11 +70,9 @@ namespace KhduSouvenirShop.API.Controllers
                     if (newUser.GPA >= 4.8m) newUser.StudentStatus = "HIGH_ACHIEVER";
                     else if (newUser.GPA >= 4.0m) newUser.StudentStatus = "SCHOLARSHIP";
                     else newUser.StudentStatus = "REGULAR";
-
                     newUser.StudentVerifiedAt = DateTime.UtcNow;
                     newUser.StudentExpiresAt = DateTime.UtcNow.AddMonths(4);
                     _logger.LogInformation("Користувач {Email} автоматично верифікований як студент. Статус: {Status}", newUser.Email, newUser.StudentStatus);
-
                     // Відправка email про зміну статусу
                     await _emailService.SendStudentVerificationEmailAsync(newUser.Email, newUser.StudentStatus, "ua");
                 }
@@ -91,14 +82,10 @@ namespace KhduSouvenirShop.API.Controllers
                 newUser.StudentStatus = "NONE";
                 _logger.LogInformation("Користувач {Email} зареєстрований як зовнішній користувач", newUser.Email);
             }
-
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
-
             _logger.LogInformation("Користувач {Email} успішно зареєстрований", newUser.Email);
-
             var token = GenerateJwtToken(newUser);
-
             var result = new
             {
                 userId = newUser.UserId,
@@ -112,10 +99,8 @@ namespace KhduSouvenirShop.API.Controllers
                 studentExpiresAt = newUser.StudentExpiresAt,
                 token = token
             };
-
             return CreatedAtAction(nameof(GetUser), new { id = newUser.UserId }, ApiResponse<object>.SuccessResult(result, "Користувач успішно зареєстрований"));
         }
-
         // POST: api/Users/login
         [HttpPost("login")]
         [EnableRateLimiting("AuthPolicy")]
@@ -124,33 +109,26 @@ namespace KhduSouvenirShop.API.Controllers
         public async Task<ActionResult> Login([FromBody] LoginDto loginDto)
         {
             _logger.LogInformation("Спроба авторизації: {Email}", loginDto.Email);
-
-            // Шукаємо користувача, ігноруючи фільтр видалення, щоб перевірити на блокування
+            // Пошук користувача, ігноруючи фільтр видалення, щоб перевірити на блокування
             var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == loginDto.Email);
-
             if (user == null)
             {
                 _logger.LogWarning("Користувача з email {Email} не знайдено", loginDto.Email);
                 return Unauthorized(ApiResponse<object>.FailureResult("Невірний email або пароль", "Unauthorized"));
             }
-
             if (user.IsDeleted)
             {
                 _logger.LogWarning("Спроба входу в заблокований акаунт: {Email}", loginDto.Email);
                 return BadRequest(ApiResponse<object>.FailureResult("AccountBlocked", "Ваш акаунт заблоковано. Будь ласка, зверніться до адміністратора."));
             }
-
             var isValid = BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password);
             if (!isValid)
             {
                 _logger.LogWarning("Невірний пароль для {Email}", loginDto.Email);
                 return Unauthorized(ApiResponse<object>.FailureResult("Невірний email або пароль", "Unauthorized"));
             }
-
             var token = GenerateJwtToken(user);
-
             _logger.LogInformation("Користувач {Email} успішно авторизований", user.Email);
-
             var result = new
             {
                 userId = user.UserId,
@@ -164,10 +142,8 @@ namespace KhduSouvenirShop.API.Controllers
                 studentExpiresAt = user.StudentExpiresAt,
                 token = token
             };
-
             return Ok(ApiResponse<object>.SuccessResult(result, "Авторизація успішна"));
         }
-
         // GET: api/Users/me
         [Authorize]
         [HttpGet("me")]
@@ -180,14 +156,11 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-
             var user = await _context.Users.FindAsync(userId);
-
             if (user == null)
             {
                 return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено", "NotFound"));
             }
-
             var result = new
             {
                 userId = user.UserId,
@@ -202,12 +175,9 @@ namespace KhduSouvenirShop.API.Controllers
                 studentExpiresAt = user.StudentExpiresAt,
                 gpa = user.GPA
             };
-
             return Ok(ApiResponse<object>.SuccessResult(result));
         }
-
-        // --- Admin Methods ---
-
+        // Методи керування користувачами для адміністраторів (перегляд списку, зміна ролей та блокування)
         [HttpGet]
         [Authorize(Roles = "Administrator")]
         [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
@@ -224,12 +194,10 @@ namespace KhduSouvenirShop.API.Controllers
                 var s = search.Trim().ToLower();
                 query = query.Where(u => u.Email.ToLower().Contains(s) || u.FirstName.ToLower().Contains(s) || u.LastName.ToLower().Contains(s));
             }
-
             if (!string.IsNullOrEmpty(role))
             {
                 query = query.Where(u => u.Role == role);
             }
-
             var count = await query.CountAsync();
             var items = await query
                 .OrderByDescending(u => u.CreatedAt)
@@ -246,30 +214,25 @@ namespace KhduSouvenirShop.API.Controllers
                     u.IsDeleted
                 })
                 .ToListAsync();
-
             var response = new PagedResponse<object>(items, count, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResponse<object>>.SuccessResult(response));
         }
-
         [HttpPatch("{id}/role")]
         [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> UpdateUserRole(int id, [FromBody] UpdateRoleDto dto)
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null) return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено"));
-
             user.Role = dto.Role;
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Роль користувача оновлено"));
         }
-
         [HttpPost("{id}/toggle-block")]
         [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> ToggleBlockUser(int id)
         {
             var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.UserId == id);
             if (user == null) return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено"));
-
             if (user.IsDeleted)
             {
                 user.IsDeleted = false;
@@ -282,12 +245,11 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 user.IsDeleted = true;
                 user.DeletedAt = DateTime.UtcNow;
-                // DeletedBy will be set in SaveChangesAsync
+                // Ідентифікатор того, хто видалив, буде встановлено автоматично в SaveChangesAsync
                 await _context.SaveChangesAsync();
                 return Ok(ApiResponse<object>.SuccessResult(new { isBlocked = true }, "Користувача заблоковано (Soft Delete)"));
             }
         }
-
         // PUT: api/Users/me
         [Authorize]
         [HttpPut("me")]
@@ -295,14 +257,11 @@ namespace KhduSouvenirShop.API.Controllers
         {
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdStr, out var userId)) return Unauthorized();
-
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound();
-
             user.FirstName = dto.FirstName;
             user.LastName = dto.LastName;
             user.Phone = dto.Phone;
-
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResult(new {
                 user.FirstName,
@@ -310,7 +269,6 @@ namespace KhduSouvenirShop.API.Controllers
                 user.Phone
             }, "Профіль оновлено"));
         }
-
         // POST: api/Users/change-password
         [Authorize]
         [HttpPost("change-password")]
@@ -318,21 +276,17 @@ namespace KhduSouvenirShop.API.Controllers
         {
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdStr, out var userId)) return Unauthorized();
-
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound();
-
             if (!BCrypt.Net.BCrypt.Verify(dto.OldPassword, user.Password))
             {
                 return BadRequest(ApiResponse<object>.FailureResult("Невірний старий пароль", "InvalidPassword"));
             }
-
             user.Password = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
 
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Пароль змінено"));
         }
-
         // GET: api/Users/5
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
@@ -340,12 +294,10 @@ namespace KhduSouvenirShop.API.Controllers
         public async Task<ActionResult> GetUser(int id)
         {
             var user = await _context.Users.FindAsync(id);
-
             if (user == null)
             {
                 return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено", "NotFound"));
             }
-
             var result = new
             {
                 userId = user.UserId,
@@ -360,10 +312,8 @@ namespace KhduSouvenirShop.API.Controllers
                 studentExpiresAt = user.StudentExpiresAt,
                 gpa = user.GPA
             };
-
             return Ok(ApiResponse<object>.SuccessResult(result));
         }
-
         // Метод генерації JWT токену
         private string GenerateJwtToken(User user)
         {
@@ -372,10 +322,8 @@ namespace KhduSouvenirShop.API.Controllers
             var jwtIssuer = jwtSettings["Issuer"] ?? throw new InvalidOperationException("JWT Issuer не налаштовано");
             var jwtAudience = jwtSettings["Audience"] ?? throw new InvalidOperationException("JWT Audience не налаштовано");
             var jwtExpireMinutes = jwtSettings["ExpireMinutes"] ?? "1440";
-            
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
@@ -383,7 +331,6 @@ namespace KhduSouvenirShop.API.Controllers
                 new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
                 new Claim(ClaimTypes.Role, user.Role)
             };
-
             var token = new JwtSecurityToken(
                 issuer: jwtIssuer,
                 audience: jwtAudience,
@@ -391,15 +338,11 @@ namespace KhduSouvenirShop.API.Controllers
                 expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtExpireMinutes)),
                 signingCredentials: credentials
             );
-
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-
         // Хешування через BCrypt (workFactor=12)
-        // Збережено для можливих міграцій або альтернативних сценаріїв
         private static string HashPassword(string password) => BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
     }
-
     // DTO для реєстрації
     public class RegisterDto
     {
@@ -409,27 +352,23 @@ namespace KhduSouvenirShop.API.Controllers
         public string Password { get; set; } = string.Empty;
         public string? Phone { get; set; }
     }
-
     // DTO для авторизації
     public class LoginDto
     {
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
-
     public class UserUpdateDto
     {
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string? Phone { get; set; }
     }
-
     public class ChangePasswordDto
     {
         public string OldPassword { get; set; } = string.Empty;
         public string NewPassword { get; set; } = string.Empty;
     }
-
     public class UpdateRoleDto
     {
         public string Role { get; set; } = string.Empty;

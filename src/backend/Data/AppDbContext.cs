@@ -9,12 +9,10 @@ namespace KhduSouvenirShop.API.Data
     public class AppDbContext : DbContext
     {
         private readonly IHttpContextAccessor? _httpContextAccessor;
-
         public AppDbContext(DbContextOptions<AppDbContext> options, IHttpContextAccessor? httpContextAccessor = null) : base(options)
         {
             _httpContextAccessor = httpContextAccessor;
         }
-
         // DbSet для кожної таблиці
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<Category> Categories { get; set; } = null!;
@@ -32,163 +30,134 @@ namespace KhduSouvenirShop.API.Data
         public DbSet<Company> Companies { get; set; } = null!;
         public DbSet<IncomingDocument> IncomingDocuments { get; set; } = null!;
         public DbSet<OutgoingDocument> OutgoingDocuments { get; set; } = null!;
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
             var seedDate = new DateTime(2026, 1, 1);
-
             // Налаштування унікальних індексів
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
-
             modelBuilder.Entity<Cart>()
                 .HasIndex(c => c.UserId)
                 .IsUnique();
-
             modelBuilder.Entity<Order>()
                 .HasIndex(o => o.OrderNumber)
                 .IsUnique();
-
             modelBuilder.Entity<Promotion>()
                 .HasIndex(p => p.PromoCode)
                 .IsUnique();
-
             modelBuilder.Entity<Company>()
                 .HasIndex(c => c.Name)
                 .IsUnique();
-
             modelBuilder.Entity<Company>()
                 .HasIndex(c => c.Email)
                 .IsUnique();
-
             // Налаштування унікальної пари для CartItems
             modelBuilder.Entity<CartItem>()
                 .HasIndex(ci => new { ci.CartId, ci.ProductId })
                 .IsUnique();
-
             // Налаштування унікальної пари для UserPromotions
             modelBuilder.Entity<UserPromotion>()
                 .HasIndex(up => new { up.UserId, up.PromotionId })
                 .IsUnique();
-
             // Налаштування каскадного видалення
             modelBuilder.Entity<Cart>()
                 .HasOne(c => c.User)
                 .WithOne(u => u.Cart)
                 .HasForeignKey<Cart>(c => c.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-
             modelBuilder.Entity<CartItem>()
                 .HasOne(ci => ci.Cart)
                 .WithMany(c => c.CartItems)
                 .HasForeignKey(ci => ci.CartId)
                 .OnDelete(DeleteBehavior.Cascade);
-
             modelBuilder.Entity<ProductImage>()
                 .HasOne(pi => pi.Product)
                 .WithMany(p => p.Images)
                 .HasForeignKey(pi => pi.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
-
             // Налаштування рекурсивного зв'язку для категорій
             modelBuilder.Entity<Category>()
                 .HasOne(c => c.ParentCategory)
                 .WithMany(c => c.SubCategories)
                 .HasForeignKey(c => c.ParentCategoryId)
                 .OnDelete(DeleteBehavior.SetNull);
-
             // Налаштування зв'язків Order
             modelBuilder.Entity<Order>()
                 .HasOne(o => o.Shipping)
                 .WithOne(s => s.Order)
                 .HasForeignKey<Shipping>(s => s.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
-
             modelBuilder.Entity<Order>()
                 .HasOne(o => o.Payment)
                 .WithOne(p => p.Order)
                 .HasForeignKey<Payment>(p => p.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
-
             modelBuilder.Entity<OrderHistory>()
                 .HasOne(oh => oh.Order)
                 .WithMany(o => o.OrderHistories)
                 .HasForeignKey(oh => oh.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
-
             // Налаштування зв'язків Promotion
             modelBuilder.Entity<Promotion>()
                 .HasOne(p => p.CreatedByUser)
                 .WithMany()
                 .HasForeignKey(p => p.CreatedBy)
                 .OnDelete(DeleteBehavior.Restrict);
-
             // Налаштування зв'язків UserPromotion (many-to-many)
             modelBuilder.Entity<UserPromotion>()
                 .HasOne(up => up.User)
                 .WithMany(u => u.UserPromotions)
                 .HasForeignKey(up => up.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-
             modelBuilder.Entity<UserPromotion>()
                 .HasOne(up => up.Promotion)
                 .WithMany()
                 .HasForeignKey(up => up.PromotionId)
                 .OnDelete(DeleteBehavior.Cascade);
-
             // Налаштування зв'язків IncomingDocuments
             modelBuilder.Entity<IncomingDocument>()
                 .HasOne(id => id.Product)
                 .WithMany()
                 .HasForeignKey(id => id.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
-
             modelBuilder.Entity<IncomingDocument>()
                 .HasOne(id => id.Company)
                 .WithMany(c => c.IncomingDocuments)
                 .HasForeignKey(id => id.CompanyId)
                 .OnDelete(DeleteBehavior.Restrict);
-
             modelBuilder.Entity<IncomingDocument>()
                 .HasOne(id => id.CreatedByUser)
                 .WithMany()
                 .HasForeignKey(id => id.CreatedBy)
                 .OnDelete(DeleteBehavior.Restrict);
-
             // Налаштування зв'язків OutgoingDocuments
             modelBuilder.Entity<OutgoingDocument>()
                 .HasOne(od => od.Product)
                 .WithMany()
                 .HasForeignKey(od => od.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
-
             modelBuilder.Entity<OutgoingDocument>()
                 .HasOne(od => od.Order)
                 .WithMany()
                 .HasForeignKey(od => od.OrderId)
                 .OnDelete(DeleteBehavior.SetNull);
-
             modelBuilder.Entity<OutgoingDocument>()
                 .HasOne(od => od.Company)
                 .WithMany(c => c.OutgoingDocuments)
                 .HasForeignKey(od => od.CompanyId)
                 .OnDelete(DeleteBehavior.SetNull);
-
             modelBuilder.Entity<OutgoingDocument>()
                 .HasOne(od => od.AppliedPromotion)
                 .WithMany()
                 .HasForeignKey(od => od.AppliedPromotionId)
                 .OnDelete(DeleteBehavior.SetNull);
-
             modelBuilder.Entity<OutgoingDocument>()
                 .HasOne(od => od.CreatedByUser)
                 .WithMany()
                 .HasForeignKey(od => od.CreatedBy)
                 .OnDelete(DeleteBehavior.SetNull);
-
             // Початкові категорії
             modelBuilder.Entity<Category>().HasData(
                 new Category { CategoryId = 1, Name = "Футболки", NameEn = "T-Shirts", DisplayOrder = 1, CreatedAt = seedDate },
@@ -196,7 +165,6 @@ namespace KhduSouvenirShop.API.Data
                 new Category { CategoryId = 3, Name = "Гуртки", NameEn = "Mugs", DisplayOrder = 3, CreatedAt = seedDate },
                 new Category { CategoryId = 4, Name = "Канцелярія", NameEn = "Stationery", DisplayOrder = 4, CreatedAt = seedDate }
             );
-
             // Початкові товари
             modelBuilder.Entity<Product>().HasData(
                 new Product { ProductId = 1, Name = "Худі KSU Black", NameEn = "KSU Hoodie Black", Description = "Якісне чорне худі з логотипом університету", DescriptionEn = "High-quality black hoodie with university logo", Price = 850, Weight = 0.600m, CategoryId = 2, Stock = 25, CreatedAt = seedDate },
@@ -208,7 +176,6 @@ namespace KhduSouvenirShop.API.Data
                 new Product { ProductId = 7, Name = "Блокнот А5", NameEn = "Notebook A5", Description = "Блокнот у лінійку на 96 аркушів", DescriptionEn = "96-page lined notebook", Price = 120, Weight = 0.250m, CategoryId = 4, Stock = 200, CreatedAt = seedDate },
                 new Product { ProductId = 8, Name = "Ручка металева", NameEn = "Metal Pen", Description = "Стильна металева ручка", DescriptionEn = "Stylish metal pen", Price = 80, Weight = 0.050m, CategoryId = 4, Stock = 500, CreatedAt = seedDate }
             );
-
             // Додавання фільтрів для Soft Delete
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
@@ -217,7 +184,6 @@ namespace KhduSouvenirShop.API.Data
                     modelBuilder.Entity(entityType.ClrType).HasQueryFilter(ConvertFilterExpression(entityType.ClrType));
                 }
             }
-
             // Зображення товарів
             modelBuilder.Entity<ProductImage>().HasData(
                 // Футболки
@@ -238,7 +204,6 @@ namespace KhduSouvenirShop.API.Data
                 new ProductImage { ImageId = 12, ProductId = 8, ImageURL = "/images/products/notebook-a5.jpg", IsPrimary = true, DisplayOrder = 1 }
             );
         }
-
         private static System.Linq.Expressions.LambdaExpression ConvertFilterExpression(Type type)
         { 
             var parameter = System.Linq.Expressions.Expression.Parameter(type, "e");
@@ -248,11 +213,9 @@ namespace KhduSouvenirShop.API.Data
             var compareExpression = System.Linq.Expressions.Expression.Equal(isDeletedProperty, falseConstant);
             return System.Linq.Expressions.Expression.Lambda(compareExpression, parameter);
         }
-
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         { 
             var userId = GetCurrentUserId();
-
             foreach (var entry in ChangeTracker.Entries())
             {
                 if (entry.Entity is IAuditable auditable)
@@ -270,15 +233,13 @@ namespace KhduSouvenirShop.API.Data
                             break;
                     }
                 }
-
                 if (entry.Entity is ISoftDeletable softDeletable && entry.State == EntityState.Deleted)
                 {
                     entry.State = EntityState.Modified;
                     softDeletable.IsDeleted = true;
                     softDeletable.DeletedAt = DateTime.UtcNow;
                     softDeletable.DeletedBy = userId;
-
-                    // Якщо сутність також підтримує аудит, оновимо поле UpdatedAt
+                    // Якщо сутність також підтримує аудит - оновлення поля UpdatedAt
                     if (entry.Entity is IAuditable auditableEntity)
                     {
                         auditableEntity.UpdatedAt = softDeletable.DeletedAt;
@@ -286,10 +247,8 @@ namespace KhduSouvenirShop.API.Data
                     }
                 }
             }
-
             return await base.SaveChangesAsync(cancellationToken);
         }
-
         private int? GetCurrentUserId()
         {
             var userIdStr = _httpContextAccessor?.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;

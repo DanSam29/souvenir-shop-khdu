@@ -10,12 +10,10 @@ function OrderDetailsPage() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const isEn = i18n.language === 'en';
   const fromAdmin = location.state?.from === 'admin';
   const backPath = fromAdmin ? '/admin/orders' : '/profile';
   const backText = fromAdmin ? t('order.back_to_admin_orders') : t('order.back_to_profile');
-
   useEffect(() => {
     const loadOrder = async () => {
       try {
@@ -30,11 +28,9 @@ function OrderDetailsPage() {
     };
     loadOrder();
   }, [id, t]);
-
   if (loading) return <div className="loading">{t('common.loading')}</div>;
   if (error) return <div className="error">{error}</div>;
   if (!order) return <div>{t('order.not_found')}</div>;
-
   return (
     <div className="order-details" style={{ maxWidth: 800, margin: '40px auto', padding: '0 20px' }}>
       <Link to={backPath} style={{ textDecoration: 'none', color: '#007bff', fontWeight: 500 }}>← {backText}</Link>
@@ -50,7 +46,6 @@ function OrderDetailsPage() {
           {order.status}
         </span>
       </div>
-
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 30 }}>
         <div style={{ background: '#fff', padding: 20, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
           <h3>{t('checkout.delivery')}</h3>
@@ -64,7 +59,6 @@ function OrderDetailsPage() {
             </div>
           )}
         </div>
-
         <div style={{ background: '#fff', padding: 20, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
           <h3>{t('checkout.payment')}</h3>
           <p><strong>{t('checkout.payment_method')}:</strong> {order.payment.method === 'Card' ? t('checkout.payment_card') : t('checkout.payment_cod')}</p>
@@ -72,7 +66,6 @@ function OrderDetailsPage() {
           <p><strong>{t('order.payment_status')}:</strong> {order.payment.status}</p>
         </div>
       </div>
-
       <div style={{ background: '#fff', padding: 20, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', marginTop: 20 }}>
         <h3>{t('cart.items')}</h3>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>

@@ -10,30 +10,24 @@ function ProductCard({ product }) {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
-
   const isEn = i18n.language === 'en';
   const displayName = (isEn && product.nameEn) ? product.nameEn : product.name;
   const displayCategory = (isEn && product.category?.nameEn) ? product.category.nameEn : product.category?.name;
-
   const primaryImage = product.images?.find(img => img.isPrimary)?.imageURL 
                       || product.images?.[0]?.imageURL;
   const primaryImageUrl = buildImageUrl(primaryImage);
-
   const handleAddToCart = async (e) => {
-    e.preventDefault(); // Запобігаємо переходу по Link
-
+    e.preventDefault(); // Запобігнення переходу по Link
     if (!isAuthenticated) {
       alert(t('common.auth_required_cart') || 'Для додавання товарів до кошика потрібно авторизуватися');
       navigate('/login');
       return;
     }
-
     try {
       setAdding(true);
       await cartAPI.addToCart(product.productId, 1);
       alert(t('common.added_to_cart') || 'Товар додано до кошика!');
-      
-      // Оновлюємо Header через перезавантаження (можна покращити через контекст)
+      // Оновлення Header через перезавантаження
       window.location.reload();
     } catch (err) {
       console.error('Помилка додавання до кошика:', err);
@@ -47,7 +41,6 @@ function ProductCard({ product }) {
       setAdding(false);
     }
   };
-
   return (
     <div className="product-card">
       <Link to={`/product/${product.productId}`} className="product-link">
@@ -75,7 +68,6 @@ function ProductCard({ product }) {
           </div>
         </div>
       </Link>
-      
       <button 
         onClick={handleAddToCart} 
         className="add-to-cart-btn"

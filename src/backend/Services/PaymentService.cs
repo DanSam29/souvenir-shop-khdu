@@ -15,7 +15,6 @@ namespace KhduSouvenirShop.API.Services
         private readonly IEmailService _emailService;
         private readonly IMemoryCache _cache;
         private readonly string _webhookSecret;
-
         public PaymentService(AppDbContext context, ILogger<PaymentService> logger, IConfiguration configuration, IEmailService emailService, IMemoryCache cache)
         {
             _context = context;
@@ -26,14 +25,12 @@ namespace KhduSouvenirShop.API.Services
             StripeConfiguration.ApiKey = _configuration["Stripe:SecretKey"];
             _webhookSecret = _configuration["Stripe:WebhookSecret"] ?? string.Empty;
         }
-
         private void InvalidateCache()
         {
             var currentVersion = _cache.Get<int>("Products_Cache_Version");
             _cache.Set("Products_Cache_Version", currentVersion + 1);
             _cache.Remove("Public_Products_All");
         }
-
         public async Task<Session> CreateCheckoutSessionAsync(Order order, string successUrl, string cancelUrl)
         {
             var orderWithItems = await _context.Orders
@@ -41,19 +38,15 @@ namespace KhduSouvenirShop.API.Services
                     .ThenInclude(oi => oi.Product)
                 .Include(o => o.Shipping)
                 .FirstOrDefaultAsync(o => o.OrderId == order.OrderId);
-
             if (orderWithItems == null)
                 throw new Exception("Замовлення не знайдено");
-
             var payment = await _context.Payments.FirstOrDefaultAsync(p => p.OrderId == order.OrderId);
             var idempotencyKey = payment?.IdempotencyKey ?? Guid.NewGuid().ToString();
-
             if (payment != null && string.IsNullOrEmpty(payment.IdempotencyKey))
             {
                 payment.IdempotencyKey = idempotencyKey;
                 await _context.SaveChangesAsync();
             }
-
             var lineItems = orderWithItems.OrderItems.Select(item => new SessionLineItemOptions
             {
                 PriceData = new SessionLineItemPriceDataOptions
@@ -68,8 +61,7 @@ namespace KhduSouvenirShop.API.Services
                 },
                 Quantity = item.Quantity,
             }).ToList();
-
-            // Додаємо вартість доставки як окремий line item
+            // Додавання вартості доставки як окремий line item
             if (orderWithItems.ShippingCost > 0)
             {
                 lineItems.Add(new SessionLineItemOptions
@@ -87,7 +79,6 @@ namespace KhduSouvenirShop.API.Services
                     Quantity = 1,
                 });
             }
-
             var options = new SessionCreateOptions
             {
                 PaymentMethodTypes = new List<string> { "card" },
@@ -101,15 +92,12 @@ namespace KhduSouvenirShop.API.Services
                     { "orderNumber", order.OrderNumber }
                 }
             };
-
             var requestOptions = new RequestOptions
             {
                 IdempotencyKey = idempotencyKey
             };
-
             var service = new SessionService();
             var session = await service.CreateAsync(options, requestOptions);
-
             // Оновлення інформації про платіж
             if (payment != null)
             {
@@ -117,21 +105,17 @@ namespace KhduSouvenirShop.API.Services
                 payment.StripePaymentIntentId = session.PaymentIntentId;
                 await _context.SaveChangesAsync();
             }
-
             return session;
         }
-
         public async Task<Session> CreateCheckoutSessionForCartAsync(User user, Cart cart, List<Promotion> promos, string? promoCode, string successUrl, string cancelUrl, Dictionary<string, string> metadata)
         {
             var promotionService = new PromotionService(_context);
             var lineItems = new List<SessionLineItemOptions>();
             decimal totalAmount = 0;
-
             foreach (var item in cart.CartItems)
             {
                 var priceAfterUserPromos = promotionService.GetPriceAfterPromotions(item.Product, promos);
-                
-                // Якщо є промокод, застосовуємо його до ціни (спрощена логіка для Stripe)
+                // Якщо є промокод - він застосовується до ціни
                 if (!string.IsNullOrEmpty(promoCode))
                 {
                     var now = DateTime.UtcNow;
@@ -145,7 +129,7 @@ namespace KhduSouvenirShop.API.Services
                         }
                         else if (promo.Type == "FIXED_AMOUNT")
                         {
-                            // Для фіксованої суми на весь кошик - пропорційно розподіляємо (спрощено)
+                            // Для фіксованої суми на весь кошик - пропорційне розділення
                             var cartTotal = cart.CartItems.Sum(ci => promotionService.GetPriceAfterPromotions(ci.Product, promos) * ci.Quantity);
                             if (cartTotal > 0)
                             {
@@ -156,7 +140,6 @@ namespace KhduSouvenirShop.API.Services
                         }
                     }
                 }
-
                 lineItems.Add(new SessionLineItemOptions
                 {
                     PriceData = new SessionLineItemPriceDataOptions
@@ -173,8 +156,7 @@ namespace KhduSouvenirShop.API.Services
                 });
                 totalAmount += priceAfterUserPromos * item.Quantity;
             }
-
-            // Додаємо доставку, якщо вона є в метаданих
+            // Додавання доставки, якщо вона є в метаданих
             if (metadata.TryGetValue("shippingCost", out var costStr) && decimal.TryParse(costStr, out var cost) && cost > 0)
             {
                 lineItems.Add(new SessionLineItemOptions
@@ -191,7 +173,6 @@ namespace KhduSouvenirShop.API.Services
                     Quantity = 1,
                 });
             }
-
             var options = new SessionCreateOptions
             {
                 PaymentMethodTypes = new List<string> { "card" },
@@ -202,11 +183,9 @@ namespace KhduSouvenirShop.API.Services
                 ClientReferenceId = $"CART_{user.UserId}",
                 Metadata = metadata
             };
-
             var service = new SessionService();
             return await service.CreateAsync(options);
         }
-
         public async Task<bool> HandleWebhookAsync(string? json, string? stripeSignature, string? sessionId = null)
         {
             try
@@ -239,13 +218,11 @@ namespace KhduSouvenirShop.API.Services
                 {
                     var service = new SessionService();
                     session = await service.GetAsync(sessionId);
-                    
                     if (session.PaymentStatus == "paid")
                     {
                         return await ProcessSuccessfulPayment(session);
                     }
                 }
-
                 return true;
             }
             catch (StripeException e)
@@ -254,35 +231,26 @@ namespace KhduSouvenirShop.API.Services
                 return false;
             }
         }
-
         private async Task<bool> ProcessSuccessfulPayment(Session session)
         {
             var reference = session.ClientReferenceId;
-            
             if (reference != null && reference.StartsWith("CART_"))
             {
                 return await CreateOrderFromSuccessfulSession(session);
             }
-
             var orderIdStr = reference;
             if (!int.TryParse(orderIdStr, out var orderId)) return false;
-
             var order = await _context.Orders
                 .Include(o => o.Payment)
                 .FirstOrDefaultAsync(o => o.OrderId == orderId);
-
             if (order == null || order.Payment == null) return false;
-
-            // Ідемпотентність: якщо вже завершено, нічого не робимо
+            // Якщо вже завершено - нічого не виконується (ідемпотентність)
             if (order.Payment.Status == "Completed") return true;
-
             var oldStatus = order.Status;
             order.Payment.Status = "Completed";
             order.Payment.TransactionId = session.PaymentIntentId;
             order.Payment.StripePaymentIntentId = session.PaymentIntentId;
-
             order.Status = "Paid";
-
             _context.OrderHistories.Add(new OrderHistory
             {
                 OrderId = order.OrderId,
@@ -291,42 +259,32 @@ namespace KhduSouvenirShop.API.Services
                 Comment = "Оплата отримана через Stripe",
                 Timestamp = DateTime.UtcNow
             });
-
             await _context.SaveChangesAsync();
             _logger.LogInformation("Order {OrderId} successfully paid via Stripe", orderId);
-
             // Відправка листа про успішну оплату
             await _emailService.SendPaymentConfirmationAsync(order.User.Email, order.OrderNumber, order.Payment.Amount, "ua");
-
             return true;
         }
-
         private async Task<bool> CreateOrderFromSuccessfulSession(Session session)
         {
             var userIdStr = session.Metadata["userId"];
             if (!int.TryParse(userIdStr, out var userId)) return false;
-
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return false;
-
             var cart = await _context.Carts
                 .Include(c => c.CartItems)
                     .ThenInclude(ci => ci.Product)
                 .FirstOrDefaultAsync(c => c.UserId == userId);
-
             if (cart == null || cart.CartItems.Count == 0)
             {
                 _logger.LogWarning("Cart is empty for user {UserId} during webhook processing", userId);
                 return true; // Вже опрацьовано або кошик очищено іншим шляхом
             }
-
             var promoCode = session.Metadata.TryGetValue("promoCode", out var pc) ? pc : null;
             decimal shippingCost = 0;
             if (session.Metadata.TryGetValue("shippingCost", out var scStr)) decimal.TryParse(scStr, out shippingCost);
-
             var promotionService = new PromotionService(_context);
             var userPromotions = await promotionService.GetActivePromotionsForUserAsync(user.StudentStatus);
-
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -339,10 +297,8 @@ namespace KhduSouvenirShop.API.Services
                     ShippingCost = shippingCost,
                     CreatedAt = DateTime.UtcNow
                 };
-
                 _context.Orders.Add(order);
                 await _context.SaveChangesAsync();
-
                 var shipping = new KhduSouvenirShop.API.Models.Shipping
                 {
                     OrderId = order.OrderId,
@@ -354,7 +310,6 @@ namespace KhduSouvenirShop.API.Services
                     RecipientPhone = session.Metadata["recipientPhone"]
                 };
                 _context.Shippings.Add(shipping);
-
                 var payment = new Payment
                 {
                     OrderId = order.OrderId,
@@ -367,14 +322,12 @@ namespace KhduSouvenirShop.API.Services
                     CreatedAt = DateTime.UtcNow
                 };
                 _context.Payments.Add(payment);
-
                 decimal subtotal = 0;
                 var orderItems = new List<OrderItem>();
                 foreach (var item in cart.CartItems)
                 {
                     item.Product.Stock -= item.Quantity;
                     var priceAfterUserPromos = promotionService.GetPriceAfterPromotions(item.Product, userPromotions);
-                    
                     var orderItem = new OrderItem
                     {
                         OrderId = order.OrderId,
@@ -387,7 +340,6 @@ namespace KhduSouvenirShop.API.Services
                     orderItems.Add(orderItem);
                     subtotal += priceAfterUserPromos * item.Quantity;
                 }
-
                 // Застосування промокоду, якщо він був
                 if (!string.IsNullOrWhiteSpace(promoCode))
                 {
@@ -420,9 +372,7 @@ namespace KhduSouvenirShop.API.Services
                         promo.CurrentUsage += 1;
                     }
                 }
-
                 order.TotalAmount = orderItems.Sum(oi => oi.FinalPrice * oi.Quantity) + shippingCost;
-
                 foreach (var oi in orderItems)
                 {
                     _context.OrderItems.Add(oi);
@@ -441,9 +391,7 @@ namespace KhduSouvenirShop.API.Services
                         Notes = $"Створено автоматично після оплати Stripe {order.OrderNumber}"
                     });
                 }
-
                 _context.CartItems.RemoveRange(cart.CartItems);
-                
                 _context.OrderHistories.Add(new OrderHistory
                 {
                     OrderId = order.OrderId,
@@ -451,15 +399,11 @@ namespace KhduSouvenirShop.API.Services
                     Comment = "Замовлення створено та оплачено через Stripe Checkout",
                     Timestamp = DateTime.UtcNow
                 });
-
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
-
                 InvalidateCache();
-
                 _logger.LogInformation("Order {OrderNumber} created from Stripe Session {SessionId}", order.OrderNumber, session.Id);
                 await _emailService.SendOrderConfirmationAsync(user.Email, order.OrderNumber, "ua");
-                
                 return true;
             }
             catch (Exception ex)
@@ -469,26 +413,20 @@ namespace KhduSouvenirShop.API.Services
                 return false;
             }
         }
-
         private async Task<bool> ProcessFailedPayment(PaymentIntent paymentIntent)
         {
             var payment = await _context.Payments
                 .Include(p => p.Order)
                 .FirstOrDefaultAsync(p => p.StripePaymentIntentId == paymentIntent.Id);
-
             if (payment == null) return false;
-
             return await CancelOrderAndRestoreStock(payment.OrderId, "Помилка оплати через Stripe (PaymentIntent Failed)");
         }
-
         private async Task<bool> ProcessExpiredSession(Session session)
         {
             var orderIdStr = session.ClientReferenceId;
             if (!int.TryParse(orderIdStr, out var orderId)) return false;
-
             return await CancelOrderAndRestoreStock(orderId, "Сесія оплати Stripe вичерпана (Expired)");
         }
-
         public async Task<bool> CancelOrderAndRestoreStock(int orderId, string comment)
         {
             var order = await _context.Orders
@@ -496,14 +434,10 @@ namespace KhduSouvenirShop.API.Services
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
                 .FirstOrDefaultAsync(o => o.OrderId == orderId);
-
             if (order == null) return false;
-
-            // Якщо замовлення вже скасоване, не робимо нічого
+            // Якщо замовлення вже скасоване - нічого не виконується
             if (order.Status == "Cancelled") return true;
-
             var oldStatus = order.Status;
-
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -512,18 +446,14 @@ namespace KhduSouvenirShop.API.Services
                 {
                     item.Product.Stock += item.Quantity;
                 }
-
-                // Видалення видаткових накладних (OutgoingDocument), пов'язаних з цим замовленням
+                // Видалення видаткових накладних, пов'язаних з цим замовленням
                 var docs = await _context.OutgoingDocuments.Where(d => d.OrderId == orderId && d.Reason == "ORDER").ToListAsync();
                 _context.OutgoingDocuments.RemoveRange(docs);
-
                 if (order.Payment != null)
                 {
                     order.Payment.Status = "Failed";
                 }
-
                 order.Status = "Cancelled";
-
                 _context.OrderHistories.Add(new OrderHistory
                 {
                     OrderId = order.OrderId,
@@ -532,12 +462,9 @@ namespace KhduSouvenirShop.API.Services
                     Comment = comment,
                     Timestamp = DateTime.UtcNow
                 });
-
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
-
                 InvalidateCache();
-
                 _logger.LogInformation("Order {OrderId} cancelled and stock restored. Reason: {Comment}", orderId, comment);
                 return true;
             }
@@ -548,7 +475,6 @@ namespace KhduSouvenirShop.API.Services
                 return false;
             }
         }
-
         public async Task<bool> RefundPaymentAsync(int orderId, string? reason = null)
         {
             var order = await _context.Orders
@@ -556,13 +482,10 @@ namespace KhduSouvenirShop.API.Services
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
                 .FirstOrDefaultAsync(o => o.OrderId == orderId);
-
             if (order == null || order.Payment == null || string.IsNullOrEmpty(order.Payment.StripePaymentIntentId))
                 return false;
-
             if (order.Payment.Status != "Completed")
                 return false;
-
             try
             {
                 var options = new RefundCreateOptions
@@ -575,28 +498,22 @@ namespace KhduSouvenirShop.API.Services
                         { "reason", reason ?? "No reason provided" }
                     }
                 };
-
                 var service = new RefundService();
                 var refund = await service.CreateAsync(options);
-
                 var oldStatus = order.Status;
-
                 // Повернення товару на склад при Refund
                 foreach (var item in order.OrderItems)
                 {
                     item.Product.Stock += item.Quantity;
                 }
-
-                // Видалення видаткових накладних (OutgoingDocument), пов'язаних з цим замовленням
+                // Видалення видаткових накладних, пов'язаних з цим замовленням
                 var docs = await _context.OutgoingDocuments.Where(d => d.OrderId == orderId && d.Reason == "ORDER").ToListAsync();
                 _context.OutgoingDocuments.RemoveRange(docs);
-
                 order.Status = "Cancelled";
                 if (order.Payment != null)
                 {
                     order.Payment.Status = "Refunded";
                 }
-
                 _context.OrderHistories.Add(new OrderHistory
                 {
                     OrderId = order.OrderId,
@@ -605,7 +522,6 @@ namespace KhduSouvenirShop.API.Services
                     Comment = $"Повернення коштів через Stripe. Причина: {reason ?? "не вказана"}",
                     Timestamp = DateTime.UtcNow
                 });
-
                 await _context.SaveChangesAsync();
                 InvalidateCache();
                 _logger.LogInformation("Successfully refunded payment for Order {OrderId} and restored stock", orderId);

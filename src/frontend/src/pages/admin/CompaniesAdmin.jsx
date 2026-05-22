@@ -16,16 +16,14 @@ function CompaniesAdmin() {
     notes: '',
     isActive: true
   });
-
   useEffect(() => {
     loadCompanies();
   }, []);
-
   const loadCompanies = async () => {
     try {
       setLoading(true);
       const res = await companiesAPI.getAll();
-      // Після впровадження Етапу 14 бекенд повертає об'єкт з Items
+      // Повренення об'єкту з Items
       if (res.data && res.data.items) {
         setCompanies(res.data.items);
       } else {
@@ -38,7 +36,6 @@ function CompaniesAdmin() {
       setLoading(false);
     }
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -55,7 +52,6 @@ function CompaniesAdmin() {
       alert(err.response?.data?.errors?.[0] || 'Не вдалося зберегти компанію');
     }
   };
-
   const handleEdit = (company) => {
     setEditingCompany(company);
     setForm({
@@ -69,7 +65,6 @@ function CompaniesAdmin() {
     });
     setShowForm(true);
   };
-
   const handleDelete = async (companyId) => {
     if (!window.confirm('Ви впевнені, що хочете видалити/деактивувати цю компанію?')) return;
     try {
@@ -79,7 +74,6 @@ function CompaniesAdmin() {
       alert('Не вдалося видалити компанію');
     }
   };
-
   const resetForm = () => {
     setForm({
       name: '',
@@ -91,9 +85,7 @@ function CompaniesAdmin() {
       isActive: true
     });
   };
-
   if (loading) return <div>Завантаження...</div>;
-
   return (
     <div style={{ padding: 20, maxWidth: 1200, margin: '0 auto' }}>
       <div style={{ marginBottom: 20 }}>
@@ -110,7 +102,6 @@ function CompaniesAdmin() {
           </button>
         </div>
       </div>
-
       {showForm && (
         <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)', marginBottom: 30 }}>
           <h2 style={{ marginBottom: 20 }}>{editingCompany ? 'Редагувати компанію' : 'Нова компанія'}</h2>
@@ -202,7 +193,6 @@ function CompaniesAdmin() {
           </form>
         </div>
       )}
-
       <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead style={{ background: '#f8f9fa' }}>

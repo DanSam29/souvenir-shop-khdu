@@ -10,10 +10,8 @@ function Header() {
   const { t, i18n } = useTranslation();
   const { isAuthenticated, user } = useAuth();
   const [cartCount, setCartCount] = useState(0);
-
   // Перевірка чи є користувач адміністратором або менеджером
   const isAdmin = user && ['Manager', 'Administrator', 'SuperAdmin'].includes(user.role);
-
   // Завантаження кількості товарів у кошику (тільки для авторизованих)
   useEffect(() => {
     if (isAuthenticated) {
@@ -22,7 +20,6 @@ function Header() {
       setCartCount(0);
     }
   }, [isAuthenticated]);
-
   const loadCartCount = async () => {
     try {
       const response = await cartAPI.getCart();
@@ -31,12 +28,10 @@ function Header() {
       console.error('Помилка завантаження кошика:', error);
     }
   };
-
   const toggleLanguage = () => {
     const newLang = i18n.language === 'ua' ? 'en' : 'ua';
     i18n.changeLanguage(newLang);
   };
-
   return (
     <header className="header">
       <div className="container">
@@ -51,18 +46,15 @@ function Header() {
           <Link to="/" className="nav-link">
             {t('nav.home')}
           </Link>
-
           {isAdmin && (
             <Link to="/admin" className="nav-link nav-link-admin">
               {t('nav.admin')}
             </Link>
           )}
-          
           <button onClick={toggleLanguage} className="lang-switcher">
             {i18n.language === 'ua' ? 'EN' : 'UA'}
           </button>
-          
-          {/* Показуємо для неавторизованих */}
+          {/* Відображення для неавторизованих */}
           {!isAuthenticated && (
             <>
               <Link to="/login" className="nav-link">
@@ -73,15 +65,13 @@ function Header() {
               </Link>
             </>
           )}
-          
-          {/* Показуємо для авторизованих */}
+          {/* Відображення для авторизованих */}
           {isAuthenticated && (
             <Link to="/profile" className="nav-link nav-link-profile">
               <span className="nav-icon">👤</span>
               {t('nav.profile')}
             </Link>
           )}
-          
           <Link to="/cart" className="nav-link nav-link-cart">
             <span className="nav-icon">🛒</span>
             {t('nav.cart')}

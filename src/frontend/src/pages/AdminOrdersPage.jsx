@@ -8,16 +8,14 @@ function AdminOrdersPage() {
   const [pagination, setPagination] = useState({ pageNumber: 1, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-
   useEffect(() => {
     loadOrders(1);
   }, []);
-
   const loadOrders = async (page = 1) => {
     try {
       setLoading(true);
       const res = await ordersAPI.getAll({ pageNumber: page, pageSize: 10 });
-      // Після впровадження Етапу 14 бекенд повертає об'єкт з Items
+      // Повренення об'єкту з Items
       if (res.data && res.data.items) {
         setOrders(res.data.items);
         setPagination({
@@ -34,11 +32,9 @@ function AdminOrdersPage() {
       setLoading(false);
     }
   };
-
   const handleStatusChange = async (id, newStatus) => {
     const trackingNumber = newStatus === 'Shipped' ? prompt('Введіть номер ТТН Нової Пошти:') : null;
     if (newStatus === 'Shipped' && trackingNumber === null) return;
-
     try {
       setUpdating(true);
       await ordersAPI.updateStatus(id, { status: newStatus, trackingNumber });
@@ -50,9 +46,7 @@ function AdminOrdersPage() {
       setUpdating(false);
     }
   };
-
   if (loading) return <div className="loading">Завантаження...</div>;
-
   return (
     <div className="admin-orders" style={{ padding: 20, maxWidth: 1400, margin: '0 auto' }}>
       <div style={{ marginBottom: 20 }}>
@@ -108,7 +102,6 @@ function AdminOrdersPage() {
           ))}
         </tbody>
       </table>
-
       {pagination.totalPages > 1 && (
         <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center', gap: 10 }}>
           <button 
@@ -133,10 +126,8 @@ function AdminOrdersPage() {
     </div>
   );
 }
-
 const thStyle = { padding: '12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' };
 const tdStyle = { padding: '12px' };
-
 const statusBadgeStyle = (status) => ({
   padding: '4px 8px',
   borderRadius: '12px',

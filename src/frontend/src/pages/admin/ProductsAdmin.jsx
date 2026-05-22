@@ -6,12 +6,10 @@ import { productsAPI, categoriesAPI, adminProductsAPI, buildImageUrl } from '../
 function ProductsAdmin() {
   const { user, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
-
   const [products, setProducts] = useState([]);
   const [categoriesTree, setCategoriesTree] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -25,7 +23,6 @@ function ProductsAdmin() {
   const [showForm, setShowForm] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
-
   useEffect(() => {
     if (loading) return;
     if (!isAuthenticated) {
@@ -38,7 +35,6 @@ function ProductsAdmin() {
     }
     loadData();
   }, [loading, isAuthenticated, user, navigate]);
-
   const loadData = async () => {
     try {
       setPageLoading(true);
@@ -55,19 +51,17 @@ function ProductsAdmin() {
       setPageLoading(false);
     }
   };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => {
       const updated = { ...prev, [name]: value };
-      // Якщо змінили батьківську категорію, скидаємо підкатегорію
+      // Якщо змінена батьківська категорія - скидання підкатегорію
       if (name === 'parentCategoryId') {
         updated.subCategoryId = '';
       }
       return updated;
     });
   };
-
   const resetForm = () => {
     setForm({
       name: '',
@@ -83,16 +77,13 @@ function ProductsAdmin() {
     setSelectedFiles([]);
     setExistingImages([]);
   };
-
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     setSelectedFiles(prev => [...prev, ...files]);
   };
-
   const removeSelectedFile = (index) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
-
   const removeExistingImage = async (imageId) => {
     if (!window.confirm('Видалити це зображення назавжди?')) return;
     try {
@@ -102,23 +93,19 @@ function ProductsAdmin() {
       alert('Помилка при видаленні зображення');
     }
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     // Перевірка опису (мінімум 10 символів для валідатора)
     if (form.description.length < 10) {
       alert('Опис має містити мінімум 10 символів');
       return;
     }
-
     try {
       const categoryId = form.subCategoryId || form.parentCategoryId;
       if (!categoryId) {
         alert('Будь ласка, оберіть категорію');
         return;
       }
-
       const payload = {
         name: form.name,
         description: form.description,
@@ -127,7 +114,6 @@ function ProductsAdmin() {
         categoryId: Number(categoryId),
         stock: Number(form.stock) || 0
       };
-      
       let productId = editId;
       if (editId) {
         await adminProductsAPI.update(editId, payload);
@@ -135,7 +121,6 @@ function ProductsAdmin() {
         const res = await adminProductsAPI.create(payload);
         productId = res.data.productId;
       }
-
       // Завантаження нових зображень
       if (selectedFiles.length > 0 && productId) {
         for (const file of selectedFiles) {
@@ -144,7 +129,6 @@ function ProductsAdmin() {
           await productsAPI.uploadImage(productId, formData);
         }
       }
-
       await loadData();
       resetForm();
     } catch (err) {
@@ -154,12 +138,10 @@ function ProductsAdmin() {
       alert(errorMsg);
     }
   };
-
   const startEdit = (p) => {
-    // Знаходимо категорію та її батька
+    // Пошук категорії та її батьківської категорії
     let parentId = '';
     let subId = '';
-
     const findCat = (nodes, targetId, parent = null) => {
       for (const node of nodes) {
         if (node.categoryId === targetId) {
@@ -176,9 +158,7 @@ function ProductsAdmin() {
       }
       return false;
     };
-
     findCat(categoriesTree, p.categoryId);
-
     setEditId(p.productId);
     setForm({
       name: p.name,
@@ -193,7 +173,6 @@ function ProductsAdmin() {
     setShowForm(true);
     setSelectedFiles([]);
   };
-
   const handleDelete = async (id) => {
     if (!window.confirm('Видалити товар?')) return;
     try {
@@ -203,14 +182,11 @@ function ProductsAdmin() {
       alert(err.response?.data?.error || 'Помилка видалення товару');
     }
   };
-
   const selectedParentCategory = categoriesTree.find(c => c.categoryId === Number(form.parentCategoryId));
   const subCategories = selectedParentCategory?.subCategories || [];
-
   if (loading) return <div>Завантаження...</div>;
   if (pageLoading) return <div>Завантаження...</div>;
   if (error) return <div>{error}</div>;
-
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: 20 }}>
       <div style={{ marginBottom: 30 }}>
@@ -234,7 +210,6 @@ function ProductsAdmin() {
           </button>
         </div>
       </div>
-
       <div style={{ display: 'grid', gridTemplateColumns: showForm ? '1fr 2fr' : '1fr', gap: 30 }}>
         {showForm && (
           <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', height: 'fit-content' }}>
@@ -244,12 +219,10 @@ function ProductsAdmin() {
                 <label style={labelStyle}>Назва *</label>
                 <input name="name" value={form.name} onChange={handleChange} placeholder="Назва товару" style={inputStyle} required />
               </div>
-              
               <div className="form-group">
                 <label style={labelStyle}>Опис * (мін. 10 симв.)</label>
                 <textarea name="description" value={form.description} onChange={handleChange} placeholder="Опис товару" rows={4} style={inputStyle} required />
               </div>
-
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15 }}>
                 <div className="form-group">
                   <label style={labelStyle}>Ціна (грн) *</label>
@@ -260,7 +233,6 @@ function ProductsAdmin() {
                   <input name="weight" type="number" step="0.001" value={form.weight} onChange={handleChange} style={inputStyle} required />
                 </div>
               </div>
-
               <div className="form-group">
                 <label style={labelStyle}>Категорія *</label>
                 <select name="parentCategoryId" value={form.parentCategoryId} onChange={handleChange} style={inputStyle} required>
@@ -270,7 +242,6 @@ function ProductsAdmin() {
                   ))}
                 </select>
               </div>
-
               {form.parentCategoryId && subCategories.length > 0 && (
                 <div className="form-group">
                   <label style={labelStyle}>Підкатегорія (необов'язково)</label>
@@ -282,12 +253,10 @@ function ProductsAdmin() {
                   </select>
                 </div>
               )}
-
               <div className="form-group">
                 <label style={labelStyle}>Залишок на складі</label>
                 <input name="stock" type="number" value={form.stock} onChange={handleChange} style={inputStyle} />
               </div>
-
               {/* Управління існуючими зображеннями */}
               {existingImages.length > 0 && (
                 <div className="form-group">
@@ -306,7 +275,6 @@ function ProductsAdmin() {
                   </div>
                 </div>
               )}
-
               {/* Управління новими зображеннями */}
               <div className="form-group">
                 <label style={labelStyle}>Додати зображення</label>
@@ -330,14 +298,12 @@ function ProductsAdmin() {
                   ))}
                 </div>
               </div>
-
               <button type="submit" style={{ padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', marginTop: 10 }}>
                 {editId ? 'Зберегти зміни' : 'Створити товар'}
               </button>
             </form>
           </div>
         )}
-
         <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
           <h3 style={{ marginBottom: 20 }}>Список товарів ({products.length})</h3>
           <div style={{ overflowX: 'auto' }}>
@@ -394,7 +360,6 @@ function ProductsAdmin() {
     </div>
   );
 }
-
 const inputStyle = {
   width: '100%',
   padding: '10px',
@@ -402,7 +367,6 @@ const inputStyle = {
   border: '1px solid #ddd',
   fontSize: '0.95rem'
 };
-
 const labelStyle = {
   display: 'block',
   marginBottom: 5,
@@ -410,10 +374,8 @@ const labelStyle = {
   fontWeight: 600,
   color: '#555'
 };
-
 const thStyle = { padding: '12px 8px', color: '#666', fontWeight: 600 };
 const tdStyle = { padding: '15px 8px' };
-
 const actionBtnStyle = (color) => ({
   background: 'none',
   border: `1px solid ${color}`,
@@ -423,7 +385,6 @@ const actionBtnStyle = (color) => ({
   cursor: 'pointer',
   fontSize: '1rem'
 });
-
 const removeBtnStyle = {
   position: 'absolute',
   top: -5,

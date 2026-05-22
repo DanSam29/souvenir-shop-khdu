@@ -16,12 +16,10 @@ function ProductPage() {
   const [adding, setAdding] = useState(false);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-
   const isEn = i18n.language === 'en';
   const displayName = (isEn && product?.nameEn) ? product.nameEn : product?.name;
   const displayDescription = (isEn && product?.descriptionEn) ? product.descriptionEn : product?.description;
   const displayCategory = (isEn && product?.category?.nameEn) ? product.category.nameEn : product?.category?.name;
-
   const loadProduct = useCallback(async () => {
     try {
       setLoading(true);
@@ -35,14 +33,12 @@ function ProductPage() {
       setLoading(false);
     }
   }, [id, t]); // Залежність: id, оскільки API-запит залежить від нього.
-
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
       alert(t('common.auth_required_cart') || 'Для додавання товарів до кошика потрібно авторизуватися');
       navigate('/login');
       return;
     }
-
     try {
       setAdding(true);
       await cartAPI.addToCart(product.productId, 1);
@@ -60,15 +56,12 @@ function ProductPage() {
       setAdding(false);
     }
   };
-
   useEffect(() => {
     loadProduct();
   }, [loadProduct]); // Залежність: стабільна функція loadProduct (з useCallback)
-
   if (loading) {
     return <div className="loading">{t('common.loading')}</div>;
   }
-
   if (error || !product) {
     return (
       <div className="error">
@@ -79,26 +72,21 @@ function ProductPage() {
       </div>
     );
   }
-
   const imageUrl = product.images && product.images.length > 0 
     ? buildImageUrl(product.images[0].imageURL)
     : 'https://via.placeholder.com/500x500?text=No+Image';
-
   return (
     <div className="product-page">
       <Link to={from === 'cart' ? '/cart' : '/'} className="back-link">
         ← {from === 'cart' ? t('product.back_to_cart') : t('product.back_to_catalog')}
       </Link>
-      
       <div className="product-details">
         <div className="product-images">
           <img src={imageUrl} alt={displayName} />
         </div>
-
         <div className="product-info-detailed">
           <h1>{displayName}</h1>
           <p className="category-badge">{displayCategory}</p>
-          
           <div className="price-section">
             {product.originalPrice && product.originalPrice !== product.price ? (
               <>
@@ -112,12 +100,10 @@ function ProductPage() {
               {product.stock > 0 ? `✓ ${t('product.in_stock')} (${product.stock} ${t('product.pcs')})` : `✗ ${t('product.out_of_stock')}`}
             </span>
           </div>
-
           <div className="description">
             <h3>{t('product.description')}</h3>
             <p>{displayDescription}</p>
           </div>
-
           <div className="product-specs">
             <h3>{t('product.specs')}</h3>
             <table>
@@ -133,7 +119,6 @@ function ProductPage() {
               </tbody>
             </table>
           </div>
-
           <button 
             className="add-to-cart-btn" 
             disabled={product.stock === 0 || adding}

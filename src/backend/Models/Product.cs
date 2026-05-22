@@ -9,39 +9,29 @@ namespace KhduSouvenirShop.API.Models
     {
         [Key]
         public int ProductId { get; set; }
-
         [Required]
         [MaxLength(200)]
         public string Name { get; set; } = string.Empty;
-
         [MaxLength(200)]
         public string? NameEn { get; set; }
-
         [Required]
         [Column(TypeName = "text")]
         public string Description { get; set; } = string.Empty;
-
         [Column(TypeName = "text")]
         public string? DescriptionEn { get; set; }
-
         [Required]
         [Column(TypeName = "decimal(10,2)")]
         public decimal Price { get; set; }
-
         [Required]
         [Column(TypeName = "decimal(10,3)")]
         public decimal Weight { get; set; }
-
         [Required]
         public int CategoryId { get; set; }
-
         [Required]
         public int Stock { get; set; } = 0;
-
         // Навігаційні властивості
         [ForeignKey("CategoryId")]
         public virtual Category Category { get; set; } = null!;
-
         public virtual ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
         public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
         public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();

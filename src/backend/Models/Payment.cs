@@ -8,37 +8,27 @@ namespace KhduSouvenirShop.API.Models
     {
         [Key]
         public int PaymentId { get; set; }
-
         [Required]
         public int OrderId { get; set; }
-
         [Required]
         [Column(TypeName = "decimal(10,2)")]
         public decimal Amount { get; set; }
-
         [Required]
         [MaxLength(50)]
         public string Method { get; set; } = "Card"; // Card, CashOnDelivery
-
         [Required]
         [MaxLength(50)]
         public string Status { get; set; } = "Pending"; // Pending, Completed, Failed, Refunded
-
         [MaxLength(255)]
         public string? TransactionId { get; set; }
-
         [MaxLength(255)]
         public string? StripeSessionId { get; set; }
-
         [MaxLength(255)]
         public string? StripePaymentIntentId { get; set; }
-
         [MaxLength(100)]
         public string? IdempotencyKey { get; set; }
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
-
         // Навігаційні властивості
         [ForeignKey("OrderId")]
         public virtual Order Order { get; set; } = null!;

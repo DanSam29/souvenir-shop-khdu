@@ -7,16 +7,14 @@ function AdminUsersPage() {
   const [pagination, setPagination] = useState({ pageNumber: 1, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-
   useEffect(() => {
     loadUsers(1);
   }, []);
-
   const loadUsers = async (page = 1) => {
     try {
       setLoading(true);
       const res = await adminUsersAPI.getAll({ pageNumber: page, pageSize: 10 });
-      // Після впровадження Етапу 14 бекенд повертає об'єкт з Items та метаданими
+      // Повернення об'єкту з Items та метаданими
       if (res.data && res.data.items) {
         setUsers(res.data.items);
         setPagination({
@@ -33,7 +31,6 @@ function AdminUsersPage() {
       setLoading(false);
     }
   };
-
   const handleRoleChange = async (id, newRole) => {
     try {
       setUpdating(true);
@@ -46,9 +43,7 @@ function AdminUsersPage() {
       setUpdating(false);
     }
   };
-
   if (loading) return <div className="loading">Завантаження...</div>;
-
   return (
     <div className="admin-users" style={{ padding: 20, maxWidth: 1400, margin: '0 auto' }}>
       <div style={{ marginBottom: 20 }}>
@@ -113,7 +108,6 @@ function AdminUsersPage() {
           </div>
         )}
       </div>
-
       {pagination.totalPages > 1 && (
         <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center', gap: 10 }}>
           <button 

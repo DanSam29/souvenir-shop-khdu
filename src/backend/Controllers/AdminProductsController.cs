@@ -19,14 +19,12 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly AppDbContext _context = context;
         private readonly ILogger<AdminProductsController> _logger = logger;
         private readonly IMemoryCache _cache = cache;
-
         private void InvalidateCache()
         {
             var currentVersion = _cache.Get<int>("Products_Cache_Version");
             _cache.Set("Products_Cache_Version", currentVersion + 1);
             _cache.Remove("Public_Products_All");
         }
-
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
@@ -37,7 +35,6 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return BadRequest(ApiResponse<object>.FailureResult("Категорію не знайдено", "NotFound"));
             }
-
             var product = new Product
             {
                 Name = dto.Name.Trim(),
@@ -49,12 +46,9 @@ namespace KhduSouvenirShop.API.Controllers
                 CategoryId = dto.CategoryId,
                 Stock = dto.Stock
             };
-
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
-
             InvalidateCache();
-
             var result = new
             {
                 productId = product.ProductId,
@@ -67,10 +61,8 @@ namespace KhduSouvenirShop.API.Controllers
                 categoryId = product.CategoryId,
                 stock = product.Stock
             };
-
             return CreatedAtAction(nameof(GetById), new { id = product.ProductId }, ApiResponse<object>.SuccessResult(result, "Товар створено"));
         }
-
         [HttpGet]
         [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
         public async Task<ActionResult> GetProducts(
@@ -83,19 +75,15 @@ namespace KhduSouvenirShop.API.Controllers
             [FromQuery] bool? inStock = null)
         {
             var query = _context.Products.Include(p => p.Category).AsQueryable();
-
             if (categoryId.HasValue)
                 query = query.Where(p => p.CategoryId == categoryId.Value);
-
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim().ToLower();
                 query = query.Where(p => p.Name.ToLower().Contains(s) || (p.NameEn != null && p.NameEn.ToLower().Contains(s)));
             }
-
             if (inStock.HasValue)
                 query = inStock.Value ? query.Where(p => p.Stock > 0) : query.Where(p => p.Stock == 0);
-
             query = sortBy?.ToLower() switch
             {
                 "price" => descending ? query.OrderByDescending(p => p.Price) : query.OrderBy(p => p.Price),
@@ -103,7 +91,6 @@ namespace KhduSouvenirShop.API.Controllers
                 "createdat" => descending ? query.OrderByDescending(p => p.CreatedAt) : query.OrderBy(p => p.CreatedAt),
                 _ => descending ? query.OrderByDescending(p => p.Name) : query.OrderBy(p => p.Name),
             };
-
             var count = await query.CountAsync();
             var items = await query
                 .Skip((pageNumber - 1) * pageSize)
@@ -121,11 +108,9 @@ namespace KhduSouvenirShop.API.Controllers
                     p.UpdatedAt
                 })
                 .ToListAsync();
-
             var response = new PagedResponse<object>(items, count, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResponse<object>>.SuccessResult(response));
         }
-
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -135,12 +120,10 @@ namespace KhduSouvenirShop.API.Controllers
                 .Include(p => p.Category)
                 .Include(p => p.Images)
                 .FirstOrDefaultAsync(p => p.ProductId == id);
-
             if (product == null)
             {
                 return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
             }
-
             var result = new
             {
                 productId = product.ProductId,
@@ -153,10 +136,8 @@ namespace KhduSouvenirShop.API.Controllers
                 categoryId = product.CategoryId,
                 stock = product.Stock
             };
-
             return Ok(ApiResponse<object>.SuccessResult(result));
         }
-
         [HttpPut("{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -167,7 +148,6 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
             }
-
             if (dto.CategoryId != product.CategoryId)
             {
                 var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == dto.CategoryId);
@@ -176,7 +156,6 @@ namespace KhduSouvenirShop.API.Controllers
                     return BadRequest(ApiResponse<object>.FailureResult("Категорію не знайдено", "NotFound"));
                 }
             }
-
             product.Name = string.IsNullOrWhiteSpace(dto.Name) ? product.Name : dto.Name.Trim();
             product.NameEn = dto.NameEn?.Trim();
             product.Description = dto.Description ?? product.Description;
@@ -185,13 +164,10 @@ namespace KhduSouvenirShop.API.Controllers
             product.Weight = dto.Weight > 0 ? dto.Weight : product.Weight;
             product.CategoryId = dto.CategoryId;
             product.Stock = dto.Stock >= 0 ? dto.Stock : product.Stock;
-
             await _context.SaveChangesAsync();
             InvalidateCache();
-
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Товар оновлено"));
         }
-
         [HttpPatch("{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -199,7 +175,6 @@ namespace KhduSouvenirShop.API.Controllers
         {
             var product = await _context.Products.FindAsync(id);
             if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено"));
-
             foreach (var update in updates)
             {
                 var value = update.Value;
@@ -221,12 +196,10 @@ namespace KhduSouvenirShop.API.Controllers
                         break;
                 }
             }
-
             await _context.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Товар частково оновлено"));
         }
-
         [HttpPost("bulk-delete")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         public async Task<ActionResult> BulkDelete([FromBody] List<int> ids)
@@ -235,10 +208,8 @@ namespace KhduSouvenirShop.API.Controllers
                 .Include(p => p.OrderItems)
                 .Where(p => ids.Contains(p.ProductId))
                 .ToListAsync();
-
             var deletedCount = 0;
             var skippedCount = 0;
-
             foreach (var product in products)
             {
                 if (product.OrderItems.Count > 0)
@@ -249,13 +220,10 @@ namespace KhduSouvenirShop.API.Controllers
                 _context.Products.Remove(product);
                 deletedCount++;
             }
-
             await _context.SaveChangesAsync();
             InvalidateCache();
-
             return Ok(ApiResponse<object>.SuccessResult(new { deletedCount, skippedCount }, $"Видалено {deletedCount} товарів. Пропущено {skippedCount} (мають замовлення)"));
         }
-
         [HttpDelete("{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
@@ -266,25 +234,20 @@ namespace KhduSouvenirShop.API.Controllers
                 .Include(p => p.Images)
                 .Include(p => p.OrderItems)
                 .FirstOrDefaultAsync(p => p.ProductId == id);
-
             if (product == null)
             {
                 return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
             }
-
             if (product.OrderItems.Count > 0)
             {
                 return BadRequest(ApiResponse<object>.FailureResult("Неможливо видалити товар, який фігурує у замовленнях. Він буде прихований (Soft Delete) автоматично, якщо ви просто спробуєте видалити, але ми додамо перевірку", "BadRequest"));
             }
-
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
             InvalidateCache();
-
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Товар видалено"));
         }
     }
-
     public class ProductDto
     {
         public string Name { get; set; } = string.Empty;

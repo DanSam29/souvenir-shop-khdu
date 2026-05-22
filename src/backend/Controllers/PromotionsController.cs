@@ -19,35 +19,28 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly AppDbContext _context;
         private readonly Services.PromotionService _promotionService;
         private readonly IMemoryCache _cache;
-
         public PromotionsController(AppDbContext context, Services.PromotionService promotionService, IMemoryCache cache)
         {
             _context = context;
             _promotionService = promotionService;
             _cache = cache;
         }
-
         private void InvalidateCache()
         {
             var currentVersion = _cache.Get<int>("Products_Cache_Version");
             _cache.Set("Products_Cache_Version", currentVersion + 1);
             _cache.Remove("Public_Products_All");
         }
-
-        // --- Public Methods ---
-
+        // Методи для користувачів (перегляд доступних персональних акцій та знижок)
         [HttpGet("my")]
         [Authorize]
         public async Task<ActionResult> GetMyPromotions()
         {
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdStr, out var userId)) return Unauthorized();
-
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound();
-
             var promos = await _promotionService.GetActivePromotionsForUserAsync(user.StudentStatus);
-            
             var result = promos.Select(p => new {
                 p.PromotionId,
                 p.Name,
@@ -59,12 +52,9 @@ namespace KhduSouvenirShop.API.Controllers
                 p.TargetType,
                 p.EndDate
             });
-
             return Ok(ApiResponse<object>.SuccessResult(result));
         }
-
-        // --- Admin Methods ---
-
+        // Методи керування акціями для адміністраторів (перегляд усіх акцій та створення нових)
         [HttpGet]
         [Authorize(Roles = "Administrator")]
         [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
@@ -75,24 +65,19 @@ namespace KhduSouvenirShop.API.Controllers
             [FromQuery] bool? isActive = null)
         {
             var query = _context.Promotions.AsQueryable();
-
             if (!string.IsNullOrEmpty(type))
                 query = query.Where(p => p.Type == type);
-
             if (isActive.HasValue)
                 query = query.Where(p => p.IsActive == isActive.Value);
-
             var count = await query.CountAsync();
             var items = await query
                 .OrderByDescending(p => p.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
-
             var response = new PagedResponse<object>(items, count, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResponse<object>>.SuccessResult(response));
         }
-
         [HttpPost]
         [Authorize(Roles = "Administrator")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
@@ -117,21 +102,17 @@ namespace KhduSouvenirShop.API.Controllers
                 UsageLimit = dto.UsageLimit,
                 IsActive = true
             };
-
             _context.Promotions.Add(promo);
             await _context.SaveChangesAsync();
             InvalidateCache();
-
             return Ok(ApiResponse<object>.SuccessResult(promo, "Акцію створено"));
         }
-
         [HttpPatch("{id}")]
         [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> PatchPromotion(int id, [FromBody] IDictionary<string, JsonElement> updates)
         {
             var promo = await _context.Promotions.FindAsync(id);
             if (promo == null) return NotFound();
-
             foreach (var update in updates)
             {
                 var value = update.Value;
@@ -152,40 +133,32 @@ namespace KhduSouvenirShop.API.Controllers
                         break;
                 }
             }
-
             await _context.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(promo, "Акцію частково оновлено"));
         }
-
         [HttpPatch("{id}/toggle")]
         [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> TogglePromotion(int id)
         {
             var promo = await _context.Promotions.FindAsync(id);
             if (promo == null) return NotFound();
-
             promo.IsActive = !promo.IsActive;
             await _context.SaveChangesAsync();
             InvalidateCache();
-
             return Ok(ApiResponse<object>.SuccessResult(new { id = promo.PromotionId, isActive = promo.IsActive }));
         }
-
         [HttpDelete("{id}")]
         [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> DeletePromotion(int id)
         {
             var promo = await _context.Promotions.FindAsync(id);
             if (promo == null) return NotFound();
-
             _context.Promotions.Remove(promo);
             await _context.SaveChangesAsync();
             InvalidateCache();
-
             return Ok(ApiResponse<object>.SuccessResult(null, "Акцію видалено"));
         }
-
         [HttpPost("bulk-delete")]
         [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> BulkDelete([FromBody] List<int> ids)
@@ -194,11 +167,9 @@ namespace KhduSouvenirShop.API.Controllers
             _context.Promotions.RemoveRange(promos);
             await _context.SaveChangesAsync();
             InvalidateCache();
-
             return Ok(ApiResponse<object>.SuccessResult(null, $"Видалено {promos.Count} акцій"));
         }
     }
-
     public class PromotionDto
     {
         public string Name { get; set; } = string.Empty;

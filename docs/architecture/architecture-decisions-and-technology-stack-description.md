@@ -384,29 +384,34 @@ Services на Render.com:
     - Type: Private Service (Docker)  
     - Internal URL only
 ### 8.2. Environment Variables
-Backend:  
-  - `DATABASE\_URL=mysql://\...`  
-  - `JWT\_SECRET=\...`  
-  - `STRIPE\_SECRET\_KEY=\...`  
-  - `STRIPE\_PUBLISHABLE\_KEY=\...`  
-  - `STRIPE\_WEBHOOK\_SECRET=\...`  
-  - `NOVAPOSHTA\_API\_KEY=\...`  
-  - `UNIVERSITY\_API\_KEY=\...`  
-  - `UNIVERSITY\_API\_BASE\_URL=https://api.ksu.edu.ua`  
-  - `UNIVERSITY\_API\_TIMEOUT=5000`  
-  - `STUDENT\_STATUS\_EXPIRY\_MONTHS=4`  
-  - `HIGH\_ACHIEVER\_MIN\_GPA=4.5`  
-  - `SMTP\_HOST=\...`  
-  - `SMTP\_PORT=\...`  
-  - `SMTP\_USERNAME=\...`  
-  - `SMTP\_PASSWORD=\...`  
-  - `MINIO\_ENDPOINT=\...`  
-  - `MINIO\_ACCESS\_KEY=\...`  
-  - `MINIO\_SECRET\_KEY=\...`  
+Backend (ASP.NET Core 8.0):
 
-Frontend:  
-  - `VITE\_API\_URL=https://api.khdu-eshop.onrender.com`  
-  - `VITE\_STRIPE\_PUBLISHABLE\_KEY=...`
+| Змінна | Призначення |
+|--------|-------------|
+| `AllowedOrigins__0` | Дозволений домен для CORS (фронтенд) |
+| `ASPNETCORE_ENVIRONMENT` | Середовище виконання (Development/Production) |
+| `ConnectionStrings__DefaultConnection` | Підключення до MySQL (Aiven Cloud) |
+| `Jwt__Audience` | Аудиторія для JWT токенів |
+| `Jwt__Issuer` | Видавець JWT токенів |
+| `Jwt__Key` | Секретний ключ для підпису JWT токенів |
+| `NovaPoshta__ApiKey` | API ключ для Nova Poshta |
+| `Smtp__Password` | Пароль для SMTP-сервера (email-сповіщення) |
+| `Stripe__CancelUrl` | URL перенаправлення при скасуванні платежу |
+| `Stripe__PublishableKey` | Публічний ключ Stripe для фронтенду |
+| `Stripe__SecretKey` | Секретний ключ Stripe API |
+| `Stripe__SuccessUrl` | URL перенаправлення при успішному платежі |
+| `Stripe__WebhookSecret` | Секрет для верифікації webhook від Stripe |
+
+Frontend (React):
+
+| Змінна | Призначення |
+|--------|-------------|
+| `REACT_APP_API_URL` | Базовий URL бекенд API |
+
+Примітки:
+  - Усі чутливі дані (ключа, паролі) зберігаються в зашифрованому вигляді в секретному сховищі Render.com
+  - Змінні формату `X__Y` (з подвійним підкресленням) використовуються для вкладених конфігурацій в ASP.NET Core (наприклад, `Jwt:Key`)
+  - URL фронтенду та бекенду налаштовані відповідно до реальних адрес розгортання
 ### 8.3. CI/CD Pipeline (GitHub Actions)
 Workflow:  
 1. Push to GitHub main branch  

@@ -5,11 +5,9 @@ import { warehouseAPI } from '../services/api';
 function AdminWarehousePage() {
   const [stock, setStock] = useState([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     loadStock();
   }, []);
-
   const loadStock = async () => {
     try {
       setLoading(true);
@@ -21,15 +19,12 @@ function AdminWarehousePage() {
       setLoading(false);
     }
   };
-
   if (loading) return <div className="loading">Завантаження...</div>;
-
   const getStockColor = (current) => {
     if (current <= 0) return '#dc3545';
     if (current <= 5) return '#ffc107';
     return '#28a745';
   };
-
   return (
     <div className="admin-warehouse" style={{ padding: 20, maxWidth: 1200, margin: '0 auto' }}>
       <div style={{ marginBottom: 20 }}>

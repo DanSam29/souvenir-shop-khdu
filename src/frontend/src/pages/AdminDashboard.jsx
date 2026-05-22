@@ -6,7 +6,6 @@ function AdminDashboard() {
   const [stats, setStats] = useState({ orders: 0, users: 0, stock: 0, categories: 0 });
   const [integrations, setIntegrations] = useState(null);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const loadStats = async () => {
       try {
@@ -17,7 +16,6 @@ function AdminDashboard() {
           integrationsAPI.getStatus(),
           categoriesAPI.getAll()
         ]);
-
         // Підрахунок загальної кількості категорій (включаючи підкатегорії)
         const countCategories = (nodes) => {
           let count = 0;
@@ -29,7 +27,6 @@ function AdminDashboard() {
           });
           return count;
         };
-
         setStats({
           orders: oRes.data.items ? oRes.data.totalItems : oRes.data.length,
           users: uRes.data.items ? uRes.data.totalItems : uRes.data.length,
@@ -45,13 +42,10 @@ function AdminDashboard() {
     };
     loadStats();
   }, []);
-
   if (loading) return <div>Завантаження...</div>;
-
   return (
     <div className="admin-dashboard" style={{ padding: 20 }}>
       <h1>Панель адміністратора</h1>
-      
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginTop: 30 }}>
         <div style={statCardStyle}>
           <h3>Замовлення</h3>
@@ -89,7 +83,6 @@ function AdminDashboard() {
           <Link to="/admin/analytics">Звіти →</Link>
         </div>
       </div>
-
       <h2 style={{ marginTop: 40 }}>Статус інтеграцій</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginTop: 20 }}>
         {integrations && (
@@ -112,7 +105,6 @@ function AdminDashboard() {
     </div>
   );
 }
-
 const statCardStyle = {
   background: '#fff',
   padding: 20,
@@ -120,7 +112,6 @@ const statCardStyle = {
   boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
   textAlign: 'center'
 };
-
 const integrationCardStyle = (isActive) => ({
   background: '#fff',
   padding: 20,

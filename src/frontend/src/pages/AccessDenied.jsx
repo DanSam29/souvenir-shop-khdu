@@ -5,7 +5,6 @@ import './AccessDenied.css';
 
 const AccessDenied = () => {
   const { t } = useTranslation();
-
   return (
     <div className="access-denied-container">
       <div className="access-denied-content">

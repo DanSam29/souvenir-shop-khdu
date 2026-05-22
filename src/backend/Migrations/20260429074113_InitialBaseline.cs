@@ -1,22 +1,19 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+#pragma warning disable CA1814 // Використання зубчастих масивів замість багатовимірних
 
 namespace KhduSouvenirShop.API.Migrations
 {
-    /// <inheritdoc />
     public partial class InitialBaseline : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterDatabase()
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateTable(
                 name: "Categories",
                 columns: table => new
@@ -43,7 +40,6 @@ namespace KhduSouvenirShop.API.Migrations
                         onDelete: ReferentialAction.SetNull);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateTable(
                 name: "Companies",
                 columns: table => new
@@ -71,7 +67,6 @@ namespace KhduSouvenirShop.API.Migrations
                     table.PrimaryKey("PK_Companies", x => x.CompanyId);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
@@ -106,7 +101,6 @@ namespace KhduSouvenirShop.API.Migrations
                     table.PrimaryKey("PK_Users", x => x.UserId);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateTable(
                 name: "Products",
                 columns: table => new
@@ -135,7 +129,6 @@ namespace KhduSouvenirShop.API.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateTable(
                 name: "Cart",
                 columns: table => new
@@ -156,7 +149,6 @@ namespace KhduSouvenirShop.API.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateTable(
                 name: "Orders",
                 columns: table => new
@@ -184,7 +176,6 @@ namespace KhduSouvenirShop.API.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateTable(
                 name: "Promotions",
                 columns: table => new
@@ -228,7 +219,6 @@ namespace KhduSouvenirShop.API.Migrations
                         onDelete: ReferentialAction.Restrict);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateTable(
                 name: "IncomingDocuments",
                 columns: table => new
@@ -268,7 +258,6 @@ namespace KhduSouvenirShop.API.Migrations
                         onDelete: ReferentialAction.Restrict);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateTable(
                 name: "ProductImages",
                 columns: table => new
@@ -292,7 +281,6 @@ namespace KhduSouvenirShop.API.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateTable(
                 name: "CartItems",
                 columns: table => new
@@ -321,7 +309,6 @@ namespace KhduSouvenirShop.API.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateTable(
                 name: "OrderHistories",
                 columns: table => new
@@ -354,7 +341,6 @@ namespace KhduSouvenirShop.API.Migrations
                         principalColumn: "UserId");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateTable(
                 name: "OrderItems",
                 columns: table => new
@@ -386,7 +372,6 @@ namespace KhduSouvenirShop.API.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateTable(
                 name: "Payments",
                 columns: table => new
@@ -421,7 +406,6 @@ namespace KhduSouvenirShop.API.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateTable(
                 name: "Shipping",
                 columns: table => new
@@ -455,7 +439,6 @@ namespace KhduSouvenirShop.API.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateTable(
                 name: "OutgoingDocuments",
                 columns: table => new
@@ -513,7 +496,6 @@ namespace KhduSouvenirShop.API.Migrations
                         onDelete: ReferentialAction.SetNull);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateTable(
                 name: "UserPromotions",
                 columns: table => new
@@ -542,7 +524,6 @@ namespace KhduSouvenirShop.API.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.InsertData(
                 table: "Categories",
                 columns: new[] { "CategoryId", "CreatedAt", "Description", "DisplayOrder", "Name", "ParentCategoryId", "UpdatedAt" },
@@ -553,7 +534,6 @@ namespace KhduSouvenirShop.API.Migrations
                     { 3, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, 3, "Гуртки", null, null },
                     { 4, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, 4, "Канцелярія", null, null }
                 });
-
             migrationBuilder.InsertData(
                 table: "Products",
                 columns: new[] { "ProductId", "CategoryId", "CreatedAt", "Description", "Name", "Price", "Stock", "UpdatedAt", "Weight" },
@@ -568,7 +548,6 @@ namespace KhduSouvenirShop.API.Migrations
                     { 7, 4, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Металева ручка з гравіюванням ХДУ", "Ручка металева", 129.00m, 300, null, 0.050m },
                     { 8, 4, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Блокнот формату A5 з логотипом ХДУ", "Блокнот A5", 149.00m, 180, null, 0.250m }
                 });
-
             migrationBuilder.InsertData(
                 table: "ProductImages",
                 columns: new[] { "ImageId", "DisplayOrder", "ImageURL", "IsPrimary", "ProductId" },
@@ -587,211 +566,165 @@ namespace KhduSouvenirShop.API.Migrations
                     { 11, 1, "/images/products/pen-metal.jpg", true, 7 },
                     { 12, 1, "/images/products/notebook-a5.jpg", true, 8 }
                 });
-
             migrationBuilder.CreateIndex(
                 name: "IX_Cart_UserId",
                 table: "Cart",
                 column: "UserId",
                 unique: true);
-
             migrationBuilder.CreateIndex(
                 name: "IX_CartItems_CartId_ProductId",
                 table: "CartItems",
                 columns: new[] { "CartId", "ProductId" },
                 unique: true);
-
             migrationBuilder.CreateIndex(
                 name: "IX_CartItems_ProductId",
                 table: "CartItems",
                 column: "ProductId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Categories_ParentCategoryId",
                 table: "Categories",
                 column: "ParentCategoryId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Companies_Email",
                 table: "Companies",
                 column: "Email",
                 unique: true);
-
             migrationBuilder.CreateIndex(
                 name: "IX_Companies_Name",
                 table: "Companies",
                 column: "Name",
                 unique: true);
-
             migrationBuilder.CreateIndex(
                 name: "IX_IncomingDocuments_CompanyId",
                 table: "IncomingDocuments",
                 column: "CompanyId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_IncomingDocuments_CreatedByUserId",
                 table: "IncomingDocuments",
                 column: "CreatedByUserId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_IncomingDocuments_ProductId",
                 table: "IncomingDocuments",
                 column: "ProductId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_OrderHistories_ChangedByUserId",
                 table: "OrderHistories",
                 column: "ChangedByUserId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_OrderHistories_OrderId",
                 table: "OrderHistories",
                 column: "OrderId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_OrderItems_OrderId",
                 table: "OrderItems",
                 column: "OrderId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_OrderItems_ProductId",
                 table: "OrderItems",
                 column: "ProductId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Orders_OrderNumber",
                 table: "Orders",
                 column: "OrderNumber",
                 unique: true);
-
             migrationBuilder.CreateIndex(
                 name: "IX_Orders_UserId",
                 table: "Orders",
                 column: "UserId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_OutgoingDocuments_AppliedPromotionId",
                 table: "OutgoingDocuments",
                 column: "AppliedPromotionId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_OutgoingDocuments_CompanyId",
                 table: "OutgoingDocuments",
                 column: "CompanyId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_OutgoingDocuments_CreatedByUserId",
                 table: "OutgoingDocuments",
                 column: "CreatedByUserId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_OutgoingDocuments_OrderId",
                 table: "OutgoingDocuments",
                 column: "OrderId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_OutgoingDocuments_ProductId",
                 table: "OutgoingDocuments",
                 column: "ProductId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Payments_OrderId",
                 table: "Payments",
                 column: "OrderId",
                 unique: true);
-
             migrationBuilder.CreateIndex(
                 name: "IX_ProductImages_ProductId",
                 table: "ProductImages",
                 column: "ProductId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Products_CategoryId",
                 table: "Products",
                 column: "CategoryId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Promotions_CreatedBy",
                 table: "Promotions",
                 column: "CreatedBy");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Promotions_PromoCode",
                 table: "Promotions",
                 column: "PromoCode",
                 unique: true);
-
             migrationBuilder.CreateIndex(
                 name: "IX_Shipping_OrderId",
                 table: "Shipping",
                 column: "OrderId",
                 unique: true);
-
             migrationBuilder.CreateIndex(
                 name: "IX_UserPromotions_PromotionId",
                 table: "UserPromotions",
                 column: "PromotionId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_UserPromotions_UserId_PromotionId",
                 table: "UserPromotions",
                 columns: new[] { "UserId", "PromotionId" },
                 unique: true);
-
             migrationBuilder.CreateIndex(
                 name: "IX_Users_Email",
                 table: "Users",
                 column: "Email",
                 unique: true);
         }
-
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
                 name: "CartItems");
-
             migrationBuilder.DropTable(
                 name: "IncomingDocuments");
-
             migrationBuilder.DropTable(
                 name: "OrderHistories");
-
             migrationBuilder.DropTable(
                 name: "OrderItems");
-
             migrationBuilder.DropTable(
                 name: "OutgoingDocuments");
-
             migrationBuilder.DropTable(
                 name: "Payments");
-
             migrationBuilder.DropTable(
                 name: "ProductImages");
-
             migrationBuilder.DropTable(
                 name: "Shipping");
-
             migrationBuilder.DropTable(
                 name: "UserPromotions");
-
             migrationBuilder.DropTable(
                 name: "Cart");
-
             migrationBuilder.DropTable(
                 name: "Companies");
-
             migrationBuilder.DropTable(
                 name: "Products");
-
             migrationBuilder.DropTable(
                 name: "Orders");
-
             migrationBuilder.DropTable(
                 name: "Promotions");
-
             migrationBuilder.DropTable(
                 name: "Categories");
-
             migrationBuilder.DropTable(
                 name: "Users");
         }

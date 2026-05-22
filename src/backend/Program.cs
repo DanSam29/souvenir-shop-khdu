@@ -12,42 +12,38 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// 1. Налаштування Rate Limiting (Обмеження частоти запитів)
+// Захист від занадто частого звернення до сервера
 builder.Services.AddRateLimiter(options =>
 {
-    // Глобальний лімітер для всіх запитів
+    // Загальне обмеження для всіх користувачів: 100 запитів на хвилину від одного користувача
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: httpContext.User.Identity?.Name ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             factory: partition => new FixedWindowRateLimiterOptions
             {
                 AutoReplenishment = true,
-                PermitLimit = 100, // Максимум 100 запитів
+                PermitLimit = 100,
                 QueueLimit = 0,
-                Window = TimeSpan.FromMinutes(1) // за 1 хвилину
+                Window = TimeSpan.FromMinutes(1)
             }));
-
-    // Спеціальний лімітер для авторизації (захист від brute-force)
+    // Окремий захист для входу в систему: лише 5 спроб на 5 хвилин
     options.AddPolicy("AuthPolicy", httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             factory: partition => new FixedWindowRateLimiterOptions
             {
                 AutoReplenishment = true,
-                PermitLimit = 5, // 5 спроб
+                PermitLimit = 5,
                 QueueLimit = 0,
-                Window = TimeSpan.FromMinutes(5) // на 5 хвилин
+                Window = TimeSpan.FromMinutes(5)
             }));
-
     options.OnRejected = async (context, token) =>
     {
         context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
         await context.HttpContext.Response.WriteAsJsonAsync(ApiResponse<object>.FailureResult("Занадто багато запитів. Спробуйте пізніше.", "TooManyRequests"), token);
     };
 });
-
-// 2. Налаштування CORS
+// Дозвіл фронтенду звертатися до нашого API
 builder.Services.AddCors(options =>
 {
     var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:3000" };
@@ -59,24 +55,20 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 });
-
-// Налаштування Serilog для логування
+// Налаштування запису логів (в консоль, в папку logs)
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
-
 builder.Host.UseSerilog();
-
-// Додавання DbContext з MySQL
+// Підключення БД MySQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
-
+// Налаштування безпеки (JWT токенів)
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key не налаштовано в appsettings.json");
 var key = Encoding.UTF8.GetBytes(jwtKey);
-
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -93,39 +85,24 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSettings["Issuer"] ?? throw new InvalidOperationException("JWT Issuer не налаштовано"),
         ValidAudience = jwtSettings["Audience"] ?? throw new InvalidOperationException("JWT Audience не налаштовано"),
         IssuerSigningKey = new SymmetricSecurityKey(key),
-        ClockSkew = TimeSpan.Zero // Без затримки при перевірці часу
+        ClockSkew = TimeSpan.Zero
     };
 });
-
 builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
-
-// Кеш пам'яті для швидких GET-запитів каталогу
+// Пришвидшення роботи каталогу товарів через кешування в пам'яті
 builder.Services.AddMemoryCache();
-
-// Promotion service
+// Реєстрація внутрішніх сервісів (бізнес-логіку)
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.PromotionService>();
-
-// Payment service
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IPaymentService, KhduSouvenirShop.API.Services.PaymentService>();
-
-// Email service
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IEmailService, KhduSouvenirShop.API.Services.EmailService>();
-
-// Image service
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IImageService, KhduSouvenirShop.API.Services.ImageService>();
-
-// Nova Poshta service
 builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.INovaPoshtaService, KhduSouvenirShop.API.Services.NovaPoshtaService>();
-
-// University service
 builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.IUniversityService, KhduSouvenirShop.API.Services.UniversityService>();
-
-// FluentValidation
+// Автоматична перевірка правильності введених даних (валідація)
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-
-// Додавання контролерів з обробкою циклічних посилань та кастомною обробкою помилок валідації
+// Налаштування контролерів та формату обміну даними (JSON)
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -140,13 +117,11 @@ builder.Services.AddControllers()
                 .SelectMany(v => v.Errors)
                 .Select(e => e.ErrorMessage)
                 .ToList();
-
             var response = ApiResponse<object>.FailureResult(errors, "Validation Error");
             return new BadRequestObjectResult(response);
         };
     });
-
-// Додавання Swagger для документації API
+// Створення сторінки документації API (Swagger)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -156,8 +131,7 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1",
         Description = "API для інтернет-магазину сувенірної продукції ХДУ"
     });
-
-    // Додавання JWT авторизації в Swagger
+    // Додавання можливості ключ безпеки прямо у Swagger
     options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -167,7 +141,6 @@ builder.Services.AddSwaggerGen(options =>
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
         Description = "Введіть 'Bearer' [пробіл] і ваш токен у текстове поле нижче.\r\n\r\nПриклад: \"Bearer 12345abcdef\""
     });
-
     options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
     {
         {
@@ -183,24 +156,10 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
-
-// Додавання CORS (для frontend)
-// builder.Services.AddCors(options =>
-// {
-//     options.AddPolicy("AllowAll", policy =>
-//     {
-//         policy.AllowAnyOrigin()
-//               .AllowAnyMethod()
-//               .AllowAnyHeader();
-//     });
-// });
-
 var app = builder.Build();
-
-// Глобальна обробка помилок
+// Глобальний обробник помилок для зручного відображення помилок
 app.UseMiddleware<ExceptionMiddleware>();
-
-// Middleware для розробки
+// Налаштування увімкнення Swagger в режимі розробки
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -208,13 +167,10 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    // Налаштування HSTS для продакшн (Stage 12: Security)
     app.UseHsts();
 }
-
 app.UseHttpsRedirection();
-
-// Додавання Security Headers (Stage 12: Security)
+// Додавання заголовків безпеки, щоб захистити сайт від хакерських атак
 app.Use(async (context, next) =>
 {
     context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
@@ -224,18 +180,11 @@ app.Use(async (context, next) =>
     context.Response.Headers.Append("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; frame-ancestors 'none';");
     await next();
 });
-
 app.UseCors("DefaultPolicy");
 app.UseRateLimiter();
-
-// Обслуговування статичних файлів (зображення, тощо)
-// Доступні за адресою: http://localhost:5000/images/products/image.jpg
-app.UseStaticFiles();
-
-app.UseAuthentication();  // Спочатку аутентифікація
-app.UseAuthorization();   // Потім авторизація
-
+app.UseStaticFiles(); // Дозвіл на перегляд картинок товарів через браузер
+app.UseAuthentication();  // Автентифікація користувача
+app.UseAuthorization();   // Перевірка прав користувача
 app.MapControllers();
-
 Log.Information("Сервер запущено!");
 app.Run();

@@ -6,7 +6,6 @@ function AdminAnalyticsPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('month');
-
   const getStartDate = useCallback(() => {
     let from = new Date();
     if (period === 'week') from.setDate(from.getDate() - 7);
@@ -15,7 +14,6 @@ function AdminAnalyticsPage() {
     else if (period === 'today') from.setHours(0, 0, 0, 0);
     return from;
   }, [period]);
-
   const loadAnalytics = useCallback(async () => {
     try {
       setLoading(true);
@@ -28,24 +26,19 @@ function AdminAnalyticsPage() {
       setLoading(false);
     }
   }, [getStartDate]);
-
   useEffect(() => {
     loadAnalytics();
   }, [loadAnalytics]);
-
   const handleExport = async () => {
     try {
       const from = getStartDate();
       const to = new Date();
-      
       const res = await analyticsAPI.exportSales({ 
         from: from.toISOString(),
         to: to.toISOString()
       });
-      
       const startDateStr = from.toISOString().split('T')[0];
       const endDateStr = to.toISOString().split('T')[0];
-      
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -57,9 +50,7 @@ function AdminAnalyticsPage() {
       alert('Помилка при завантаженні звіту');
     }
   };
-
   if (loading) return <div className="loading">Завантаження аналітики...</div>;
-
   return (
     <div className="admin-analytics" style={{ padding: 20, maxWidth: 1400, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 30 }}>
@@ -88,8 +79,7 @@ function AdminAnalyticsPage() {
           </button>
         </div>
       </div>
-
-      {/* Stats Cards */}
+      {/* Картки метрик статистики */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20 }}>
         <div style={cardStyle}>
           <span style={{ color: '#666', fontSize: '0.9rem' }}>Загальний дохід</span>
@@ -108,9 +98,8 @@ function AdminAnalyticsPage() {
           <h2 style={{ margin: '10px 0' }}>{data.avgCheck.toFixed(2)} грн</h2>
         </div>
       </div>
-
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 30, marginTop: 40 }}>
-        {/* Popular Products */}
+        {/* Популярні товари */}
         <div style={cardStyle}>
           <h3 style={{ marginBottom: 20 }}>🔥 Популярні товари</h3>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -132,8 +121,7 @@ function AdminAnalyticsPage() {
             </tbody>
           </table>
         </div>
-
-        {/* Sales Chart (Simple CSS implementation) */}
+        {/* Динаміка продажів */}
         <div style={cardStyle}>
           <h3 style={{ marginBottom: 20 }}>📈 Динаміка продажів</h3>
           <div style={{ display: 'flex', alignItems: 'flex-end', height: 200, gap: 10, paddingBottom: 20, borderBottom: '2px solid #eee' }}>
@@ -160,7 +148,6 @@ function AdminAnalyticsPage() {
     </div>
   );
 }
-
 const cardStyle = {
   background: '#fff',
   padding: 24,

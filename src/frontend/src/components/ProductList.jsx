@@ -13,23 +13,18 @@ function ProductList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  
   const isEn = i18n.language === 'en';
-
   // Фільтри
   const [priceRange, setPriceRange] = useState([0, 10000]);
   const [maxPrice, setMaxPrice] = useState(10000);
   const [selectedCategories, setSelectedCategories] = useState([]);
-  
   // Функція для отримання всіх ID дочірніх категорій
   const getAllCategoryIds = useCallback((categoryIds) => {
     const allIds = new Set();
-    
     const addIds = (id) => {
       if (allIds.has(id)) return;
       allIds.add(id);
-      
-      // Знаходимо категорію в дереві (рекурсивно)
+      // Пошук категорії в дереві (рекурсивно)
       const findAndAddSub = (list) => {
         for (const cat of list) {
           if (cat.categoryId === id) {
@@ -42,23 +37,18 @@ function ProductList() {
         }
         return false;
       };
-      
       findAndAddSub(categories);
     };
-    
     categoryIds.forEach(id => addIds(id));
     return Array.from(allIds);
   }, [categories]);
-
   // Застосування фільтрів
   const applyFilters = useCallback(() => {
     let filtered = [...allProducts];
-    
     // Фільтр за ціною
     filtered = filtered.filter(p => 
       p.price >= priceRange[0] && p.price <= priceRange[1]
     );
-    
     // Фільтр за категоріями
     if (selectedCategories.length > 0) {
       const targetCategoryIds = getAllCategoryIds(selectedCategories);
@@ -66,10 +56,8 @@ function ProductList() {
         targetCategoryIds.includes(p.categoryId)
       );
     }
-    
     setProducts(filtered);
   }, [allProducts, priceRange, selectedCategories, getAllCategoryIds]);
-
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
@@ -77,18 +65,15 @@ function ProductList() {
         productsAPI.getAll(),
         categoriesAPI.getAll()
       ]);
-      
       setOriginalProducts(productsRes.data); 
       setAllProducts(productsRes.data);
       setProducts(productsRes.data);
       setCategories(categoriesRes.data);
-      
-      // Знаходимо максимальну ціну
+      // Пошук максимальної ціни
       const prices = productsRes.data.map(p => p.price);
       const max = Math.max(...prices, 1000);
       setMaxPrice(max);
       setPriceRange([0, max]);
-      
       setError(null);
     } catch (err) {
       console.error('Помилка завантаження:', err);
@@ -97,17 +82,14 @@ function ProductList() {
       setLoading(false);
     }
   }, [t]);
-
   // Завантаження товарів та категорій при монтуванні
   useEffect(() => {
     loadData();
   }, [loadData]);
-
   // Застосування фільтрів при їх зміні
   useEffect(() => {
     applyFilters();
   }, [priceRange, selectedCategories, allProducts, applyFilters]);
-
   // Пошук товарів
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -115,7 +97,6 @@ function ProductList() {
       setAllProducts(originalProducts);
       return;
     }
-
     try {
       setLoading(true);
       const response = await productsAPI.search(searchQuery);
@@ -128,7 +109,6 @@ function ProductList() {
       setLoading(false);
     }
   };
-
   // Зміна категорій
   const toggleCategory = (categoryId) => {
     setSelectedCategories(prev => 
@@ -137,7 +117,6 @@ function ProductList() {
         : [...prev, categoryId]
     );
   };
-
   // Скидання фільтрів
   const resetFilters = () => {
     setPriceRange([0, maxPrice]);
@@ -146,13 +125,12 @@ function ProductList() {
     setAllProducts(originalProducts);
     setProducts (originalProducts);
   };
-
   // Очищення пошуку
   const handleClearSearch = () => {
     setSearchQuery('');
     setAllProducts(originalProducts);
   }
-  // Рекурсивне рендеринг дерева категорій
+  // Рекурсивний рендеринг дерева категорій
   const renderCategoryTree = (nodes, level = 0) => {
     return nodes.map(category => {
       const displayName = (isEn && category.nameEn) ? category.nameEn : category.name;
@@ -178,11 +156,9 @@ function ProductList() {
       );
     });
   };
-
   if (loading && products.length === 0) {
     return <div className="loading">{t('common.loading')}</div>;
   }
-
   if (error) {
     return (
       <div className="error">
@@ -191,7 +167,6 @@ function ProductList() {
       </div>
     );
   }
-
   return (
     <>
       {/* Закріплений пошук */}
@@ -220,7 +195,6 @@ function ProductList() {
           </form>
         </div>
       </div>
-
       <div className="catalog-layout">
         {/* Фільтри зліва */}
         <aside className="filters-sidebar">
@@ -228,7 +202,6 @@ function ProductList() {
             <h3>{t('common.filters')}</h3>
             <button onClick={resetFilters} className="reset-btn">{t('common.reset')}</button>
           </div>
-
           {/* Фільтр за ціною */}
           <div className="filter-section">
             <h4>{t('common.price')}</h4>
@@ -247,7 +220,6 @@ function ProductList() {
               </div>
             </div>
           </div>
-
           {/* Фільтр за категоріями */}
           <div className="filter-section">
             <h4>{t('home.categories')}</h4>
@@ -256,14 +228,12 @@ function ProductList() {
             </div>
           </div>
         </aside>
-
         {/* Список товарів */}
         <div className="products-content">
           <div className="products-header">
             <h2>{t('home.all_products')}</h2>
             <span className="products-count">Знайдено: {products.length}</span>
           </div>
-
           {products.length === 0 ? (
             <p className="no-products">Товарів не знайдено</p>
           ) : (

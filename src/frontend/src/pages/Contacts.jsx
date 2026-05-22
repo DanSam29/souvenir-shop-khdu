@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 
 function Contacts() {
   const { t } = useTranslation();
-
   return (
     <div className="container" style={{ padding: '40px 20px', lineHeight: '1.6' }}>
       <h1>{t('legal.contacts')}</h1>

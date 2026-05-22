@@ -8,16 +8,12 @@ namespace KhduSouvenirShop.API.Models
     {
         [Key]
         public int CartId { get; set; }
-
         [Required]
         public int UserId { get; set; }
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
         // Навігаційні властивості
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;
-
         public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
     }
 }

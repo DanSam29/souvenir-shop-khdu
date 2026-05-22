@@ -8,16 +8,16 @@ workspace "Інтернет-магазин сувенірної продукці
         
         # Software Systems and Containers
         eshop = softwareSystem "Інтернет-магазин ХДУ" {
-            webapp = container "Web Application" "Клієнтський SPA додаток" "React 18, Vite" {
+            webapp = container "Web Application" "Клієнтський SPA додаток" "React 19, Create React App" {
                 tags "Frontend"
             }
             adminpanel = container "Admin Panel" "Адміністративна панель" "React Admin 4" {
                 tags "Frontend"
             }
-            api = container "API Gateway" "REST API бекенд" ".NET Core 8.0" {
+            api = container "API Gateway" "REST API бекенд" "ASP.NET Core 8.0" {
                 tags "Backend"
             }
-            database = container "Database" "Реляційна БД" "MySQL 8.0" {
+            database = container "Database" "Реляційна БД" "MySQL 8.0 (Aiven Cloud)" {
                 tags "Database"
             }
             cache = container "Cache" "Кеш товарів та категорій" "In-Memory Cache" {
@@ -40,9 +40,9 @@ workspace "Інтернет-магазин сувенірної продукці
         minio = softwareSystem "MinIO Storage" "Об'єктне сховище" {
             tags "External"
         }
-	university = softwareSystem "University API" "API університету" {
+        university = softwareSystem "University API" "API університету" {
             tags "External"
-	}
+        }
         
         # Relationships
         user -> eshop.webapp "Переглядає каталог, оформлює замовлення" "HTTPS"
@@ -58,7 +58,7 @@ workspace "Інтернет-магазин сувенірної продукці
         eshop.api -> novaposhta "Розрахунок доставки" "HTTPS/REST"
         eshop.api -> email "Email сповіщення" "SMTP/TLS"
         eshop.api -> minio "Зберігання зображень" "S3 API/HTTPS"
-	eshop.api -> university "Верифікація студентів" "HTTPS/REST"
+        eshop.api -> university "Верифікація студентів" "HTTPS/REST"
         
         # Production Environment
         production = deploymentEnvironment "Production" {
@@ -94,7 +94,7 @@ workspace "Інтернет-магазин сувенірної продукці
                     }
                 }
                 
-                deploymentNode "Database Service" "Managed Database" "Render MySQL" {
+                deploymentNode "Database Service" "Managed Database" "Aiven Cloud (MySQL)" {
                     deploymentNode "MySQL" "Сервер БД" "8.0" {
                         databaseLive = containerInstance eshop.database
                     }
@@ -121,9 +121,9 @@ workspace "Інтернет-магазин сувенірної продукці
                 deploymentNode "Email Provider" "SMTP сервіс" "Gmail/SendGrid" {
                     emailLive = softwareSystemInstance email
                 }
-		deploymentNode "University" "Університетська система" "API Server" {
-    		    universityLive = softwareSystemInstance university
-		}
+                deploymentNode "University" "Університетська система" "API Server" {
+                    universityLive = softwareSystemInstance university
+                }
             }
         }
     }

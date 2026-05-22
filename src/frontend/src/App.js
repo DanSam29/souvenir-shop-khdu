@@ -30,10 +30,8 @@ import logo from './assets/khdu-logo.png';
 import './App.css';
 
 const ADMIN_ROLES = ['Manager', 'Administrator', 'SuperAdmin'];
-
 function App() {
   const { t } = useTranslation();
-
   return (
     <AuthProvider>
       <Router>
@@ -50,8 +48,7 @@ function App() {
               <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/access-denied" element={<AccessDenied />} />
-              
-              {/* Адмінські маршрути з захистом */}
+              {/* Маршрути адміністратора з захистом */}
               <Route path="/admin" element={
                 <ProtectedRoute allowedRoles={ADMIN_ROLES}>
                   <AdminDashboard />
@@ -92,14 +89,11 @@ function App() {
                   <CompaniesAdmin />
                 </ProtectedRoute>
               } />
-
               <Route path="/checkout/success" element={<PaymentSuccessPage />} />
               <Route path="/checkout/cancel" element={<PaymentCancelPage />} />
-              
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/returns" element={<Returns />} />
               <Route path="/contacts" element={<Contacts />} />
-              
               {/* Перенаправлення для неіснуючих сторінок */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

@@ -6,22 +6,18 @@ import { categoriesAPI, adminCategoriesAPI, productsAPI } from '../../services/a
 function CategoriesAdmin() {
   const { user, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
-
   const [categoriesTree, setCategoriesTree] = useState([]);
   const [products, setProducts] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [form, setForm] = useState({
     name: '',
     parentCategoryId: '',
     description: '',
     displayOrder: 0
   });
-
   const [editId, setEditId] = useState(null);
   const [showForm, setShowForm] = useState(false);
-
   useEffect(() => {
     if (loading) return;
     if (!isAuthenticated) {
@@ -34,7 +30,6 @@ function CategoriesAdmin() {
     }
     loadData();
   }, [loading, isAuthenticated, user, navigate]);
-
   const loadData = async () => {
     try {
       setPageLoading(true);
@@ -51,14 +46,11 @@ function CategoriesAdmin() {
       setPageLoading(false);
     }
   };
-
-  const loadCategories = loadData; // Alias for backward compatibility in the component logic
-
+  const loadCategories = loadData; // Псевдонім для зворотної сумісності в логіці компонента
   const getCategoryProductCount = (category) => {
-    // Рахуємо товари в поточній категорії
+    // Підрахунок товарів в поточній категорії
     let count = products.filter(p => p.categoryId === category.categoryId).length;
-    
-    // Додаємо товари з усіх підкатегорій
+    // Додавання товарів з усіх підкатегорій
     if (category.subCategories && category.subCategories.length > 0) {
       category.subCategories.forEach(sub => {
         count += getCategoryProductCount(sub);
@@ -66,16 +58,13 @@ function CategoriesAdmin() {
     }
     return count;
   };
-
   const getDirectProductCount = (categoryId) => {
     return products.filter(p => p.categoryId === categoryId).length;
   };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
-
   const resetForm = () => {
     setForm({
       name: '',
@@ -86,7 +75,6 @@ function CategoriesAdmin() {
     setEditId(null);
     setShowForm(false);
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -107,7 +95,6 @@ function CategoriesAdmin() {
       alert(err.response?.data?.error || 'Помилка збереження категорії');
     }
   };
-
   const startEdit = (cat) => {
     setEditId(cat.categoryId);
     setForm({
@@ -118,7 +105,6 @@ function CategoriesAdmin() {
     });
     setShowForm(true);
   };
-
   const handleDelete = async (id) => {
     if (!window.confirm('Видалити категорію? Увага: категорія має бути порожньою.')) return;
     try {
@@ -128,10 +114,8 @@ function CategoriesAdmin() {
       alert(err.response?.data?.message || 'Помилка видалення категорії');
     }
   };
-
   const CategoryRow = ({ category, level = 0 }) => {
     const productCount = level === 0 ? getCategoryProductCount(category) : getDirectProductCount(category.categoryId);
-    
     return (
       <React.Fragment>
         <tr style={{ borderBottom: '1px solid #f0f0f0', background: level === 0 ? '#fafafa' : '#fff' }}>
@@ -167,11 +151,9 @@ function CategoriesAdmin() {
       </React.Fragment>
     );
   };
-
   if (loading) return <div>Завантаження...</div>;
   if (pageLoading) return <div>Завантаження...</div>;
   if (error) return <div>{error}</div>;
-
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto', padding: 20 }}>
       <div style={{ marginBottom: 30 }}>
@@ -191,7 +173,6 @@ function CategoriesAdmin() {
           </button>
         </div>
       </div>
-
       <div style={{ display: 'grid', gridTemplateColumns: showForm ? '1fr 2fr' : '1fr', gap: 30 }}>
         {showForm && (
           <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', height: 'fit-content' }}>
@@ -201,7 +182,6 @@ function CategoriesAdmin() {
                 <label style={labelStyle}>Назва *</label>
                 <input name="name" value={form.name} onChange={handleChange} style={inputStyle} required />
               </div>
-              
               <div className="form-group">
                 <label style={labelStyle}>Батьківська категорія</label>
                 <select name="parentCategoryId" value={form.parentCategoryId} onChange={handleChange} style={inputStyle}>
@@ -211,24 +191,20 @@ function CategoriesAdmin() {
                   ))}
                 </select>
               </div>
-
               <div className="form-group">
                 <label style={labelStyle}>Опис</label>
                 <textarea name="description" value={form.description} onChange={handleChange} rows={3} style={inputStyle} />
               </div>
-
               <div className="form-group">
                 <label style={labelStyle}>Порядок відображення</label>
                 <input name="displayOrder" type="number" value={form.displayOrder} onChange={handleChange} style={inputStyle} />
               </div>
-
               <button type="submit" style={{ padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', marginTop: 10 }}>
                 {editId ? 'Зберегти зміни' : 'Створити'}
               </button>
             </form>
           </div>
         )}
-
         <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -250,7 +226,6 @@ function CategoriesAdmin() {
     </div>
   );
 }
-
 const inputStyle = {
   width: '100%',
   padding: '10px',
@@ -258,7 +233,6 @@ const inputStyle = {
   border: '1px solid #ddd',
   fontSize: '0.95rem'
 };
-
 const labelStyle = {
   display: 'block',
   marginBottom: 5,
@@ -266,9 +240,7 @@ const labelStyle = {
   fontWeight: 600,
   color: '#555'
 };
-
 const thStyle = { padding: '12px 8px', color: '#666', fontWeight: 600 };
-
 const actionBtnStyle = (color) => ({
   background: 'none',
   border: `1px solid ${color}`,

@@ -7,13 +7,11 @@ function PaymentSuccessPage() {
   const sessionId = searchParams.get('session_id');
   const navigate = useNavigate();
   const [verifying, setVerifying] = useState(!!sessionId);
-
   useEffect(() => {
     if (!sessionId) {
       navigate('/');
       return;
     }
-
     const verify = async () => {
       try {
         await ordersAPI.verifyPayment(sessionId);
@@ -23,10 +21,8 @@ function PaymentSuccessPage() {
         setVerifying(false);
       }
     };
-
     verify();
   }, [sessionId, navigate]);
-
   if (verifying) {
     return (
       <div className="payment-result-page" style={{ maxWidth: 600, margin: '50px auto', textAlign: 'center', padding: 20 }}>
@@ -36,7 +32,6 @@ function PaymentSuccessPage() {
       </div>
     );
   }
-
   return (
     <div className="payment-result-page" style={{ maxWidth: 600, margin: '50px auto', textAlign: 'center', padding: 20 }}>
       <div style={{ fontSize: '64px', color: '#52c41a', marginBottom: '20px' }}>✓</div>

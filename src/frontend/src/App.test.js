@@ -11,7 +11,6 @@ jest.mock('react-router-dom', () => {
     useParams: () => ({})
   };
 });
-
 test('відображає заголовок ХДУ Сувеніри', () => {
   render(<App />);
   const titles = screen.getAllByText(/ХДУ Сувеніри/i);

@@ -23,7 +23,7 @@ jest.mock('../../contexts/AuthContext', () => ({
 }));
 
 describe('ProfilePage', () => {
-  test('відображає бейдж Студент при studentStatus', () => {
+  test('відображення бейджу Студент при studentStatus', () => {
     render(<ProfilePage />);
     const all = screen.getAllByText('Студент');
     expect(all.length).toBeGreaterThan(0);

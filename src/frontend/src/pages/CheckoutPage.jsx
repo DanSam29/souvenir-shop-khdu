@@ -14,10 +14,8 @@ function CheckoutPage() {
   const [orderResult, setOrderResult] = useState(null);
   const [calcPreview, setCalcPreview] = useState(null);
   const [features, setFeatures] = useState(null);
-
   const isEn = i18n.language === 'en';
-
-  // Nova Poshta states
+  // Nova Poshta: стани
   const [cities, setCities] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [citySearch, setCitySearch] = useState('');
@@ -25,7 +23,6 @@ function CheckoutPage() {
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [showWarehouseDropdown, setShowWarehouseDropdown] = useState(false);
   const [shippingCost, setShippingCost] = useState(0);
-
   const [form, setForm] = useState({
     city: '',
     cityRef: '',
@@ -36,7 +33,6 @@ function CheckoutPage() {
     recipientName: '',
     recipientPhone: '',
   });
-
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -46,7 +42,6 @@ function CheckoutPage() {
     loadUser();
     loadFeatures();
   }, [isAuthenticated, navigate]);
-
   const loadFeatures = async () => {
     try {
       const res = await featuresAPI.getStatus();
@@ -55,7 +50,6 @@ function CheckoutPage() {
       console.error('Не вдалося завантажити статуси фічефлагів', err);
     }
   };
-
   const loadCart = async () => {
     try {
       setLoading(true);
@@ -67,7 +61,6 @@ function CheckoutPage() {
       setLoading(false);
     }
   };
-
   const loadUser = async () => {
     try {
       const res = await usersAPI.getCurrentUser();
@@ -84,13 +77,11 @@ function CheckoutPage() {
       }));
     }
   };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
-
-  // Nova Poshta: City Search
+  // Nova Poshta: пошук міста
   useEffect(() => {
     if (form.cityRef || citySearch.length < 2) {
       setCities([]);
@@ -108,8 +99,7 @@ function CheckoutPage() {
     }, 500);
     return () => clearTimeout(timer);
   }, [citySearch, form.cityRef]);
-
-  // Nova Poshta: Warehouse Search
+  // Nova Poshta: пошук відділення
   useEffect(() => {
     if (!form.cityRef || form.warehouseRef) {
       setWarehouses([]);
@@ -127,7 +117,6 @@ function CheckoutPage() {
     }, 500);
     return () => clearTimeout(timer);
   }, [form.cityRef, form.warehouseRef, warehouseSearch]);
-
   const handleCitySelect = (city) => {
     setForm(prev => ({ 
       ...prev, 
@@ -141,7 +130,6 @@ function CheckoutPage() {
     setWarehouses([]);
     setWarehouseSearch('');
   };
-
   const handleWarehouseSelect = (wh) => {
     setForm(prev => ({ 
       ...prev, 
@@ -151,19 +139,17 @@ function CheckoutPage() {
     setWarehouseSearch(wh.description);
     setShowWarehouseDropdown(false);
   };
-
-  // Calculate Shipping Cost
+  // Nova Poshta: обчислення вартості доставки
   useEffect(() => {
     if (form.cityRef && cart) {
       const calculateShipping = async () => {
         try {
           const items = calcPreview?.items ?? cart.items;
-          // Використовуємо реальну вагу з БД, якщо вона є, інакше 0.5кг (fallback)
+          // Використання ваги з БД, якщо вона є, інакше 0.5кг (fallback)
           const totalWeight = items.reduce((acc, item) => {
             const w = item.weight !== undefined ? item.weight : 0.5;
             return acc + w * item.quantity;
           }, 0);
-          
           const currentTotal = calcPreview?.totalAmount ?? cart.totalAmount;
           const res = await novaPoshtaAPI.calculate(form.cityRef, totalWeight, currentTotal);
           setShippingCost(res.data.cost);
@@ -174,7 +160,6 @@ function CheckoutPage() {
       calculateShipping();
     }
   }, [form.cityRef, cart, calcPreview]);
-
   // Автоперерахунок при введенні промокоду
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -193,7 +178,6 @@ function CheckoutPage() {
     }, 600);
     return () => clearTimeout(timer);
   }, [form.promoCode, form.cityRef]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.cityRef || !form.warehouseRef) {
@@ -213,12 +197,10 @@ function CheckoutPage() {
         promoCode: form.promoCode?.trim() || null,
       };
       const res = await ordersAPI.checkout(payload);
-      
       if (res.data && res.data.paymentUrl) {
         window.location.href = res.data.paymentUrl;
         return;
       }
-
       setOrderResult(res.data);
       await loadCart();
     } catch (err) {
@@ -227,11 +209,9 @@ function CheckoutPage() {
       setSubmitting(false);
     }
   };
-
   if (loading) {
     return <div className="checkout-page"><div className="loading">{t('common.loading')}</div></div>;
   }
-
   if (orderResult) {
     return (
       <div className="checkout-page" style={{ maxWidth: 600, margin: '50px auto', padding: 20, textAlign: 'center' }}>
@@ -258,7 +238,6 @@ function CheckoutPage() {
       </div>
     );
   }
-
   if (!cart || cart.items.length === 0) {
     return (
       <div className="checkout-page">
@@ -269,20 +248,16 @@ function CheckoutPage() {
       </div>
     );
   }
-
   const cartTotal = cart?.totalAmount ?? 0;
   const previewTotal = calcPreview?.totalAmount ?? cartTotal;
   const finalTotal = previewTotal + (shippingCost || 0);
-
   return (
     <div className="checkout-page" style={{ maxWidth: 900, margin: '0 auto', padding: 20 }}>
       <Link to="/cart" className="back-link" style={{ textDecoration: 'none', color: '#007bff', fontWeight: 500 }}>← {t('product.back_to_cart')}</Link>
       <h1 style={{ marginBottom: 30 }}>{t('checkout.title')}</h1>
-
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 30 }}>
         <form onSubmit={handleSubmit} style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
           <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>{t('checkout.delivery')}</h2>
-
           {features?.novaPoshtaEnabled ? (
             <>
               <div style={{ position: 'relative', marginBottom: 20 }}>
@@ -313,7 +288,6 @@ function CheckoutPage() {
                   </ul>
                 )}
               </div>
-
               <div style={{ position: 'relative', marginBottom: 20 }}>
                 <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.warehouse')}</label>
                 <input
@@ -369,9 +343,7 @@ function CheckoutPage() {
               </div>
             </>
           )}
-
           <h2 style={{ fontSize: '1.2rem', margin: '30px 0 20px', borderBottom: '1px solid #eee', paddingBottom: 10 }}>{t('checkout.payment_promo')}</h2>
-
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.payment_method')}</label>
             <select
@@ -384,7 +356,6 @@ function CheckoutPage() {
               <option value="CashOnDelivery">📦 {t('checkout.payment_cod')}</option>
             </select>
           </div>
-          
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.promo_code')}</label>
             <input
@@ -396,7 +367,6 @@ function CheckoutPage() {
               style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
             />
           </div>
-
           <button
             type="submit"
             disabled={
@@ -426,18 +396,16 @@ function CheckoutPage() {
             {submitting ? t('common.submitting') : t('checkout.place_order')}
           </button>
         </form>
-
         <div style={{ position: 'sticky', top: 20 }}>
           <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
             <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>{t('checkout.your_order')}</h2>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {(calcPreview?.items ?? cart.items).map((item) => {
-                // Визначаємо ціну: беремо з calcPreview (якщо є) або з кошика
+                // Визначення ціни: з calcPreview (якщо є) або з кошика
                 const itemPrice = item.finalPrice ?? item.productPrice ?? item.price ?? 0;
                 const quantity = item.quantity ?? 0;
                 const itemSubtotal = itemPrice * quantity;
                 const displayName = (isEn && (item.nameEn || item.productNameEn)) ? (item.nameEn || item.productNameEn) : (item.name || item.productName);
-                
                 return (
                   <li key={item.cartItemId || item.productId} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: '0.95rem' }}>
                     <span style={{ color: '#555' }}>{displayName} × {quantity}</span>
@@ -446,7 +414,6 @@ function CheckoutPage() {
                 );
               })}
             </ul>
-            
             <div style={{ marginTop: 20, paddingTop: 15, borderTop: '1px solid #eee' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span style={{ color: '#666' }}>{t('cart.items')}</span>

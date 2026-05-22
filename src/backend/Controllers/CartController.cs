@@ -16,15 +16,13 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly AppDbContext _context;
         private readonly ILogger<CartController> _logger;
         private readonly KhduSouvenirShop.API.Services.PromotionService _promotionService;
-
         public CartController(AppDbContext context, ILogger<CartController> logger, KhduSouvenirShop.API.Services.PromotionService promotionService)
         {
             _context = context;
             _logger = logger;
             _promotionService = promotionService;
         }
-
-        // GET: api/Cart - отримання кошика поточного користувача
+        // Отримання кошика поточного користувача (GET: api/Cart)
         [HttpGet]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         public async Task<ActionResult> GetCart()
@@ -34,7 +32,6 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-
             var cart = await _context.Carts
                 .Include(c => c.CartItems)
                     .ThenInclude(ci => ci.Product)
@@ -43,7 +40,6 @@ namespace KhduSouvenirShop.API.Controllers
                     .ThenInclude(ci => ci.Product)
                         .ThenInclude(p => p.Images)
                 .FirstOrDefaultAsync(c => c.UserId == userId);
-
             if (cart == null)
             {
                 cart = new Cart
@@ -54,12 +50,9 @@ namespace KhduSouvenirShop.API.Controllers
                 _context.Carts.Add(cart);
                 await _context.SaveChangesAsync();
             }
-
             var user = await _context.Users.FindAsync(cart.UserId);
             string studentStatus = user?.StudentStatus ?? "NONE";
-
             var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
-
             var itemsDto = cart.CartItems.Select(ci =>
             {
                 var discountedPrice = _promotionService.GetPriceAfterPromotions(ci.Product, promos);
@@ -78,9 +71,7 @@ namespace KhduSouvenirShop.API.Controllers
                     subtotal = discountedPrice * ci.Quantity
                 };
             }).ToList();
-
             var totalAmount = itemsDto.Sum(i => (decimal)i.subtotal);
-
             var result = new
             {
                 cartId = cart.CartId,
@@ -88,11 +79,9 @@ namespace KhduSouvenirShop.API.Controllers
                 totalAmount = totalAmount,
                 itemCount = cart.CartItems.Count
             };
-
             return Ok(ApiResponse<object>.SuccessResult(result));
         }
-
-        // POST: api/Cart/add - додавання товару до кошика
+        // Додавання товару до кошика (POST: api/Cart/add)
         [HttpPost("add")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
@@ -104,23 +93,19 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-
             if (dto.Quantity <= 0)
             {
                 return BadRequest(ApiResponse<object>.FailureResult("Кількість має бути більше 0", "BadRequest"));
             }
-
             var product = await _context.Products.FindAsync(dto.ProductId);
             if (product == null)
             {
                 return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
             }
-
             if (product.Stock < dto.Quantity)
             {
                 return BadRequest(ApiResponse<object>.FailureResult($"Недостатньо товару на складі. Доступно: {product.Stock}", "BadRequest"));
             }
-
             var cart = await _context.Carts.FirstOrDefaultAsync(c => c.UserId == userId);
             if (cart == null)
             {
@@ -128,10 +113,8 @@ namespace KhduSouvenirShop.API.Controllers
                 _context.Carts.Add(cart);
                 await _context.SaveChangesAsync();
             }
-
             var existingItem = await _context.CartItems
                 .FirstOrDefaultAsync(ci => ci.CartId == cart.CartId && ci.ProductId == dto.ProductId);
-
             if (existingItem != null)
             {
                 var newQuantity = existingItem.Quantity + dto.Quantity;
@@ -152,15 +135,11 @@ namespace KhduSouvenirShop.API.Controllers
                 };
                 _context.CartItems.Add(cartItem);
             }
-
             await _context.SaveChangesAsync();
-
             _logger.LogInformation("Товар {ProductId} додано до кошика користувача {UserId}", dto.ProductId, userId);
-
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Товар додано до кошика"));
         }
-
-        // PUT: api/Cart/update/{cartItemId} - оновлення кількості товару
+        // Оновлення кількості товару (PUT: api/Cart/update/{cartItemId})
         [HttpPut("update/{cartItemId}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -171,34 +150,27 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-
             var cartItem = await _context.CartItems
                 .Include(ci => ci.Cart)
                 .Include(ci => ci.Product)
                 .FirstOrDefaultAsync(ci => ci.CartItemId == cartItemId && ci.Cart.UserId == userId);
-
             if (cartItem == null)
             {
                 return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено у кошику", "NotFound"));
             }
-
             if (dto.Quantity <= 0)
             {
                 return BadRequest(ApiResponse<object>.FailureResult("Кількість має бути більше 0", "BadRequest"));
             }
-
             if (cartItem.Product.Stock < dto.Quantity)
             {
                 return BadRequest(ApiResponse<object>.FailureResult($"Недостатньо товару на складі. Доступно: {cartItem.Product.Stock}", "BadRequest"));
             }
-
             cartItem.Quantity = dto.Quantity;
             await _context.SaveChangesAsync();
-
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Кількість оновлено"));
         }
-
-        // DELETE: api/Cart/remove/{cartItemId} - видалення товару з кошика
+        // Видалення товару з кошика (DELETE: api/Cart/remove/{cartItemId})
         [HttpDelete("remove/{cartItemId}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -209,7 +181,6 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-
             var cartItem = await _context.CartItems
                 .Include(ci => ci.Cart)
                 .FirstOrDefaultAsync(ci => ci.CartItemId == cartItemId && ci.Cart.UserId == userId);
@@ -218,14 +189,11 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено у кошику", "NotFound"));
             }
-
             _context.CartItems.Remove(cartItem);
             await _context.SaveChangesAsync();
-
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Товар видалено з кошика"));
         }
-
-        // DELETE: api/Cart/clear - очищення кошика
+        // Очищення кошика (DELETE: api/Cart/clear)
         [HttpDelete("clear")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -236,29 +204,23 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-
             var cart = await _context.Carts
                 .Include(c => c.CartItems)
                 .FirstOrDefaultAsync(c => c.UserId == userId);
-
             if (cart == null)
             {
                 return NotFound(ApiResponse<object>.FailureResult("Кошик не знайдено", "NotFound"));
             }
-
             _context.CartItems.RemoveRange(cart.CartItems);
             await _context.SaveChangesAsync();
-
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Кошик очищено"));
         }
     }
-
     public class AddToCartDto
     {
         public int ProductId { get; set; }
         public int Quantity { get; set; } = 1;
     }
-
     public class UpdateQuantityDto
     {
         public int Quantity { get; set; }

@@ -8,13 +8,11 @@ jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
 }));
-
 jest.mock('../../contexts/AuthContext', () => ({
   useAuth: () => ({ login: jest.fn() })
 }));
-
 describe('LoginPage', () => {
-  test('показує плейсхолдер email example@ksu.edu.ua', () => {
+  test('відображення плейсхолдеру email example@ksu.edu.ua', () => {
     render(<MemoryRouter><LoginPage /></MemoryRouter>);
     const input = screen.getByLabelText(/Email/i);
     expect(input).toHaveAttribute('placeholder', 'example@ksu.edu.ua');

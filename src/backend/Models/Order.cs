@@ -8,31 +8,23 @@ namespace KhduSouvenirShop.API.Models
     {
         [Key]
         public int OrderId { get; set; }
-
         [Required]
         public int UserId { get; set; }
-
         [Required]
         [MaxLength(50)]
         public string OrderNumber { get; set; } = string.Empty;
-
         [Required]
         [MaxLength(50)]
         public string Status { get; set; } = "Processing"; // Processing, Shipped, Delivered, Cancelled
-
         [Required]
         [Column(TypeName = "decimal(10,2)")]
         public decimal TotalAmount { get; set; }
-
         [Column(TypeName = "decimal(10,2)")]
         public decimal ShippingCost { get; set; } = 0;
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
         // Навігаційні властивості
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;
-
         public virtual ICollection<OrderItem> OrderItems { get; set; } = [];
         public virtual ICollection<OrderHistory> OrderHistories { get; set; } = [];
         public virtual Shipping? Shipping { get; set; }

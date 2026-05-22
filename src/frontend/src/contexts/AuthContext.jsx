@@ -6,13 +6,11 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Вихід (потрібен для loadUserData, тому визначаємо його першим)
+  // Вихід (потрібен для loadUserData, тому визначений першим)
   const logout = useCallback(() => {
     localStorage.removeItem('token');
     setUser(null);
   }, []);
-
   // Завантаження даних користувача (Обертаємо в useCallback для стабілізації)
   const loadUserData = useCallback(async () => {
     try {
@@ -21,12 +19,11 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
     } catch (error) {
       console.error('Помилка завантаження даних користувача:', error);
-      logout(); // Якщо токен невалідний - виходимо
+      logout(); // Якщо токен невалідний - вихід
     } finally {
       setLoading(false);
     }
   }, [logout]); // Залежність: logout
-
   // Перевірка токену при завантаженні додатку
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -36,29 +33,22 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   }, [loadUserData]); // Залежність: loadUserData
-
   // Авторизація
   const login = async (email, password) => {
     const response = await usersAPI.login({ email, password });
     const { token, ...userData } = response.data;
-    
     localStorage.setItem('token', token);
     setUser(userData);
-
     return response.data;
   };
-
   // Реєстрація
   const register = async (userData) => {
     const response = await usersAPI.register(userData);
     const { token, ...userInfo } = response.data;
-    
     localStorage.setItem('token', token);
     setUser(userInfo);
-    
     return response.data;
   };
-
   const value = {
     user,
     loading,
@@ -67,10 +57,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     isAuthenticated: !!user
   };
-
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
 // Хук для використання контексту
 export const useAuth = () => {
   const context = useContext(AuthContext);

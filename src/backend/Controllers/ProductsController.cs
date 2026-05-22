@@ -17,7 +17,6 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly IMemoryCache _cache;
         private readonly KhduSouvenirShop.API.Services.PromotionService _promotionService;
         private readonly KhduSouvenirShop.API.Services.IImageService _imageService;
-
         public ProductsController(AppDbContext context, ILogger<ProductsController> logger, IMemoryCache cache, KhduSouvenirShop.API.Services.PromotionService promotionService, KhduSouvenirShop.API.Services.IImageService imageService)
         {
             _context = context;
@@ -26,7 +25,6 @@ namespace KhduSouvenirShop.API.Controllers
             _promotionService = promotionService;
             _imageService = imageService;
         }
-
         // GET: api/Products
         [HttpGet]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status200OK)]
@@ -38,8 +36,7 @@ namespace KhduSouvenirShop.API.Controllers
             [FromQuery] decimal? maxPrice = null)
         {
             _logger.LogInformation("Запит на отримання товарів з фільтрами");
-            
-            // Спочатку визначаємо studentStatus
+            // Визначення studentStatus
             string studentStatus = "NONE";
             if (User?.Identity?.IsAuthenticated == true)
             {
@@ -50,35 +47,27 @@ namespace KhduSouvenirShop.API.Controllers
                     if (user != null) studentStatus = user.StudentStatus ?? "NONE";
                 }
             }
-
-            // Отримуємо поточну версію кешу
+            // Отримання поточної версії кешу
             var cacheVersion = _cache.Get<int>("Products_Cache_Version");
-            
-            // Ключ кешу залежить від версії, фільтрів ТА studentStatus
+            // Ключ кешу залежить від версії, фільтрів та studentStatus
             string cacheKey = $"v{cacheVersion}_Products_{categoryId}_{search}_{sortBy}_{minPrice}_{maxPrice}_{studentStatus}";
-            
             if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
             {
                 var query = _context.Products
                     .Include(p => p.Category)
                     .Include(p => p.Images)
                     .AsQueryable();
-
                 // Фільтрація
                 if (categoryId.HasValue)
                     query = query.Where(p => p.CategoryId == categoryId.Value);
-
                 if (!string.IsNullOrEmpty(search))
                     query = query.Where(p => p.Name.Contains(search) || p.Description.Contains(search) || 
                                             (p.NameEn != null && p.NameEn.Contains(search)) || 
                                             (p.DescriptionEn != null && p.DescriptionEn.Contains(search)));
-
                 if (minPrice.HasValue)
                     query = query.Where(p => p.Price >= minPrice.Value);
-
                 if (maxPrice.HasValue)
                     query = query.Where(p => p.Price <= maxPrice.Value);
-
                 // Сортування
                 query = sortBy switch
                 {
@@ -87,11 +76,8 @@ namespace KhduSouvenirShop.API.Controllers
                     "name_asc" => query.OrderBy(p => p.Name),
                     _ => query.OrderByDescending(p => p.CreatedAt)
                 };
-
                 var products = await query.ToListAsync();
-
                 var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
-
                 dtoList = products.Select(p => new
                 {
                     productId = p.ProductId,
@@ -112,13 +98,10 @@ namespace KhduSouvenirShop.API.Controllers
                     createdAt = p.CreatedAt,
                     stock = p.Stock
                 }).ToList<object>();
-
                 _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(5));
             }
-
             return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
         }
-
         // GET: api/Products/5
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
@@ -126,7 +109,6 @@ namespace KhduSouvenirShop.API.Controllers
         public async Task<ActionResult> GetProduct(int id)
         {
             _logger.LogInformation("Запит на отримання товару з ID: {ProductId}", id);
-
             string studentStatus = "NONE";
             if (User?.Identity?.IsAuthenticated == true)
             {
@@ -137,7 +119,6 @@ namespace KhduSouvenirShop.API.Controllers
                     if (user != null) studentStatus = user.StudentStatus ?? "NONE";
                 }
             }
-
             var cacheVersion = _cache.Get<int>("Products_Cache_Version");
             var cacheKey = $"v{cacheVersion}_product:{id}:{studentStatus}";
             if (!_cache.TryGetValue(cacheKey, out object? dto))
@@ -146,15 +127,12 @@ namespace KhduSouvenirShop.API.Controllers
                     .Include(p => p.Category)
                     .Include(p => p.Images)
                     .FirstOrDefaultAsync(p => p.ProductId == id);
-
                 if (product == null)
                 {
                     _logger.LogWarning("Товар з ID {ProductId} не знайдено", id);
                     return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
                 }
-
                 var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
-
                 dto = new
                 {
                     productId = product.ProductId,
@@ -175,18 +153,14 @@ namespace KhduSouvenirShop.API.Controllers
                     createdAt = product.CreatedAt,
                     stock = product.Stock
                 };
-
                 _cache.Set(cacheKey, dto, TimeSpan.FromMinutes(5));
             }
-
             if (dto == null)
             {
                 return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
             }
-
             return Ok(ApiResponse<object>.SuccessResult(dto));
         }
-
         // GET: api/Products/search?query=футболка
         [HttpGet("search")]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status200OK)]
@@ -199,9 +173,7 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return BadRequest(ApiResponse<object>.FailureResult("Пошуковий запит не може бути порожнім", "BadRequest"));
             }
-
             var norm = query.Trim().ToLowerInvariant();
-
             string studentStatus = "NONE";
             if (User?.Identity?.IsAuthenticated == true)
             {
@@ -212,7 +184,6 @@ namespace KhduSouvenirShop.API.Controllers
                     if (user != null) studentStatus = user.StudentStatus ?? "NONE";
                 }
             }
-
             var cacheVersion = _cache.Get<int>("Products_Cache_Version");
             var cacheKey = $"v{cacheVersion}_products:search:{norm}:{studentStatus}";
             if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
@@ -224,7 +195,6 @@ namespace KhduSouvenirShop.API.Controllers
                                 (p.NameEn != null && p.NameEn.Contains(query)) || 
                                 (p.DescriptionEn != null && p.DescriptionEn.Contains(query)))
                     .ToListAsync();
-
                 var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
                 dtoList = products.Select(p => new
                 {
@@ -246,13 +216,10 @@ namespace KhduSouvenirShop.API.Controllers
                     createdAt = p.CreatedAt,
                     stock = p.Stock
                 }).ToList<object>();
-
                 _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(2));
             }
-
             return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
         }
-
         // GET: api/Products/category/1
         [HttpGet("category/{categoryId}")]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status200OK)]
@@ -269,7 +236,6 @@ namespace KhduSouvenirShop.API.Controllers
                     if (user != null) studentStatus = user.StudentStatus ?? "NONE";
                 }
             }
-
             var cacheVersion = _cache.Get<int>("Products_Cache_Version");
             var cacheKey = $"v{cacheVersion}_products:category:{categoryId}:{studentStatus}";
             if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
@@ -279,9 +245,7 @@ namespace KhduSouvenirShop.API.Controllers
                     .Include(p => p.Images)
                     .Where(p => p.CategoryId == categoryId)
                     .ToListAsync();
-
                 var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
-
                 dtoList = products.Select(p => new
                 {
                     productId = p.ProductId,
@@ -293,15 +257,11 @@ namespace KhduSouvenirShop.API.Controllers
                     originalPrice = p.Price,
                     stock = p.Stock
                 }).ToList<object>();
-
                 _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(5));
             }
-
             return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
         }
-
-        // --- Admin Methods ---
-
+        // Методи управління товарами для адміністраторів (створення, редагування, видалення та керування зображеннями)
         [HttpPost]
         [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> CreateProduct([FromBody] ProductCreateDto dto)
@@ -317,14 +277,11 @@ namespace KhduSouvenirShop.API.Controllers
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
-
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
-
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(product, "Товар створено"));
         }
-
         [HttpPut("{id}")]
         [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> UpdateProduct(int id, [FromBody] ProductUpdateDto dto)
@@ -339,13 +296,10 @@ namespace KhduSouvenirShop.API.Controllers
             product.CategoryId = dto.CategoryId;
             product.Weight = dto.Weight;
             product.UpdatedAt = DateTime.UtcNow;
-
             await _context.SaveChangesAsync();
-
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(product, "Товар оновлено"));
         }
-
         [HttpDelete("{id}")]
         [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> DeleteProduct(int id)
@@ -355,40 +309,32 @@ namespace KhduSouvenirShop.API.Controllers
                 .FirstOrDefaultAsync(p => p.ProductId == id);
 
             if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
-
             // Видалення зображень з диска
             foreach (var img in product.Images)
             {
                 await _imageService.DeleteImageAsync(img.ImageURL);
             }
-
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
-
             InvalidateCache();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Товар видалено"));
         }
-
         [HttpPost("{id}/images")]
         [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> UploadImage(int id, IFormFile file, [FromQuery] bool isPrimary = false)
         {
             var product = await _context.Products.Include(p => p.Images).FirstOrDefaultAsync(p => p.ProductId == id);
             if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
-
             try
             {
                 var url = await _imageService.UploadImageAsync(file);
-
-                // Якщо це перше зображення, робимо його головним автоматично
+                // Якщо це перше зображення - автоматично стає головним
                 if (!product.Images.Any()) isPrimary = true;
-
-                // Якщо ми ставимо нове головне зображення, знімаємо прапорець з інших
+                // Якщо додано нове головне зображення - будь-яке інше зображення втрачає цей статус
                 if (isPrimary)
                 {
                     foreach (var img in product.Images) img.IsPrimary = false;
                 }
-
                 var productImage = new ProductImage
                 {
                     ProductId = id,
@@ -396,10 +342,8 @@ namespace KhduSouvenirShop.API.Controllers
                     IsPrimary = isPrimary,
                     DisplayOrder = product.Images.Count
                 };
-
                 _context.ProductImages.Add(productImage);
                 await _context.SaveChangesAsync();
-
                 InvalidateCache();
                 return Ok(ApiResponse<object>.SuccessResult(productImage, "Зображення додано"));
             }
@@ -409,32 +353,26 @@ namespace KhduSouvenirShop.API.Controllers
                 return BadRequest(ApiResponse<object>.FailureResult("Помилка при завантаженні зображення", "UploadError"));
             }
         }
-
         [HttpDelete("images/{imageId}")]
         [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> DeleteImage(int imageId)
         {
             var img = await _context.ProductImages.FindAsync(imageId);
             if (img == null) return NotFound(ApiResponse<object>.FailureResult("Зображення не знайдено", "NotFound"));
-
             await _imageService.DeleteImageAsync(img.ImageURL);
             _context.ProductImages.Remove(img);
             await _context.SaveChangesAsync();
-
             InvalidateCache();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Зображення видалено"));
         }
-
         private void InvalidateCache()
         {
-            // Інкрементуємо версію кешу, що фактично інвалідує всі існуючі ключі для товарів
+            // Інкрементація версії кешу, що фактично інвалідує всі існуючі ключі для товарів
             var currentVersion = _cache.Get<int>("Products_Cache_Version");
             _cache.Set("Products_Cache_Version", currentVersion + 1);
-            
             _cache.Remove("Public_Products_All");
         }
     }
-
     public class ProductCreateDto
     {
         public string Name { get; set; } = string.Empty;
@@ -444,6 +382,5 @@ namespace KhduSouvenirShop.API.Controllers
         public int CategoryId { get; set; }
         public decimal Weight { get; set; } = 0.5m;
     }
-
     public class ProductUpdateDto : ProductCreateDto { }
 }

@@ -9,9 +9,7 @@ namespace KhduSouvenirShop.API.Models.Common
         public int TotalItems { get; set; }
         public bool HasPreviousPage => PageNumber > 1;
         public bool HasNextPage => PageNumber < TotalPages;
-
         public PagedResponse() { }
-
         public PagedResponse(IEnumerable<T> items, int count, int pageNumber, int pageSize)
         {
             Items = items;

@@ -11,9 +11,7 @@ function CartPage() {
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const isEn = i18n.language === 'en';
-
   const loadCart = useCallback(async () => {
     try {
       setLoading(true);
@@ -26,7 +24,6 @@ function CartPage() {
       setLoading(false);
     }
   }, [t]);
-
   useEffect(() => {
     if (isAuthenticated) {
       loadCart();
@@ -34,10 +31,8 @@ function CartPage() {
       setLoading(false);
     }
   }, [isAuthenticated, loadCart]);
-
   const handleUpdateQuantity = async (cartItemId, newQuantity) => {
     if (newQuantity < 1) return;
-
     try {
       await cartAPI.updateQuantity(cartItemId, newQuantity);
       await loadCart(); // Перезавантажуємо кошик
@@ -46,7 +41,6 @@ function CartPage() {
       alert(err.response?.data?.error || t('common.update_error') || 'Помилка оновлення кількості');
     }
   };
-
   const handleRemoveItem = async (cartItemId) => {
     try {
       await cartAPI.removeFromCart(cartItemId);
@@ -56,12 +50,10 @@ function CartPage() {
       alert(t('common.remove_error') || 'Помилка видалення товару');
     }
   };
-
   const handleClearCart = async () => {
     if (!window.confirm(t('cart.clear_confirm') || 'Ви впевнені, що хочете очистити кошик?')) {
       return;
     }
-
     try {
       await cartAPI.clearCart();
       await loadCart();
@@ -70,7 +62,6 @@ function CartPage() {
       alert(t('common.clear_error') || 'Помилка очищення кошика');
     }
   };
-
   // Якщо не авторизований
   if (!isAuthenticated) {
     return (
@@ -91,7 +82,6 @@ function CartPage() {
       </div>
     );
   }
-
   if (loading) {
     return (
       <div className="cart-page">
@@ -99,7 +89,6 @@ function CartPage() {
       </div>
     );
   }
-
   if (error) {
     return (
       <div className="cart-page">
@@ -110,7 +99,6 @@ function CartPage() {
       </div>
     );
   }
-
   if (!cart || cart.items.length === 0) {
     return (
       <div className="cart-page">
@@ -125,7 +113,6 @@ function CartPage() {
       </div>
     );
   }
-
   return (
     <div className="cart-page">
       <div className="cart-container">
@@ -135,7 +122,6 @@ function CartPage() {
             🗑️ {t('cart.clear')}
           </button>
         </div>
-
         <div className="cart-content">
           <div className="cart-items">
             {cart.items.map(item => {
@@ -173,7 +159,6 @@ function CartPage() {
               );
             })}
           </div>
-
           <aside className="cart-summary">
             <h2>{t('cart.summary')}</h2>
             <div className="summary-row">

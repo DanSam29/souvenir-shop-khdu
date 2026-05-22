@@ -10,12 +10,10 @@ namespace KhduSouvenirShop.API.Controllers
     public class IntegrationsController : ControllerBase
     {
         private readonly IConfiguration _configuration;
-
         public IntegrationsController(IConfiguration configuration)
         {
             _configuration = configuration;
         }
-
         [HttpGet("status")]
         public ActionResult GetStatus()
         {
@@ -37,7 +35,6 @@ namespace KhduSouvenirShop.API.Controllers
                     domainsCount = _configuration.GetSection("University:AllowedDomains").Get<string[]>()?.Length ?? 0
                 }
             };
-
             return Ok(ApiResponse<object>.SuccessResult(status));
         }
     }
