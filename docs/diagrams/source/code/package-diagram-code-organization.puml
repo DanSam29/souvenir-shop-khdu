@@ -144,6 +144,7 @@ package "Database" {
         component Shipping
         component Orders
         component OrderItems
+        component OrderHistory
         component Users
         component Products
         component Categories
@@ -225,6 +226,7 @@ PaymentModule -[#0000CC]-> Payments : read/write
 ShippingModule -[#4C0099]-> Shipping : read/write
 "OrderModule " -[#DEBC00]-> Orders : read/write
 "OrderModule " -[#DEBC00]-> OrderItems : read/write
+"OrderModule " -[#DEBC00]-> OrderHistory : read/write
 "UserModule " -[#89707B]-> Users : read/write
 "CatalogModule " -[#596E6E]-> Products : read/write
 "CatalogModule " -[#596E6E]-> Categories : read/write
@@ -236,6 +238,7 @@ PromotionModule -[#9370DB]-> Promotions : read/write
 PromotionModule -[#9370DB]-> UserPromotions : read/write
 AnalyticsModule -[#66FFFF]-> Orders : read
 AnalyticsModule -[#66FFFF]-> OrderItems : read
+AnalyticsModule -[#66FFFF]-> OrderHistory : read
 AnalyticsModule -[#66FFFF]-> Products : read
 AnalyticsModule -[#66FFFF]-> Categories : read
 AnalyticsModule -[#66FFFF]-> Promotions : read
