@@ -2,9 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
+using KhduSouvenirShop.API.Repositories;
 
 using System.Globalization;
 using System.Text.Json;
@@ -14,9 +14,10 @@ namespace KhduSouvenirShop.API.Controllers
     [Route("api/admin/products")]
     [ApiController]
     [Authorize(Roles = "Manager,Administrator")]
-    public class AdminProductsController(AppDbContext context, ILogger<AdminProductsController> logger, IMemoryCache cache) : ControllerBase
+    public class AdminProductsController(IProductRepository productRepository, ICategoryRepository categoryRepository, ILogger<AdminProductsController> logger, IMemoryCache cache) : ControllerBase
     {
-        private readonly AppDbContext _context = context;
+        private readonly IProductRepository _productRepository = productRepository;
+        private readonly ICategoryRepository _categoryRepository = categoryRepository;
         private readonly ILogger<AdminProductsController> _logger = logger;
         private readonly IMemoryCache _cache = cache;
         private void InvalidateCache()
@@ -30,7 +31,7 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> CreateProduct([FromBody] ProductDto dto)
         {
-            var category = await _context.Categories.FindAsync(dto.CategoryId);
+            var category = await _categoryRepository.GetByIdAsync(dto.CategoryId);
             if (category == null)
             {
                 return BadRequest(ApiResponse<object>.FailureResult("Категорію не знайдено", "NotFound"));
@@ -46,8 +47,8 @@ namespace KhduSouvenirShop.API.Controllers
                 CategoryId = dto.CategoryId,
                 Stock = dto.Stock
             };
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
+            await _productRepository.AddAsync(product);
+            await _productRepository.SaveChangesAsync();
             InvalidateCache();
             var result = new
             {
@@ -74,7 +75,7 @@ namespace KhduSouvenirShop.API.Controllers
             [FromQuery] bool descending = false,
             [FromQuery] bool? inStock = null)
         {
-            var query = _context.Products.Include(p => p.Category).AsQueryable();
+            var query = _productRepository.Query().Include(p => p.Category).AsQueryable();
             if (categoryId.HasValue)
                 query = query.Where(p => p.CategoryId == categoryId.Value);
             if (!string.IsNullOrWhiteSpace(search))
@@ -116,7 +117,7 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> GetById(int id)
         {
-            var product = await _context.Products
+            var product = await _productRepository.Query()
                 .Include(p => p.Category)
                 .Include(p => p.Images)
                 .FirstOrDefaultAsync(p => p.ProductId == id);
@@ -143,14 +144,14 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> UpdateProduct(int id, [FromBody] ProductDto dto)
         {
-            var product = await _context.Products.FindAsync(id);
+            var product = await _productRepository.GetByIdAsync(id);
             if (product == null)
             {
                 return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
             }
             if (dto.CategoryId != product.CategoryId)
             {
-                var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == dto.CategoryId);
+                var categoryExists = await _categoryRepository.Query().AnyAsync(c => c.CategoryId == dto.CategoryId);
                 if (!categoryExists)
                 {
                     return BadRequest(ApiResponse<object>.FailureResult("Категорію не знайдено", "NotFound"));
@@ -164,7 +165,7 @@ namespace KhduSouvenirShop.API.Controllers
             product.Weight = dto.Weight > 0 ? dto.Weight : product.Weight;
             product.CategoryId = dto.CategoryId;
             product.Stock = dto.Stock >= 0 ? dto.Stock : product.Stock;
-            await _context.SaveChangesAsync();
+            await _productRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Товар оновлено"));
         }
@@ -173,7 +174,7 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> PatchProduct(int id, [FromBody] IDictionary<string, JsonElement> updates)
         {
-            var product = await _context.Products.FindAsync(id);
+            var product = await _productRepository.GetByIdAsync(id);
             if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено"));
             foreach (var update in updates)
             {
@@ -196,7 +197,7 @@ namespace KhduSouvenirShop.API.Controllers
                         break;
                 }
             }
-            await _context.SaveChangesAsync();
+            await _productRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Товар частково оновлено"));
         }
@@ -204,7 +205,7 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         public async Task<ActionResult> BulkDelete([FromBody] List<int> ids)
         {
-            var products = await _context.Products
+            var products = await _productRepository.Query()
                 .Include(p => p.OrderItems)
                 .Where(p => ids.Contains(p.ProductId))
                 .ToListAsync();
@@ -217,10 +218,10 @@ namespace KhduSouvenirShop.API.Controllers
                     skippedCount++;
                     continue;
                 }
-                _context.Products.Remove(product);
+                _productRepository.Remove(product);
                 deletedCount++;
             }
-            await _context.SaveChangesAsync();
+            await _productRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(new { deletedCount, skippedCount }, $"Видалено {deletedCount} товарів. Пропущено {skippedCount} (мають замовлення)"));
         }
@@ -230,7 +231,7 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> DeleteProduct(int id)
         {
-            var product = await _context.Products
+            var product = await _productRepository.Query()
                 .Include(p => p.Images)
                 .Include(p => p.OrderItems)
                 .FirstOrDefaultAsync(p => p.ProductId == id);
@@ -242,8 +243,8 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return BadRequest(ApiResponse<object>.FailureResult("Неможливо видалити товар, який фігурує у замовленнях. Він буде прихований (Soft Delete) автоматично, якщо ви просто спробуєте видалити, але ми додамо перевірку", "BadRequest"));
             }
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+            _productRepository.Remove(product);
+            await _productRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Товар видалено"));
         }

@@ -1,22 +1,22 @@
 using Microsoft.EntityFrameworkCore;
-using KhduSouvenirShop.API.Data;
+using KhduSouvenirShop.API.Repositories;
 using KhduSouvenirShop.API.Models;
 
 namespace KhduSouvenirShop.API.Services;
 
 public class PromotionService
 {
-    private readonly AppDbContext _context;
-    public PromotionService(AppDbContext context)
+    private readonly IPromotionRepository _promotionRepository;
+    public PromotionService(IPromotionRepository promotionRepository)
     {
-        _context = context;
+        _promotionRepository = promotionRepository;
     }
     // Отримання списку активних акцій для конкретного користувача на основі його статусу
     public async Task<List<Promotion>> GetActivePromotionsForUserAsync(string? studentStatus)
     {
         var now = DateTime.UtcNow;
         // Отримання акцій, які не є промокодами (автоматичні акції)
-        var promos = await _context.Promotions
+        var promos = await _promotionRepository.Query()
             .Where(p => p.IsActive && 
                         string.IsNullOrEmpty(p.PromoCode) && 
                         (p.StartDate == null || p.StartDate <= now) && 
@@ -89,8 +89,7 @@ public class PromotionService
     {
         if (string.IsNullOrWhiteSpace(code)) return null;
         var now = DateTime.UtcNow;
-        var promo = await _context.Promotions
-            .FirstOrDefaultAsync(p => 
+        var promo = await _promotionRepository.FirstOrDefaultAsync(p => 
                 p.PromoCode == code && 
                 p.IsActive && 
                 (p.StartDate == null || p.StartDate <= now) && 

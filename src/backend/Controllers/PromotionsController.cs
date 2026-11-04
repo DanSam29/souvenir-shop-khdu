@@ -1,4 +1,4 @@
-using KhduSouvenirShop.API.Data;
+using KhduSouvenirShop.API.Repositories;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
 using Microsoft.AspNetCore.Authorization;
@@ -16,12 +16,14 @@ namespace KhduSouvenirShop.API.Controllers
     [ApiController]
     public class PromotionsController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IPromotionRepository _promotionRepository;
+        private readonly IUserRepository _userRepository;
         private readonly Services.PromotionService _promotionService;
         private readonly IMemoryCache _cache;
-        public PromotionsController(AppDbContext context, Services.PromotionService promotionService, IMemoryCache cache)
+        public PromotionsController(IPromotionRepository promotionRepository, IUserRepository userRepository, Services.PromotionService promotionService, IMemoryCache cache)
         {
-            _context = context;
+            _promotionRepository = promotionRepository;
+            _userRepository = userRepository;
             _promotionService = promotionService;
             _cache = cache;
         }
@@ -38,7 +40,7 @@ namespace KhduSouvenirShop.API.Controllers
         {
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdStr, out var userId)) return Unauthorized();
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null) return NotFound();
             var promos = await _promotionService.GetActivePromotionsForUserAsync(user.StudentStatus);
             var result = promos.Select(p => new {
@@ -64,7 +66,7 @@ namespace KhduSouvenirShop.API.Controllers
             [FromQuery] string? type = null,
             [FromQuery] bool? isActive = null)
         {
-            var query = _context.Promotions.AsQueryable();
+            var query = _promotionRepository.Query().AsQueryable();
             if (!string.IsNullOrEmpty(type))
                 query = query.Where(p => p.Type == type);
             if (isActive.HasValue)
@@ -102,8 +104,8 @@ namespace KhduSouvenirShop.API.Controllers
                 UsageLimit = dto.UsageLimit,
                 IsActive = true
             };
-            _context.Promotions.Add(promo);
-            await _context.SaveChangesAsync();
+            await _promotionRepository.AddAsync(promo);
+            await _promotionRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(promo, "Акцію створено"));
         }
@@ -111,7 +113,7 @@ namespace KhduSouvenirShop.API.Controllers
         [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> PatchPromotion(int id, [FromBody] IDictionary<string, JsonElement> updates)
         {
-            var promo = await _context.Promotions.FindAsync(id);
+            var promo = await _promotionRepository.GetByIdAsync(id);
             if (promo == null) return NotFound();
             foreach (var update in updates)
             {
@@ -133,7 +135,7 @@ namespace KhduSouvenirShop.API.Controllers
                         break;
                 }
             }
-            await _context.SaveChangesAsync();
+            await _promotionRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(promo, "Акцію частково оновлено"));
         }
@@ -141,10 +143,10 @@ namespace KhduSouvenirShop.API.Controllers
         [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> TogglePromotion(int id)
         {
-            var promo = await _context.Promotions.FindAsync(id);
+            var promo = await _promotionRepository.GetByIdAsync(id);
             if (promo == null) return NotFound();
             promo.IsActive = !promo.IsActive;
-            await _context.SaveChangesAsync();
+            await _promotionRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(new { id = promo.PromotionId, isActive = promo.IsActive }));
         }
@@ -152,10 +154,10 @@ namespace KhduSouvenirShop.API.Controllers
         [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> DeletePromotion(int id)
         {
-            var promo = await _context.Promotions.FindAsync(id);
+            var promo = await _promotionRepository.GetByIdAsync(id);
             if (promo == null) return NotFound();
-            _context.Promotions.Remove(promo);
-            await _context.SaveChangesAsync();
+            _promotionRepository.Remove(promo);
+            await _promotionRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(null, "Акцію видалено"));
         }
@@ -163,9 +165,9 @@ namespace KhduSouvenirShop.API.Controllers
         [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> BulkDelete([FromBody] List<int> ids)
         {
-            var promos = await _context.Promotions.Where(p => ids.Contains(p.PromotionId)).ToListAsync();
-            _context.Promotions.RemoveRange(promos);
-            await _context.SaveChangesAsync();
+            var promos = await _promotionRepository.Query().Where(p => ids.Contains(p.PromotionId)).ToListAsync();
+            _promotionRepository.RemoveRange(promos);
+            await _promotionRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(null, $"Видалено {promos.Count} акцій"));
         }

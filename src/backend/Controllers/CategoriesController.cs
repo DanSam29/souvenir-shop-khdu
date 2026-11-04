@@ -1,6 +1,6 @@
-using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
+using KhduSouvenirShop.API.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,12 +12,12 @@ namespace KhduSouvenirShop.API.Controllers
     [ApiController]
     public class CategoriesController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly ICategoryRepository _categoryRepository;
         private readonly IMemoryCache _cache;
         private readonly ILogger<CategoriesController> _logger;
-        public CategoriesController(AppDbContext context, IMemoryCache cache, ILogger<CategoriesController> logger)
+        public CategoriesController(ICategoryRepository categoryRepository, IMemoryCache cache, ILogger<CategoriesController> logger)
         {
-            _context = context;
+            _categoryRepository = categoryRepository;
             _cache = cache;
             _logger = logger;
         }
@@ -30,7 +30,7 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Ok(ApiResponse<object>.SuccessResult(cachedTree!));
             }
-            var allCategories = await _context.Categories
+            var allCategories = await _categoryRepository.Query()
                 .OrderBy(c => c.DisplayOrder)
                 .ToListAsync();
             // Побудова дерева категорій
@@ -72,8 +72,8 @@ namespace KhduSouvenirShop.API.Controllers
                 DisplayOrder = dto.DisplayOrder,
                 CreatedAt = DateTime.UtcNow
             };
-            _context.Categories.Add(category);
-            await _context.SaveChangesAsync();
+            await _categoryRepository.AddAsync(category);
+            await _categoryRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(category, "Категорію створено"));
         }
@@ -81,7 +81,7 @@ namespace KhduSouvenirShop.API.Controllers
         [Authorize(Roles = "Admin,Manager")]
         public async Task<ActionResult> UpdateCategory(int id, [FromBody] CategoryDto dto)
         {
-            var category = await _context.Categories.FindAsync(id);
+            var category = await _categoryRepository.GetByIdAsync(id);
             if (category == null) return NotFound(ApiResponse<object>.FailureResult("Категорію не знайдено", "NotFound"));
             category.Name = dto.Name;
             category.NameEn = dto.NameEn;
@@ -90,7 +90,7 @@ namespace KhduSouvenirShop.API.Controllers
             category.ParentCategoryId = dto.ParentCategoryId;
             category.DisplayOrder = dto.DisplayOrder;
             category.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await _categoryRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(category, "Категорію оновлено"));
         }
@@ -98,7 +98,7 @@ namespace KhduSouvenirShop.API.Controllers
         [Authorize(Roles = "Admin,Manager")]
         public async Task<ActionResult> DeleteCategory(int id)
         {
-            var category = await _context.Categories
+            var category = await _categoryRepository.Query()
                 .Include(c => c.Products)
                 .Include(c => c.SubCategories)
                 .FirstOrDefaultAsync(c => c.CategoryId == id);
@@ -107,8 +107,8 @@ namespace KhduSouvenirShop.API.Controllers
                 return BadRequest(ApiResponse<object>.FailureResult("Неможливо видалити категорію, що містить товари", "Conflict"));
             if (category.SubCategories.Any())
                 return BadRequest(ApiResponse<object>.FailureResult("Неможливо видалити категорію, що містить підкатегорії", "Conflict"));
-            _context.Categories.Remove(category);
-            await _context.SaveChangesAsync();
+            _categoryRepository.Remove(category);
+            await _categoryRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Категорію видалено"));
         }

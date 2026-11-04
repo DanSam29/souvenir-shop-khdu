@@ -1,6 +1,6 @@
-using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
+using KhduSouvenirShop.API.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,9 +12,9 @@ namespace KhduSouvenirShop.API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize(Roles = "Administrator,Manager")]
-    public class CompaniesController(AppDbContext context, ILogger<CompaniesController> logger) : ControllerBase
+    public class CompaniesController(ICompanyRepository companyRepository, ILogger<CompaniesController> logger) : ControllerBase
     {
-        private readonly AppDbContext _context = context;
+        private readonly ICompanyRepository _companyRepository = companyRepository;
         private readonly ILogger<CompaniesController> _logger = logger;
         [HttpGet]
         [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
@@ -24,7 +24,7 @@ namespace KhduSouvenirShop.API.Controllers
             [FromQuery] string? search = null,
             [FromQuery] bool? isActive = null)
         {
-            var query = _context.Companies.AsQueryable();
+            var query = _companyRepository.Query();
             if (isActive.HasValue)
                 query = query.Where(c => c.IsActive == isActive.Value);
             if (!string.IsNullOrWhiteSpace(search))
@@ -46,7 +46,7 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> GetCompany(int id)
         {
-            var company = await _context.Companies.FindAsync(id);
+            var company = await _companyRepository.GetByIdAsync(id);
             if (company == null) return NotFound(ApiResponse<object>.FailureResult("Компанію не знайдено", "NotFound"));
             return Ok(ApiResponse<object>.SuccessResult(company));
         }
@@ -54,7 +54,7 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
         public async Task<ActionResult> CreateCompany([FromBody] CompanyDto dto)
         {
-            if (await _context.Companies.AnyAsync(c => c.Name == dto.Name))
+            if (await _companyRepository.NameExistsAsync(dto.Name))
                 return BadRequest(ApiResponse<object>.FailureResult("Компанія з такою назвою вже існує", "Conflict"));
             var company = new Company
             {
@@ -66,17 +66,17 @@ namespace KhduSouvenirShop.API.Controllers
                 Notes = dto.Notes,
                 IsActive = true
             };
-            _context.Companies.Add(company);
-            await _context.SaveChangesAsync();
+            await _companyRepository.AddAsync(company);
+            await _companyRepository.SaveChangesAsync();
             return CreatedAtAction(nameof(GetCompany), new { id = company.CompanyId }, ApiResponse<object>.SuccessResult(company, "Компанію створено"));
         }
         [HttpPut("{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         public async Task<ActionResult> UpdateCompany(int id, [FromBody] CompanyDto dto)
         {
-            var company = await _context.Companies.FindAsync(id);
+            var company = await _companyRepository.GetByIdAsync(id);
             if (company == null) return NotFound(ApiResponse<object>.FailureResult("Компанію не знайдено", "NotFound"));
-            if (await _context.Companies.AnyAsync(c => c.Name == dto.Name && c.CompanyId != id))
+            if (await _companyRepository.ExistsAsync(c => c.Name == dto.Name && c.CompanyId != id))
                 return BadRequest(ApiResponse<object>.FailureResult("Компанія з такою назвою вже існує", "Conflict"));
             company.Name = dto.Name;
             company.ContactPerson = dto.ContactPerson;
@@ -85,14 +85,14 @@ namespace KhduSouvenirShop.API.Controllers
             company.Address = dto.Address;
             company.Notes = dto.Notes;
             company.IsActive = dto.IsActive;
-            await _context.SaveChangesAsync();
+            await _companyRepository.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResult(company, "Дані компанії оновлено"));
         }
         [HttpPatch("{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         public async Task<ActionResult> PatchCompany(int id, [FromBody] IDictionary<string, JsonElement> updates)
         {
-            var company = await _context.Companies.FindAsync(id);
+            var company = await _companyRepository.GetByIdAsync(id);
             if (company == null) return NotFound(ApiResponse<object>.FailureResult("Компанію не знайдено"));
             foreach (var update in updates)
             {
@@ -108,13 +108,13 @@ namespace KhduSouvenirShop.API.Controllers
                     case "phone": company.Phone = value.GetString(); break;
                 }
             }
-            await _context.SaveChangesAsync();
+            await _companyRepository.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResult(company, "Дані компанії частково оновлено"));
         }
         [HttpPost("bulk-delete")]
         public async Task<ActionResult> BulkDelete([FromBody] List<int> ids)
         {
-            var companies = await _context.Companies
+            var companies = await _companyRepository.Query()
                 .Include(c => c.IncomingDocuments)
                 .Include(c => c.OutgoingDocuments)
                 .Where(c => ids.Contains(c.CompanyId))
@@ -130,18 +130,18 @@ namespace KhduSouvenirShop.API.Controllers
                 }
                 else
                 {
-                    _context.Companies.Remove(company);
+                    _companyRepository.Remove(company);
                     deletedCount++;
                 }
             }
-            await _context.SaveChangesAsync();
+            await _companyRepository.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResult(new { deletedCount, deactivatedCount }, $"Видалено {deletedCount}, деактивовано {deactivatedCount} компаній"));
         }
         [HttpDelete("{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         public async Task<ActionResult> DeleteCompany(int id)
         {
-            var company = await _context.Companies
+            var company = await _companyRepository.Query()
                 .Include(c => c.IncomingDocuments)
                 .Include(c => c.OutgoingDocuments)
                 .FirstOrDefaultAsync(c => c.CompanyId == id);
@@ -150,11 +150,11 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 // М'яке видалення (деактивація), якщо є пов'язані документи
                 company.IsActive = false;
-                await _context.SaveChangesAsync();
+                await _companyRepository.SaveChangesAsync();
                 return Ok(ApiResponse<object?>.SuccessResult(null, "Компанію деактивовано (має пов'язані документи)"));
             }
-            _context.Companies.Remove(company);
-            await _context.SaveChangesAsync();
+            _companyRepository.Remove(company);
+            await _companyRepository.SaveChangesAsync();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Компанію видалено"));
         }
     }

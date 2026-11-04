@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
-using KhduSouvenirShop.API.Data;
+using KhduSouvenirShop.API.Repositories;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
 
@@ -14,7 +14,17 @@ namespace KhduSouvenirShop.API.Controllers
     [Authorize]
     public class OrdersController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly ICartRepository _cartRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IOrderRepository _orderRepository;
+        private readonly IShippingRepository _shippingRepository;
+        private readonly IPaymentRepository _paymentRepository;
+        private readonly IPromotionRepository _promotionRepository;
+        private readonly IWarehouseRepository _warehouseRepository;
+        private readonly IRepository<OrderItem> _orderItemRepository;
+        private readonly IRepository<CartItem> _cartItemRepository;
+        private readonly IRepository<OrderHistory> _orderHistoryRepository;
         private readonly ILogger<OrdersController> _logger;
         private readonly KhduSouvenirShop.API.Services.PromotionService _promotionService;
         private readonly KhduSouvenirShop.API.Services.IPaymentService _paymentService;
@@ -23,7 +33,17 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly IConfiguration _configuration;
         private readonly IMemoryCache _cache;
         public OrdersController(
-            AppDbContext context, 
+            IUnitOfWork unitOfWork,
+            ICartRepository cartRepository,
+            IUserRepository userRepository,
+            IOrderRepository orderRepository,
+            IShippingRepository shippingRepository,
+            IPaymentRepository paymentRepository,
+            IPromotionRepository promotionRepository,
+            IWarehouseRepository warehouseRepository,
+            IRepository<OrderItem> orderItemRepository,
+            IRepository<CartItem> cartItemRepository,
+            IRepository<OrderHistory> orderHistoryRepository,
             ILogger<OrdersController> logger, 
             KhduSouvenirShop.API.Services.PromotionService promotionService,
             KhduSouvenirShop.API.Services.IPaymentService paymentService,
@@ -32,7 +52,17 @@ namespace KhduSouvenirShop.API.Controllers
             IConfiguration configuration,
             IMemoryCache cache)
         {
-            _context = context;
+            _unitOfWork = unitOfWork;
+            _cartRepository = cartRepository;
+            _userRepository = userRepository;
+            _orderRepository = orderRepository;
+            _shippingRepository = shippingRepository;
+            _paymentRepository = paymentRepository;
+            _promotionRepository = promotionRepository;
+            _warehouseRepository = warehouseRepository;
+            _orderItemRepository = orderItemRepository;
+            _cartItemRepository = cartItemRepository;
+            _orderHistoryRepository = orderHistoryRepository;
             _logger = logger;
             _promotionService = promotionService;
             _paymentService = paymentService;
@@ -58,7 +88,7 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-            var cart = await _context.Carts
+            var cart = await _cartRepository.Query()
                 .Include(c => c.CartItems)
                     .ThenInclude(ci => ci.Product)
                 .FirstOrDefaultAsync(c => c.UserId == userId);
@@ -66,7 +96,7 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return BadRequest(ApiResponse<object>.FailureResult("Кошик порожній", "BadRequest"));
             }
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _userRepository.GetByIdAsync(userId);
             string studentStatus = user?.StudentStatus ?? "NONE";
             var userPromotions = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
             foreach (var item in cart.CartItems)
@@ -76,7 +106,7 @@ namespace KhduSouvenirShop.API.Controllers
                     return BadRequest(ApiResponse<object>.FailureResult($"Недостатньо товару '{item.Product.Name}' на складі. Доступно: {item.Product.Stock}", "BadRequest"));
                 }
             }
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
                 var originalSubtotal = cart.CartItems.Sum(ci => ci.Product.Price * ci.Quantity);
@@ -97,8 +127,8 @@ namespace KhduSouvenirShop.API.Controllers
                     ShippingCost = shippingCost,
                     CreatedAt = DateTime.UtcNow
                 };
-                _context.Orders.Add(order);
-                await _context.SaveChangesAsync();
+                await _orderRepository.AddAsync(order);
+                await _unitOfWork.SaveChangesAsync();
                 var shipping = new Shipping
                 {
                     OrderId = order.OrderId,
@@ -110,7 +140,7 @@ namespace KhduSouvenirShop.API.Controllers
                     RecipientPhone = dto.RecipientPhone,
                     TrackingNumber = null
                 };
-                _context.Shippings.Add(shipping);
+                await _shippingRepository.AddAsync(shipping);
                 var payment = new Payment
                 {
                     OrderId = order.OrderId,
@@ -119,7 +149,7 @@ namespace KhduSouvenirShop.API.Controllers
                     Status = "Pending",
                     CreatedAt = DateTime.UtcNow
                 };
-                _context.Payments.Add(payment);
+                await _paymentRepository.AddAsync(payment);
                 var orderItems = new List<OrderItem>();
                 decimal totalAfterUserPromos = 0;
                 foreach (var item in cart.CartItems)
@@ -144,7 +174,7 @@ namespace KhduSouvenirShop.API.Controllers
                 if (!string.IsNullOrWhiteSpace(dto.PromoCode))
                 {
                     var now = DateTime.UtcNow;
-                    var promo = await _context.Promotions
+                    var promo = await _promotionRepository.Query()
                         .FirstOrDefaultAsync(p =>
                             p.PromoCode == dto.PromoCode &&
                             p.IsActive &&
@@ -191,7 +221,7 @@ namespace KhduSouvenirShop.API.Controllers
                 payment.Amount = order.TotalAmount;
                 foreach (var oi in orderItems)
                 {
-                    _context.OrderItems.Add(oi);
+                    await _orderItemRepository.AddAsync(oi);
                     var outgoingDoc = new OutgoingDocument
                     {
                         ProductId = oi.ProductId,
@@ -206,10 +236,10 @@ namespace KhduSouvenirShop.API.Controllers
                         CreatedBy = userId,
                         Notes = $"Автоматично створено для замовлення {order.OrderNumber}"
                     };
-                    _context.OutgoingDocuments.Add(outgoingDoc);
+                    await _warehouseRepository.AddAsync(outgoingDoc);
                 }
-                _context.CartItems.RemoveRange(cart.CartItems);
-                await _context.SaveChangesAsync();
+                _cartItemRepository.RemoveRange(cart.CartItems);
+                await _unitOfWork.SaveChangesAsync();
                 InvalidateCache();
                 // Відправка листа-підтвердження для накладеного платежу
                 if (payment.Method == "CashOnDelivery")
@@ -253,7 +283,7 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-            var cart = await _context.Carts
+            var cart = await _cartRepository.Query()
                 .Include(c => c.CartItems)
                     .ThenInclude(ci => ci.Product)
                 .FirstOrDefaultAsync(c => c.UserId == userId);
@@ -261,7 +291,7 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return BadRequest(ApiResponse<object>.FailureResult("Кошик порожній", "BadRequest"));
             }
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _userRepository.GetByIdAsync(userId);
             string studentStatus = user?.StudentStatus ?? "NONE";
             var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
             var items = cart.CartItems.Select(ci => new
@@ -282,7 +312,7 @@ namespace KhduSouvenirShop.API.Controllers
             if (!string.IsNullOrWhiteSpace(dto.PromoCode))
             {
                 var now = DateTime.UtcNow;
-                var promo = await _context.Promotions
+                var promo = await _promotionRepository.Query()
                     .FirstOrDefaultAsync(p =>
                         p.PromoCode == dto.PromoCode &&
                         p.IsActive &&
@@ -352,7 +382,7 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-            var orders = await _context.Orders
+            var orders = await _orderRepository.Query()
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
                 .Include(o => o.Shipping)
@@ -407,7 +437,7 @@ namespace KhduSouvenirShop.API.Controllers
         [Authorize(Roles = "Administrator,Manager")] // Змінено Admin → Administrator
         public async Task<ActionResult> GetAllOrders([FromQuery] string? status)
         {
-            var query = _context.Orders
+            var query = _orderRepository.Query()
                 .Include(o => o.User)
                 .AsQueryable();
 
@@ -437,7 +467,7 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-            var order = await _context.Orders
+            var order = await _orderRepository.Query()
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
                 .Include(o => o.Shipping)
@@ -497,7 +527,7 @@ namespace KhduSouvenirShop.API.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? status = null)
         {
-            var query = _context.Orders
+            var query = _orderRepository.Query()
                 .Include(o => o.User)
                 .AsQueryable();
             if (!string.IsNullOrEmpty(status))
@@ -544,7 +574,7 @@ namespace KhduSouvenirShop.API.Controllers
                 }
                 return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення скасовано"));
             }
-            var order = await _context.Orders
+            var order = await _orderRepository.Query()
                 .Include(o => o.Payment)
                 .FirstOrDefaultAsync(o => o.OrderId == id);
             if (order == null)
@@ -560,13 +590,13 @@ namespace KhduSouvenirShop.API.Controllers
             }
             if (dto.Status == "Shipped" && !string.IsNullOrEmpty(dto.TrackingNumber))
             {
-                var shipping = await _context.Shippings.FirstOrDefaultAsync(s => s.OrderId == id);
+                var shipping = await _shippingRepository.Query().FirstOrDefaultAsync(s => s.OrderId == id);
                 if (shipping != null)
                 {
                     shipping.TrackingNumber = dto.TrackingNumber;
                 }
             }
-            _context.OrderHistories.Add(new OrderHistory
+            await _orderHistoryRepository.AddAsync(new OrderHistory
             {
                 OrderId = order.OrderId,
                 OldStatus = oldStatus,
@@ -575,7 +605,7 @@ namespace KhduSouvenirShop.API.Controllers
                 Comment = dto.Comment ?? $"Статус змінено адміністратором. { (dto.TrackingNumber != null ? "ТТН: " + dto.TrackingNumber : "") }",
                 Timestamp = DateTime.UtcNow
             });
-            await _context.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(new { orderId = order.OrderId, status = order.Status }, "Статус замовлення оновлено"));
         }
@@ -584,7 +614,7 @@ namespace KhduSouvenirShop.API.Controllers
         public async Task<ActionResult> CancelOrder(int id, [FromBody] string? reason)
         {
             // Перевірка, чи замовлення взагалі існує
-            var order = await _context.Orders.FindAsync(id);
+            var order = await _orderRepository.GetByIdAsync(id);
             if (order == null) return NotFound(ApiResponse<object>.FailureResult("Замовлення не знайдено", "NotFound"));
             if (order.Status == "Cancelled") return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення вже скасоване"));
             // Спроба зробити refund через Stripe, якщо оплата Completed

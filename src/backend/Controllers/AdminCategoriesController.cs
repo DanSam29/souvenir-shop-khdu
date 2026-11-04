@@ -2,9 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
+using KhduSouvenirShop.API.Repositories;
 
 using System.Text.Json;
 
@@ -13,9 +13,9 @@ namespace KhduSouvenirShop.API.Controllers
     [Route("api/admin/categories")]
     [ApiController]
     [Authorize(Roles = "Manager,Administrator")]
-    public class AdminCategoriesController(AppDbContext context, ILogger<AdminCategoriesController> logger, IMemoryCache cache) : ControllerBase
+    public class AdminCategoriesController(ICategoryRepository categoryRepository, ILogger<AdminCategoriesController> logger, IMemoryCache cache) : ControllerBase
     {
-        private readonly AppDbContext _context = context;
+        private readonly ICategoryRepository _categoryRepository = categoryRepository;
         private readonly ILogger<AdminCategoriesController> _logger = logger;
         private readonly IMemoryCache _cache = cache;
         private void InvalidateCache()
@@ -37,7 +37,7 @@ namespace KhduSouvenirShop.API.Controllers
             }
             if (dto.ParentCategoryId.HasValue)
             {
-                var parentExists = await _context.Categories.AnyAsync(c => c.CategoryId == dto.ParentCategoryId.Value);
+                var parentExists = await _categoryRepository.Query().AnyAsync(c => c.CategoryId == dto.ParentCategoryId.Value);
                 if (!parentExists)
                 {
                     return BadRequest(ApiResponse<object>.FailureResult("Батьківська категорія не знайдена", "NotFound"));
@@ -50,8 +50,8 @@ namespace KhduSouvenirShop.API.Controllers
                 Description = dto.Description,
                 DisplayOrder = dto.DisplayOrder
             };
-            _context.Categories.Add(category);
-            await _context.SaveChangesAsync();
+            await _categoryRepository.AddAsync(category);
+            await _categoryRepository.SaveChangesAsync();
             InvalidateCache();
             var result = new
             {
@@ -67,7 +67,7 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status200OK)]
         public async Task<ActionResult> GetCategories([FromQuery] bool includeDeleted = false)
         {
-            var query = _context.Categories.IgnoreQueryFilters().Where(c => includeDeleted || !c.IsDeleted).AsQueryable();
+            var query = _categoryRepository.Query().IgnoreQueryFilters().Where(c => includeDeleted || !c.IsDeleted).AsQueryable();
             var categories = await query
                 .OrderBy(c => c.DisplayOrder)
                 .Select(c => new
@@ -89,7 +89,7 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> GetById(int id)
         {
-            var category = await _context.Categories
+            var category = await _categoryRepository.Query()
                 .Include(c => c.SubCategories)
                 .Include(c => c.Products)
                 .FirstOrDefaultAsync(c => c.CategoryId == id);
@@ -115,7 +115,7 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> UpdateCategory(int id, [FromBody] AdminCategoryDto dto)
         {
-            var category = await _context.Categories.FindAsync(id);
+            var category = await _categoryRepository.GetByIdAsync(id);
             if (category == null)
             {
                 return NotFound(ApiResponse<object>.FailureResult("Категорію не знайдено", "NotFound"));
@@ -126,7 +126,7 @@ namespace KhduSouvenirShop.API.Controllers
             }
             if (dto.ParentCategoryId.HasValue)
             {
-                var parentExists = await _context.Categories.AnyAsync(c => c.CategoryId == dto.ParentCategoryId.Value);
+                var parentExists = await _categoryRepository.Query().AnyAsync(c => c.CategoryId == dto.ParentCategoryId.Value);
                 if (!parentExists)
                 {
                     return BadRequest(ApiResponse<object>.FailureResult("Батьківська категорія не знайдена", "NotFound"));
@@ -136,7 +136,7 @@ namespace KhduSouvenirShop.API.Controllers
             category.ParentCategoryId = dto.ParentCategoryId;
             category.Description = dto.Description;
             category.DisplayOrder = dto.DisplayOrder;
-            await _context.SaveChangesAsync();
+            await _categoryRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Категорію оновлено"));
         }
@@ -145,7 +145,7 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> PatchCategory(int id, [FromBody] IDictionary<string, JsonElement> updates)
         {
-            var category = await _context.Categories.FindAsync(id);
+            var category = await _categoryRepository.GetByIdAsync(id);
             if (category == null) return NotFound(ApiResponse<object>.FailureResult("Категорію не знайдено"));
             foreach (var update in updates)
             {
@@ -166,7 +166,7 @@ namespace KhduSouvenirShop.API.Controllers
                         break;
                 }
             }
-            await _context.SaveChangesAsync();
+            await _categoryRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Категорію частково оновлено"));
         }
@@ -174,7 +174,7 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         public async Task<ActionResult> BulkDelete([FromBody] List<int> ids)
         {
-            var categories = await _context.Categories
+            var categories = await _categoryRepository.Query()
                 .Include(c => c.Products)
                 .Include(c => c.SubCategories)
                 .Where(c => ids.Contains(c.CategoryId))
@@ -188,10 +188,10 @@ namespace KhduSouvenirShop.API.Controllers
                     skippedCount++;
                     continue;
                 }
-                _context.Categories.Remove(category);
+                _categoryRepository.Remove(category);
                 deletedCount++;
             }
-            await _context.SaveChangesAsync();
+            await _categoryRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(new { deletedCount, skippedCount }, $"Видалено {deletedCount} категорій. Пропущено {skippedCount} (мають товари або підкатегорії)"));
         }
@@ -200,12 +200,12 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> RestoreCategory(int id)
         {
-            var category = await _context.Categories.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.CategoryId == id);
+            var category = await _categoryRepository.Query().IgnoreQueryFilters().FirstOrDefaultAsync(c => c.CategoryId == id);
             if (category == null) return NotFound(ApiResponse<object>.FailureResult("Категорію не знайдено"));
             category.IsDeleted = false;
             category.DeletedAt = null;
             category.DeletedBy = null;
-            await _context.SaveChangesAsync();
+            await _categoryRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Категорію відновлено"));
         }
@@ -215,7 +215,7 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> DeleteCategory(int id)
         {
-            var category = await _context.Categories
+            var category = await _categoryRepository.Query()
                 .Include(c => c.SubCategories)
                 .Include(c => c.Products)
                 .FirstOrDefaultAsync(c => c.CategoryId == id);
@@ -231,8 +231,8 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return BadRequest(ApiResponse<object>.FailureResult("Категорія містить товари. Видаліть або перемістіть товари", "BadRequest"));
             }
-            _context.Categories.Remove(category);
-            await _context.SaveChangesAsync();
+            _categoryRepository.Remove(category);
+            await _categoryRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Категорію видалено"));
         }

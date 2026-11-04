@@ -1,6 +1,6 @@
-using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
+using KhduSouvenirShop.API.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,12 +14,30 @@ namespace KhduSouvenirShop.API.Controllers
     [Authorize(Roles = "Administrator,Manager")]
     public class WarehouseDocumentsController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IProductRepository _productRepository;
+        private readonly ICompanyRepository _companyRepository;
+        private readonly IWarehouseRepository _warehouseRepository;
+        private readonly IRepository<IncomingDocument> _incomingRepository;
+        private readonly IRepository<OutgoingDocument> _outgoingRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<WarehouseDocumentsController> _logger;
         private readonly IMemoryCache _cache;
-        public WarehouseDocumentsController(AppDbContext context, ILogger<WarehouseDocumentsController> logger, IMemoryCache cache)
+        public WarehouseDocumentsController(
+            IProductRepository productRepository,
+            ICompanyRepository companyRepository,
+            IWarehouseRepository warehouseRepository,
+            IRepository<IncomingDocument> incomingRepository,
+            IRepository<OutgoingDocument> outgoingRepository,
+            IUnitOfWork unitOfWork,
+            ILogger<WarehouseDocumentsController> logger,
+            IMemoryCache cache)
         {
-            _context = context;
+            _productRepository = productRepository;
+            _companyRepository = companyRepository;
+            _warehouseRepository = warehouseRepository;
+            _incomingRepository = incomingRepository;
+            _outgoingRepository = outgoingRepository;
+            _unitOfWork = unitOfWork;
             _logger = logger;
             _cache = cache;
         }
@@ -38,11 +56,10 @@ namespace KhduSouvenirShop.API.Controllers
             [FromQuery] int? productId = null, 
             [FromQuery] int? companyId = null)
         {
-            var query = _context.IncomingDocuments
+            IQueryable<IncomingDocument> query = _incomingRepository.Query()
                 .Include(d => d.Product)
                 .Include(d => d.Company)
-                .Include(d => d.CreatedByUser)
-                .AsQueryable();
+                .Include(d => d.CreatedByUser);
             if (productId.HasValue) query = query.Where(d => d.ProductId == productId);
             if (companyId.HasValue) query = query.Where(d => d.CompanyId == companyId);
             var count = await query.CountAsync();
@@ -58,12 +75,12 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
         public async Task<ActionResult> CreateIncomingDocument([FromBody] IncomingDocumentDto dto)
         {
-            var product = await _context.Products.FindAsync(dto.ProductId);
-            var company = await _context.Companies.FindAsync(dto.CompanyId);
+            var product = await _productRepository.GetByIdAsync(dto.ProductId);
+            var company = await _companyRepository.GetByIdAsync(dto.CompanyId);
             if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
             if (company == null) return NotFound(ApiResponse<object>.FailureResult("Компанію не знайдено", "NotFound"));
             if (!company.IsActive) return BadRequest(ApiResponse<object>.FailureResult("Компанія деактивована", "BadRequest"));
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
                 var doc = new IncomingDocument
@@ -75,9 +92,9 @@ namespace KhduSouvenirShop.API.Controllers
                     DocumentDate = dto.DocumentDate ?? DateTime.UtcNow,
                     Notes = dto.Notes
                 };
-                _context.IncomingDocuments.Add(doc);
+                await _warehouseRepository.AddAsync(doc);
                 product.Stock += dto.Quantity; // Оновлення залишку
-                await _context.SaveChangesAsync();
+                await _warehouseRepository.SaveChangesAsync();
                 await transaction.CommitAsync();
                 InvalidateCache();
                 return Ok(ApiResponse<object>.SuccessResult(doc, "Прибуткову накладну створено"));
@@ -98,11 +115,10 @@ namespace KhduSouvenirShop.API.Controllers
             [FromQuery] int? productId = null, 
             [FromQuery] string? reason = null)
         {
-            var query = _context.OutgoingDocuments
+            IQueryable<OutgoingDocument> query = _outgoingRepository.Query()
                 .Include(d => d.Product)
                 .Include(d => d.Company)
-                .Include(d => d.CreatedByUser)
-                .AsQueryable();
+                .Include(d => d.CreatedByUser);
             if (productId.HasValue) query = query.Where(d => d.ProductId == productId);
             if (!string.IsNullOrEmpty(reason)) query = query.Where(d => d.Reason == reason);
             var count = await query.CountAsync();
@@ -118,14 +134,14 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
         public async Task<ActionResult> CreateOutgoingDocument([FromBody] OutgoingDocumentDto dto)
         {
-            var product = await _context.Products.FindAsync(dto.ProductId);
+            var product = await _productRepository.GetByIdAsync(dto.ProductId);
             if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
             if (product.Stock < dto.Quantity)
                 return BadRequest(ApiResponse<object>.FailureResult($"Недостатньо товару на складі. Доступно: {product.Stock}", "BadRequest"));
             // Валідація правил reason з плану
             if (dto.Reason == "Return" && !dto.CompanyId.HasValue)
                 return BadRequest(ApiResponse<object>.FailureResult("Для повернення (RETURN) обов'язково вказати компанію", "ValidationError"));
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
                 var doc = new OutgoingDocument
@@ -139,9 +155,9 @@ namespace KhduSouvenirShop.API.Controllers
                     DocumentDate = dto.DocumentDate ?? DateTime.UtcNow,
                     Notes = dto.Notes
                 };
-                _context.OutgoingDocuments.Add(doc);
+                await _warehouseRepository.AddAsync(doc);
                 product.Stock -= dto.Quantity; // Оновлення залишку
-                await _context.SaveChangesAsync();
+                await _warehouseRepository.SaveChangesAsync();
                 await transaction.CommitAsync();
                 InvalidateCache();
                 return Ok(ApiResponse<object>.SuccessResult(doc, "Видаткову накладну створено"));
@@ -156,14 +172,14 @@ namespace KhduSouvenirShop.API.Controllers
         [HttpGet("stock")]
         public async Task<ActionResult> GetCurrentStock()
         {
-            var stock = await _context.Products
+            var stock = await _productRepository.Query()
                 .Select(p => new
                 {
                     productId = p.ProductId,
                     name = p.Name,
                     currentStock = p.Stock,
-                    totalIncoming = _context.IncomingDocuments.Where(id => id.ProductId == p.ProductId).Sum(id => id.Quantity),
-                    totalOutgoing = _context.OutgoingDocuments.Where(od => od.ProductId == p.ProductId).Sum(od => od.Quantity)
+                    totalIncoming = _incomingRepository.Query().Where(id => id.ProductId == p.ProductId).Sum(id => id.Quantity),
+                    totalOutgoing = _outgoingRepository.Query().Where(od => od.ProductId == p.ProductId).Sum(od => od.Quantity)
                 })
                 .ToListAsync();
             return Ok(ApiResponse<object>.SuccessResult(stock));

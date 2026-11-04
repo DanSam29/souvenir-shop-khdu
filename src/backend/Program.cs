@@ -113,6 +113,7 @@ builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IPromotionRepositor
 builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IWarehouseRepository, KhduSouvenirShop.API.Repositories.WarehouseRepository>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.ICompanyRepository, KhduSouvenirShop.API.Repositories.CompanyRepository>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IAnalyticsRepository, KhduSouvenirShop.API.Repositories.AnalyticsRepository>();
+builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IUnitOfWork, KhduSouvenirShop.API.Repositories.UnitOfWork>();
 // Реєстрація AutoMapper (шар перетворення сутностей у DTO)
 builder.Services.AddAutoMapper(cfg => { }, typeof(MappingProfile).Assembly);
 // Автоматична перевірка правильності введених даних (валідація)

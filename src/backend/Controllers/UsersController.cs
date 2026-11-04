@@ -6,7 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using KhduSouvenirShop.API.Data;
+using KhduSouvenirShop.API.Repositories;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
 
@@ -15,13 +15,13 @@ namespace KhduSouvenirShop.API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     public class UsersController(
-        AppDbContext context,
+        IUserRepository userRepository,
         ILogger<UsersController> logger,
         IConfiguration configuration,
         KhduSouvenirShop.API.Services.IUniversityService universityService,
         KhduSouvenirShop.API.Services.IEmailService emailService) : ControllerBase
     {
-        private readonly AppDbContext _context = context;
+        private readonly IUserRepository _userRepository = userRepository;
         private readonly ILogger<UsersController> _logger = logger;
         private readonly IConfiguration _configuration = configuration;
         private readonly KhduSouvenirShop.API.Services.IUniversityService _universityService = universityService;
@@ -36,7 +36,7 @@ namespace KhduSouvenirShop.API.Controllers
         {
             _logger.LogInformation("Спроба реєстрації користувача: {Email}", registerDto.Email);
             // Перевірка на наявність email
-            var existingUser = await _context.Users
+            var existingUser = await _userRepository
                 .FirstOrDefaultAsync(u => u.Email == registerDto.Email);
             if (existingUser != null)
             {
@@ -82,8 +82,8 @@ namespace KhduSouvenirShop.API.Controllers
                 newUser.StudentStatus = "NONE";
                 _logger.LogInformation("Користувач {Email} зареєстрований як зовнішній користувач", newUser.Email);
             }
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
+            await _userRepository.AddAsync(newUser);
+            await _userRepository.SaveChangesAsync();
             _logger.LogInformation("Користувач {Email} успішно зареєстрований", newUser.Email);
             var token = GenerateJwtToken(newUser);
             var result = new
@@ -110,7 +110,7 @@ namespace KhduSouvenirShop.API.Controllers
         {
             _logger.LogInformation("Спроба авторизації: {Email}", loginDto.Email);
             // Пошук користувача, ігноруючи фільтр видалення, щоб перевірити на блокування
-            var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == loginDto.Email);
+            var user = await _userRepository.Query().IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == loginDto.Email);
             if (user == null)
             {
                 _logger.LogWarning("Користувача з email {Email} не знайдено", loginDto.Email);
@@ -156,7 +156,7 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
             {
                 return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено", "NotFound"));
@@ -187,7 +187,7 @@ namespace KhduSouvenirShop.API.Controllers
             [FromQuery] string? search = null,
             [FromQuery] string? role = null)
         {
-            var query = _context.Users.AsQueryable();
+            var query = _userRepository.Query();
 
             if (!string.IsNullOrEmpty(search))
             {
@@ -221,24 +221,24 @@ namespace KhduSouvenirShop.API.Controllers
         [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> UpdateUserRole(int id, [FromBody] UpdateRoleDto dto)
         {
-            var user = await _context.Users.FindAsync(id);
+            var user = await _userRepository.GetByIdAsync(id);
             if (user == null) return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено"));
             user.Role = dto.Role;
-            await _context.SaveChangesAsync();
+            await _userRepository.SaveChangesAsync();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Роль користувача оновлено"));
         }
         [HttpPost("{id}/toggle-block")]
         [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> ToggleBlockUser(int id)
         {
-            var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.UserId == id);
+            var user = await _userRepository.Query().IgnoreQueryFilters().FirstOrDefaultAsync(u => u.UserId == id);
             if (user == null) return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено"));
             if (user.IsDeleted)
             {
                 user.IsDeleted = false;
                 user.DeletedAt = null;
                 user.DeletedBy = null;
-                await _context.SaveChangesAsync();
+                await _userRepository.SaveChangesAsync();
                 return Ok(ApiResponse<object>.SuccessResult(new { isBlocked = false }, "Користувача розблоковано"));
             }
             else
@@ -246,7 +246,7 @@ namespace KhduSouvenirShop.API.Controllers
                 user.IsDeleted = true;
                 user.DeletedAt = DateTime.UtcNow;
                 // Ідентифікатор того, хто видалив, буде встановлено автоматично в SaveChangesAsync
-                await _context.SaveChangesAsync();
+                await _userRepository.SaveChangesAsync();
                 return Ok(ApiResponse<object>.SuccessResult(new { isBlocked = true }, "Користувача заблоковано (Soft Delete)"));
             }
         }
@@ -257,12 +257,12 @@ namespace KhduSouvenirShop.API.Controllers
         {
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdStr, out var userId)) return Unauthorized();
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null) return NotFound();
             user.FirstName = dto.FirstName;
             user.LastName = dto.LastName;
             user.Phone = dto.Phone;
-            await _context.SaveChangesAsync();
+            await _userRepository.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResult(new {
                 user.FirstName,
                 user.LastName,
@@ -276,7 +276,7 @@ namespace KhduSouvenirShop.API.Controllers
         {
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdStr, out var userId)) return Unauthorized();
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null) return NotFound();
             if (!BCrypt.Net.BCrypt.Verify(dto.OldPassword, user.Password))
             {
@@ -284,7 +284,7 @@ namespace KhduSouvenirShop.API.Controllers
             }
             user.Password = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
 
-            await _context.SaveChangesAsync();
+            await _userRepository.SaveChangesAsync();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Пароль змінено"));
         }
         // GET: api/Users/5
@@ -293,7 +293,7 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> GetUser(int id)
         {
-            var user = await _context.Users.FindAsync(id);
+            var user = await _userRepository.GetByIdAsync(id);
             if (user == null)
             {
                 return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено", "NotFound"));

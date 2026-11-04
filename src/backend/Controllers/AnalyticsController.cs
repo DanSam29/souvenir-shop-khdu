@@ -1,4 +1,4 @@
-using KhduSouvenirShop.API.Data;
+using KhduSouvenirShop.API.Repositories;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
 using Microsoft.AspNetCore.Authorization;
@@ -11,15 +11,17 @@ namespace KhduSouvenirShop.API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize(Roles = "Administrator")]
-    public class AnalyticsController(AppDbContext context) : ControllerBase
+    public class AnalyticsController(IOrderRepository orderRepository, IRepository<OrderItem> orderItemRepository, IWarehouseRepository warehouseRepository) : ControllerBase
     {
-        private readonly AppDbContext _context = context;
+        private readonly IOrderRepository _orderRepository = orderRepository;
+        private readonly IRepository<OrderItem> _orderItemRepository = orderItemRepository;
+        private readonly IWarehouseRepository _warehouseRepository = warehouseRepository;
         [HttpGet("summary")]
         public async Task<ActionResult> GetSummary([FromQuery] DateTime? from, [FromQuery] DateTime? to)
         {
             var startDate = from ?? DateTime.UtcNow.AddMonths(-1);
             var endDate = to ?? DateTime.UtcNow;
-            var paidOrders = await _context.Orders
+            var paidOrders = await _orderRepository.Query()
                 .Where(o => o.Status == "Paid" || o.Status == "Delivered" || o.Status == "Shipped")
                 .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate)
                 .ToListAsync();
@@ -27,10 +29,11 @@ namespace KhduSouvenirShop.API.Controllers
             var ordersCount = paidOrders.Count;
             var avgCheck = ordersCount > 0 ? totalIncome / ordersCount : 0;
             // Розрахунок витрат на основі закупівельних цін товарів за вказаний період
-            var totalExpenses = await _context.IncomingDocuments
+            var incomingDocuments = await _warehouseRepository.GetIncomingListAsync();
+            var totalExpenses = incomingDocuments
                 .Where(d => d.DocumentDate >= startDate && d.DocumentDate <= endDate)
-                .SumAsync(d => d.PurchasePrice * d.Quantity);
-            var popularProducts = await _context.OrderItems
+                .Sum(d => d.PurchasePrice * d.Quantity);
+            var popularProducts = await _orderItemRepository.Query()
                 .Include(oi => oi.Product)
                 .Where(oi => oi.Order.Status != "Cancelled")
                 .GroupBy(oi => new { oi.ProductId, oi.Product.Name })
@@ -70,7 +73,7 @@ namespace KhduSouvenirShop.API.Controllers
         {
             var startDate = from ?? DateTime.UtcNow.AddMonths(-1);
             var endDate = to ?? DateTime.UtcNow;
-            var orders = await _context.Orders
+            var orders = await _orderRepository.Query()
                 .Include(o => o.User)
                 .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate)
                 .OrderByDescending(o => o.CreatedAt)

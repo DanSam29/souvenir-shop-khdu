@@ -257,3 +257,788 @@ LIMIT 1
 2026-11-04 21:36:55.558 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.UsersController.Login (KhduSouvenirShop.API) in 873.1914ms
 2026-11-04 21:36:55.559 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.UsersController.Login (KhduSouvenirShop.API)'
 2026-11-04 21:36:55.570 +02:00 [INF] Request finished HTTP/1.1 POST http://localhost:5225/api/Users/login - 200 null application/json; charset=utf-8 1108.3567ms
+2026-11-04 21:52:10.243 +02:00 [WRN] Entity 'User' has a global query filter defined and is the required end of a relationship with the entity 'Cart'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-11-04 21:52:10.296 +02:00 [WRN] Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'CartItem'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-11-04 21:52:10.298 +02:00 [WRN] Entity 'User' has a global query filter defined and is the required end of a relationship with the entity 'Order'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-11-04 21:52:10.298 +02:00 [WRN] Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'OrderItem'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-11-04 21:52:10.298 +02:00 [WRN] Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'ProductImage'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-11-04 21:52:10.298 +02:00 [WRN] Entity 'Promotion' has a global query filter defined and is the required end of a relationship with the entity 'UserPromotion'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-11-04 21:52:11.022 +02:00 [INF] Executed DbCommand (28ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `u`.`Email`
+FROM `users` AS `u`
+2026-11-04 21:52:11.098 +02:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `c`.`Name`
+FROM `companies` AS `c`
+2026-11-04 21:52:11.182 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `u`.`UserId`
+FROM `users` AS `u`
+WHERE NOT (`u`.`IsDeleted`) AND (`u`.`Role` = 'SuperAdmin')
+LIMIT 1
+2026-11-04 21:52:11.199 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `p`.`PromoCode`
+FROM `promotions` AS `p`
+WHERE `p`.`PromoCode` IS NOT NULL
+2026-11-04 21:52:11.210 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `u`.`UserId`
+FROM `users` AS `u`
+WHERE NOT (`u`.`IsDeleted`) AND (`u`.`Role` = 'Manager')
+LIMIT 1
+2026-11-04 21:52:11.317 +02:00 [INF] Executed DbCommand (40ms) [Parameters=[@__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `p`.`ProductId`, `p`.`CategoryId`, `p`.`CreatedAt`, `p`.`CreatedBy`, `p`.`DeletedAt`, `p`.`DeletedBy`, `p`.`Description`, `p`.`DescriptionEn`, `p`.`IsDeleted`, `p`.`Name`, `p`.`NameEn`, `p`.`Price`, `p`.`Stock`, `p`.`UpdatedAt`, `p`.`UpdatedBy`, `p`.`Weight`
+FROM `products` AS `p`
+WHERE NOT (`p`.`IsDeleted`)
+ORDER BY `p`.`ProductId`
+LIMIT @__p_0
+2026-11-04 21:52:11.427 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[@__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `c`.`CompanyId`, `c`.`Address`, `c`.`ContactPerson`, `c`.`CreatedAt`, `c`.`CreatedBy`, `c`.`DeletedAt`, `c`.`DeletedBy`, `c`.`Email`, `c`.`IsActive`, `c`.`IsDeleted`, `c`.`Name`, `c`.`Notes`, `c`.`Phone`, `c`.`UpdatedAt`, `c`.`UpdatedBy`
+FROM `companies` AS `c`
+WHERE NOT (`c`.`IsDeleted`)
+ORDER BY `c`.`CompanyId`
+LIMIT @__p_0
+2026-11-04 21:52:11.534 +02:00 [ERR] Failed executing DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM `incomingdocuments` AS `i`
+    WHERE `i`.`Notes` IS NOT NULL AND (`i`.`Notes` LIKE '[seed]%'))
+2026-11-04 21:52:11.569 +02:00 [ERR] An exception occurred while iterating over the results of a query for context type 'KhduSouvenirShop.API.Data.AppDbContext'.
+MySqlConnector.MySqlException (0x80004005): Table 'khdu_souvenir_shop.incomingdocuments' doesn't exist
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+MySqlConnector.MySqlException (0x80004005): Table 'khdu_souvenir_shop.incomingdocuments' doesn't exist
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+2026-11-04 21:52:11.574 +02:00 [ERR] Не вдалося виконати початкове наповнення БД
+MySqlConnector.MySqlException (0x80004005): Table 'khdu_souvenir_shop.incomingdocuments' doesn't exist
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at KhduSouvenirShop.API.Data.DbSeeder.SeedWarehouseDocumentsAsync(AppDbContext context) in C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\Data\DbSeeder.cs:line 128
+   at KhduSouvenirShop.API.Data.DbSeeder.SeedAsync(AppDbContext context, ILogger logger) in C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\Data\DbSeeder.cs:line 23
+   at Program.<Main>$(String[] args) in C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\Program.cs:line 183
+2026-11-04 21:52:11.741 +02:00 [INF] Сервер запущено!
+2026-11-04 21:52:11.763 +02:00 [INF] User profile is available. Using 'C:\Users\Danchik\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2026-11-04 21:52:11.875 +02:00 [INF] Now listening on: http://localhost:5225
+2026-11-04 21:52:11.879 +02:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-11-04 21:52:11.879 +02:00 [INF] Hosting environment: Development
+2026-11-04 21:52:11.879 +02:00 [INF] Content root path: C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend
+2026-11-04 21:52:21.102 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/promotions/active - null null
+2026-11-04 21:52:21.182 +02:00 [WRN] Failed to determine the https port for redirect.
+2026-11-04 21:52:21.238 +02:00 [INF] Executing endpoint '405 HTTP Method Not Supported'
+2026-11-04 21:52:21.239 +02:00 [INF] Executed endpoint '405 HTTP Method Not Supported'
+2026-11-04 21:52:21.248 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/promotions/active - 405 0 null 148.5061ms
+2026-11-04 21:52:21.374 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/categories - null null
+2026-11-04 21:52:21.382 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API)'
+2026-11-04 21:52:21.406 +02:00 [INF] Route matched with {action = "GetCategories", controller = "Categories"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetCategories() on controller KhduSouvenirShop.API.Controllers.CategoriesController (KhduSouvenirShop.API).
+2026-11-04 21:52:21.471 +02:00 [INF] Executed DbCommand (24ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `c`.`CategoryId`, `c`.`CreatedAt`, `c`.`CreatedBy`, `c`.`DeletedAt`, `c`.`DeletedBy`, `c`.`Description`, `c`.`DescriptionEn`, `c`.`DisplayOrder`, `c`.`IsDeleted`, `c`.`Name`, `c`.`NameEn`, `c`.`ParentCategoryId`, `c`.`UpdatedAt`, `c`.`UpdatedBy`
+FROM `categories` AS `c`
+WHERE NOT (`c`.`IsDeleted`)
+ORDER BY `c`.`DisplayOrder`
+2026-11-04 21:52:21.556 +02:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-11-04 21:52:21.676 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API) in 264.4581ms
+2026-11-04 21:52:21.677 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.CategoriesController.GetCategories (KhduSouvenirShop.API)'
+2026-11-04 21:52:21.688 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/categories - 200 null application/json; charset=utf-8 314.329ms
+2026-11-04 21:52:21.743 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/products - null null
+2026-11-04 21:52:21.748 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API)'
+2026-11-04 21:52:21.765 +02:00 [INF] Route matched with {action = "GetProducts", controller = "Products"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetProducts(System.Nullable`1[System.Int32], System.String, System.String, System.Nullable`1[System.Decimal], System.Nullable`1[System.Decimal]) on controller KhduSouvenirShop.API.Controllers.ProductsController (KhduSouvenirShop.API).
+2026-11-04 21:52:21.867 +02:00 [INF] Запит на отримання товарів з фільтрами
+2026-11-04 21:52:22.023 +02:00 [INF] Executed DbCommand (67ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `p`.`ProductId`, `p`.`CategoryId`, `p`.`CreatedAt`, `p`.`CreatedBy`, `p`.`DeletedAt`, `p`.`DeletedBy`, `p`.`Description`, `p`.`DescriptionEn`, `p`.`IsDeleted`, `p`.`Name`, `p`.`NameEn`, `p`.`Price`, `p`.`Stock`, `p`.`UpdatedAt`, `p`.`UpdatedBy`, `p`.`Weight`, `t`.`CategoryId`, `t`.`CreatedAt`, `t`.`CreatedBy`, `t`.`DeletedAt`, `t`.`DeletedBy`, `t`.`Description`, `t`.`DescriptionEn`, `t`.`DisplayOrder`, `t`.`IsDeleted`, `t`.`Name`, `t`.`NameEn`, `t`.`ParentCategoryId`, `t`.`UpdatedAt`, `t`.`UpdatedBy`, `p0`.`ImageId`, `p0`.`DisplayOrder`, `p0`.`ImageURL`, `p0`.`IsPrimary`, `p0`.`ProductId`
+FROM `products` AS `p`
+INNER JOIN (
+    SELECT `c`.`CategoryId`, `c`.`CreatedAt`, `c`.`CreatedBy`, `c`.`DeletedAt`, `c`.`DeletedBy`, `c`.`Description`, `c`.`DescriptionEn`, `c`.`DisplayOrder`, `c`.`IsDeleted`, `c`.`Name`, `c`.`NameEn`, `c`.`ParentCategoryId`, `c`.`UpdatedAt`, `c`.`UpdatedBy`
+    FROM `categories` AS `c`
+    WHERE NOT (`c`.`IsDeleted`)
+) AS `t` ON `p`.`CategoryId` = `t`.`CategoryId`
+LEFT JOIN `productimages` AS `p0` ON `p`.`ProductId` = `p0`.`ProductId`
+WHERE NOT (`p`.`IsDeleted`)
+ORDER BY `p`.`CreatedAt` DESC, `p`.`ProductId`, `t`.`CategoryId`
+2026-11-04 21:52:22.067 +02:00 [INF] Executed DbCommand (5ms) [Parameters=[@__now_0='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+SELECT `p`.`PromotionId`, `p`.`AudienceType`, `p`.`CreatedAt`, `p`.`CreatedBy`, `p`.`CurrentUsage`, `p`.`DeletedAt`, `p`.`DeletedBy`, `p`.`Description`, `p`.`DescriptionEn`, `p`.`EndDate`, `p`.`IsActive`, `p`.`IsDeleted`, `p`.`MinOrderAmount`, `p`.`MinQuantity`, `p`.`Name`, `p`.`NameEn`, `p`.`Priority`, `p`.`PromoCode`, `p`.`StartDate`, `p`.`TargetId`, `p`.`TargetType`, `p`.`Type`, `p`.`UpdatedAt`, `p`.`UpdatedBy`, `p`.`UsageLimit`, `p`.`Value`
+FROM `promotions` AS `p`
+WHERE NOT (`p`.`IsDeleted`) AND (((`p`.`IsActive` AND (`p`.`PromoCode` IS NULL OR (`p`.`PromoCode` = ''))) AND (`p`.`StartDate` IS NULL OR (`p`.`StartDate` <= @__now_0))) AND (`p`.`EndDate` IS NULL OR (`p`.`EndDate` >= @__now_0)))
+2026-11-04 21:52:22.159 +02:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Collections.Generic.IEnumerable`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-11-04 21:52:22.188 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API) in 422.9078ms
+2026-11-04 21:52:22.189 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.ProductsController.GetProducts (KhduSouvenirShop.API)'
+2026-11-04 21:52:22.189 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/products - 200 null application/json; charset=utf-8 446.4404ms
+2026-11-04 21:52:22.192 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/companies - null null
+2026-11-04 21:52:22.199 +02:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Administrator|Manager)
+2026-11-04 21:52:22.203 +02:00 [INF] AuthenticationScheme: Bearer was challenged.
+2026-11-04 21:52:22.203 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/companies - 401 0 null 11.4611ms
+2026-11-04 21:52:34.588 +02:00 [INF] Request starting HTTP/1.1 POST http://localhost:5225/api/Users/login - application/json 59
+2026-11-04 21:52:34.590 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.UsersController.Login (KhduSouvenirShop.API)'
+2026-11-04 21:52:34.597 +02:00 [INF] Route matched with {action = "Login", controller = "Users"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] Login(KhduSouvenirShop.API.Controllers.LoginDto) on controller KhduSouvenirShop.API.Controllers.UsersController (KhduSouvenirShop.API).
+2026-11-04 21:52:34.677 +02:00 [INF] Спроба авторизації: superadmin@ksu.edu.ua
+2026-11-04 21:52:34.699 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[@__loginDto_Email_0='?' (Size = 100)], CommandType='"Text"', CommandTimeout='30']
+SELECT `u`.`UserId`, `u`.`CreatedAt`, `u`.`CreatedBy`, `u`.`DeletedAt`, `u`.`DeletedBy`, `u`.`Email`, `u`.`FirstName`, `u`.`GPA`, `u`.`IsDeleted`, `u`.`LastName`, `u`.`Password`, `u`.`Phone`, `u`.`Role`, `u`.`StudentExpiresAt`, `u`.`StudentStatus`, `u`.`StudentVerifiedAt`, `u`.`UpdatedAt`, `u`.`UpdatedBy`
+FROM `users` AS `u`
+WHERE `u`.`Email` = @__loginDto_Email_0
+LIMIT 1
+2026-11-04 21:52:36.366 +02:00 [INF] Користувач superadmin@ksu.edu.ua успішно авторизований
+2026-11-04 21:52:36.366 +02:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-11-04 21:52:36.379 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.UsersController.Login (KhduSouvenirShop.API) in 1781.5864ms
+2026-11-04 21:52:36.379 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.UsersController.Login (KhduSouvenirShop.API)'
+2026-11-04 21:52:36.379 +02:00 [INF] Request finished HTTP/1.1 POST http://localhost:5225/api/Users/login - 200 null application/json; charset=utf-8 1792.0712ms
+2026-11-04 21:52:36.498 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Users/me - null null
+2026-11-04 21:52:36.589 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.UsersController.GetCurrentUser (KhduSouvenirShop.API)'
+2026-11-04 21:52:36.594 +02:00 [INF] Route matched with {action = "GetCurrentUser", controller = "Users"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetCurrentUser() on controller KhduSouvenirShop.API.Controllers.UsersController (KhduSouvenirShop.API).
+2026-11-04 21:52:36.629 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[@__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `u`.`UserId`, `u`.`CreatedAt`, `u`.`CreatedBy`, `u`.`DeletedAt`, `u`.`DeletedBy`, `u`.`Email`, `u`.`FirstName`, `u`.`GPA`, `u`.`IsDeleted`, `u`.`LastName`, `u`.`Password`, `u`.`Phone`, `u`.`Role`, `u`.`StudentExpiresAt`, `u`.`StudentStatus`, `u`.`StudentVerifiedAt`, `u`.`UpdatedAt`, `u`.`UpdatedBy`
+FROM `users` AS `u`
+WHERE NOT (`u`.`IsDeleted`) AND (`u`.`UserId` = @__p_0)
+LIMIT 1
+2026-11-04 21:52:36.630 +02:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-11-04 21:52:36.641 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.UsersController.GetCurrentUser (KhduSouvenirShop.API) in 46.5255ms
+2026-11-04 21:52:36.642 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.UsersController.GetCurrentUser (KhduSouvenirShop.API)'
+2026-11-04 21:52:36.642 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Users/me - 200 null application/json; charset=utf-8 143.5047ms
+2026-11-04 21:52:36.653 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/admin/users - null null
+2026-11-04 21:52:36.657 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/admin/users - 404 0 null 3.2078ms
+2026-11-04 21:52:36.657 +02:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5225/api/admin/users, Response status code: 404
+2026-11-04 21:52:36.686 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/admin/incoming - null null
+2026-11-04 21:52:36.689 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/admin/incoming - 404 0 null 2.9299ms
+2026-11-04 21:52:36.689 +02:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5225/api/admin/incoming, Response status code: 404
+2026-11-04 21:52:36.692 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/analytics/overview - null null
+2026-11-04 21:52:36.693 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/analytics/overview - 404 0 null 0.9451ms
+2026-11-04 21:52:36.693 +02:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5225/api/analytics/overview, Response status code: 404
+2026-11-04 21:52:36.696 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/AdminCategories - null null
+2026-11-04 21:52:36.696 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/AdminCategories - 404 0 null 0.7004ms
+2026-11-04 21:52:36.697 +02:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5225/api/AdminCategories, Response status code: 404
+2026-11-04 21:52:36.699 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/AdminProducts - null null
+2026-11-04 21:52:36.699 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/AdminProducts - 404 0 null 0.6266ms
+2026-11-04 21:52:36.700 +02:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5225/api/AdminProducts, Response status code: 404
+2026-11-04 21:52:48.013 +02:00 [INF] Request starting HTTP/1.1 POST http://localhost:5225/api/Users/login - application/json 59
+2026-11-04 21:52:48.013 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.UsersController.Login (KhduSouvenirShop.API)'
+2026-11-04 21:52:48.014 +02:00 [INF] Route matched with {action = "Login", controller = "Users"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] Login(KhduSouvenirShop.API.Controllers.LoginDto) on controller KhduSouvenirShop.API.Controllers.UsersController (KhduSouvenirShop.API).
+2026-11-04 21:52:48.031 +02:00 [INF] Спроба авторизації: superadmin@ksu.edu.ua
+2026-11-04 21:52:48.038 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[@__loginDto_Email_0='?' (Size = 100)], CommandType='"Text"', CommandTimeout='30']
+SELECT `u`.`UserId`, `u`.`CreatedAt`, `u`.`CreatedBy`, `u`.`DeletedAt`, `u`.`DeletedBy`, `u`.`Email`, `u`.`FirstName`, `u`.`GPA`, `u`.`IsDeleted`, `u`.`LastName`, `u`.`Password`, `u`.`Phone`, `u`.`Role`, `u`.`StudentExpiresAt`, `u`.`StudentStatus`, `u`.`StudentVerifiedAt`, `u`.`UpdatedAt`, `u`.`UpdatedBy`
+FROM `users` AS `u`
+WHERE `u`.`Email` = @__loginDto_Email_0
+LIMIT 1
+2026-11-04 21:52:48.582 +02:00 [INF] Користувач superadmin@ksu.edu.ua успішно авторизований
+2026-11-04 21:52:48.583 +02:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-11-04 21:52:48.583 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.UsersController.Login (KhduSouvenirShop.API) in 569.3935ms
+2026-11-04 21:52:48.583 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.UsersController.Login (KhduSouvenirShop.API)'
+2026-11-04 21:52:48.584 +02:00 [INF] Request finished HTTP/1.1 POST http://localhost:5225/api/Users/login - 200 null application/json; charset=utf-8 571.0204ms
+2026-11-04 21:52:48.697 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Users - null null
+2026-11-04 21:52:48.701 +02:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Administrator)
+2026-11-04 21:52:48.703 +02:00 [INF] AuthenticationScheme: Bearer was forbidden.
+2026-11-04 21:52:48.703 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Users - 403 0 null 5.9127ms
+2026-11-04 21:52:48.796 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/admin/categories - null null
+2026-11-04 21:52:48.797 +02:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Manager|Administrator)
+2026-11-04 21:52:48.797 +02:00 [INF] AuthenticationScheme: Bearer was forbidden.
+2026-11-04 21:52:48.798 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/admin/categories - 403 0 null 1.3684ms
+2026-11-04 21:52:48.801 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/admin/products - null null
+2026-11-04 21:52:48.802 +02:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Manager|Administrator)
+2026-11-04 21:52:48.803 +02:00 [INF] AuthenticationScheme: Bearer was forbidden.
+2026-11-04 21:52:48.803 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/admin/products - 403 0 null 1.3119ms
+2026-11-04 21:52:48.805 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Promotions - null null
+2026-11-04 21:52:48.806 +02:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Administrator)
+2026-11-04 21:52:48.806 +02:00 [INF] AuthenticationScheme: Bearer was forbidden.
+2026-11-04 21:52:48.806 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Promotions - 403 0 null 1.0161ms
+2026-11-04 21:52:48.809 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Orders/admin - null null
+2026-11-04 21:52:48.810 +02:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Administrator|Manager)
+2026-11-04 21:52:48.810 +02:00 [INF] AuthenticationScheme: Bearer was forbidden.
+2026-11-04 21:52:48.810 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Orders/admin - 403 0 null 1.1986ms
+2026-11-04 21:52:48.812 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Orders/all - null null
+2026-11-04 21:52:48.814 +02:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Administrator|Manager)
+2026-11-04 21:52:48.815 +02:00 [INF] AuthenticationScheme: Bearer was forbidden.
+2026-11-04 21:52:48.815 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Orders/all - 403 0 null 2.698ms
+2026-11-04 21:52:48.819 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Analytics/summary - null null
+2026-11-04 21:52:48.821 +02:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Administrator)
+2026-11-04 21:52:48.821 +02:00 [INF] AuthenticationScheme: Bearer was forbidden.
+2026-11-04 21:52:48.821 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Analytics/summary - 403 0 null 2.2378ms
+2026-11-04 21:52:48.824 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Companies - null null
+2026-11-04 21:52:48.824 +02:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Administrator|Manager)
+2026-11-04 21:52:48.825 +02:00 [INF] AuthenticationScheme: Bearer was forbidden.
+2026-11-04 21:52:48.825 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Companies - 403 0 null 1.1405ms
+2026-11-04 21:52:48.827 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/University/pending-verifications - null null
+2026-11-04 21:52:48.828 +02:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Admin|Manager)
+2026-11-04 21:52:48.828 +02:00 [INF] AuthenticationScheme: Bearer was forbidden.
+2026-11-04 21:52:48.828 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/University/pending-verifications - 403 0 null 0.8935ms
+2026-11-04 21:52:48.830 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/WarehouseDocuments/incoming - null null
+2026-11-04 21:52:48.831 +02:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Administrator|Manager)
+2026-11-04 21:52:48.831 +02:00 [INF] AuthenticationScheme: Bearer was forbidden.
+2026-11-04 21:52:48.831 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/WarehouseDocuments/incoming - 403 0 null 0.88ms
+2026-11-04 21:52:48.834 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/WarehouseDocuments/stock - null null
+2026-11-04 21:52:48.836 +02:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Administrator|Manager)
+2026-11-04 21:52:48.836 +02:00 [INF] AuthenticationScheme: Bearer was forbidden.
+2026-11-04 21:52:48.836 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/WarehouseDocuments/stock - 403 0 null 2.1758ms
+2026-11-04 21:53:06.437 +02:00 [INF] Request starting HTTP/1.1 POST http://localhost:5225/api/Users/login - application/json 54
+2026-11-04 21:53:06.438 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.UsersController.Login (KhduSouvenirShop.API)'
+2026-11-04 21:53:06.438 +02:00 [INF] Route matched with {action = "Login", controller = "Users"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] Login(KhduSouvenirShop.API.Controllers.LoginDto) on controller KhduSouvenirShop.API.Controllers.UsersController (KhduSouvenirShop.API).
+2026-11-04 21:53:06.445 +02:00 [INF] Спроба авторизації: admin@ksu.edu.ua
+2026-11-04 21:53:06.447 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[@__loginDto_Email_0='?' (Size = 100)], CommandType='"Text"', CommandTimeout='30']
+SELECT `u`.`UserId`, `u`.`CreatedAt`, `u`.`CreatedBy`, `u`.`DeletedAt`, `u`.`DeletedBy`, `u`.`Email`, `u`.`FirstName`, `u`.`GPA`, `u`.`IsDeleted`, `u`.`LastName`, `u`.`Password`, `u`.`Phone`, `u`.`Role`, `u`.`StudentExpiresAt`, `u`.`StudentStatus`, `u`.`StudentVerifiedAt`, `u`.`UpdatedAt`, `u`.`UpdatedBy`
+FROM `users` AS `u`
+WHERE `u`.`Email` = @__loginDto_Email_0
+LIMIT 1
+2026-11-04 21:53:06.976 +02:00 [INF] Користувач admin@ksu.edu.ua успішно авторизований
+2026-11-04 21:53:06.976 +02:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-11-04 21:53:06.977 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.UsersController.Login (KhduSouvenirShop.API) in 538.761ms
+2026-11-04 21:53:06.977 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.UsersController.Login (KhduSouvenirShop.API)'
+2026-11-04 21:53:06.978 +02:00 [INF] Request finished HTTP/1.1 POST http://localhost:5225/api/Users/login - 200 null application/json; charset=utf-8 540.1688ms
+2026-11-04 21:53:07.075 +02:00 [INF] Request starting HTTP/1.1 POST http://localhost:5225/api/Users/login - application/json 57
+2026-11-04 21:53:07.076 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.UsersController.Login (KhduSouvenirShop.API)'
+2026-11-04 21:53:07.076 +02:00 [INF] Route matched with {action = "Login", controller = "Users"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] Login(KhduSouvenirShop.API.Controllers.LoginDto) on controller KhduSouvenirShop.API.Controllers.UsersController (KhduSouvenirShop.API).
+2026-11-04 21:53:07.079 +02:00 [INF] Спроба авторизації: customer@ksu.edu.ua
+2026-11-04 21:53:07.081 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[@__loginDto_Email_0='?' (Size = 100)], CommandType='"Text"', CommandTimeout='30']
+SELECT `u`.`UserId`, `u`.`CreatedAt`, `u`.`CreatedBy`, `u`.`DeletedAt`, `u`.`DeletedBy`, `u`.`Email`, `u`.`FirstName`, `u`.`GPA`, `u`.`IsDeleted`, `u`.`LastName`, `u`.`Password`, `u`.`Phone`, `u`.`Role`, `u`.`StudentExpiresAt`, `u`.`StudentStatus`, `u`.`StudentVerifiedAt`, `u`.`UpdatedAt`, `u`.`UpdatedBy`
+FROM `users` AS `u`
+WHERE `u`.`Email` = @__loginDto_Email_0
+LIMIT 1
+2026-11-04 21:53:07.615 +02:00 [INF] Користувач customer@ksu.edu.ua успішно авторизований
+2026-11-04 21:53:07.616 +02:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-11-04 21:53:07.616 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.UsersController.Login (KhduSouvenirShop.API) in 539.8652ms
+2026-11-04 21:53:07.616 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.UsersController.Login (KhduSouvenirShop.API)'
+2026-11-04 21:53:07.616 +02:00 [INF] Request finished HTTP/1.1 POST http://localhost:5225/api/Users/login - 200 null application/json; charset=utf-8 540.9358ms
+2026-11-04 21:53:07.634 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Users - null null
+2026-11-04 21:53:07.635 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.UsersController.GetAllUsers (KhduSouvenirShop.API)'
+2026-11-04 21:53:07.642 +02:00 [INF] Route matched with {action = "GetAllUsers", controller = "Users"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetAllUsers(Int32, Int32, System.String, System.String) on controller KhduSouvenirShop.API.Controllers.UsersController (KhduSouvenirShop.API).
+2026-11-04 21:53:07.741 +02:00 [INF] Executed DbCommand (51ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM `users` AS `u`
+WHERE NOT (`u`.`IsDeleted`)
+2026-11-04 21:53:07.755 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[@__p_1='?' (DbType = Int32), @__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `u`.`UserId`, `u`.`Email`, `u`.`FirstName`, `u`.`LastName`, `u`.`Role`, `u`.`StudentStatus`, `u`.`CreatedAt`, `u`.`IsDeleted`
+FROM `users` AS `u`
+WHERE NOT (`u`.`IsDeleted`)
+ORDER BY `u`.`CreatedAt` DESC
+LIMIT @__p_1 OFFSET @__p_0
+2026-11-04 21:53:07.758 +02:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[KhduSouvenirShop.API.Models.Common.PagedResponse`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], KhduSouvenirShop.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-11-04 21:53:07.767 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.UsersController.GetAllUsers (KhduSouvenirShop.API) in 124.8879ms
+2026-11-04 21:53:07.767 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.UsersController.GetAllUsers (KhduSouvenirShop.API)'
+2026-11-04 21:53:07.767 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Users - 200 null application/json; charset=utf-8 133.502ms
+2026-11-04 21:53:07.794 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/admin/categories - null null
+2026-11-04 21:53:07.795 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.AdminCategoriesController.GetCategories (KhduSouvenirShop.API)'
+2026-11-04 21:53:07.800 +02:00 [INF] Route matched with {action = "GetCategories", controller = "AdminCategories"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetCategories(Boolean) on controller KhduSouvenirShop.API.Controllers.AdminCategoriesController (KhduSouvenirShop.API).
+2026-11-04 21:53:07.816 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `c`.`CategoryId`, `c`.`Name`, `c`.`NameEn`, `c`.`ParentCategoryId`, `c`.`DisplayOrder`, `c`.`IsDeleted`, `c`.`CreatedAt`, `c`.`UpdatedAt`
+FROM `categories` AS `c`
+WHERE NOT (`c`.`IsDeleted`)
+ORDER BY `c`.`DisplayOrder`
+2026-11-04 21:53:07.817 +02:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Collections.Generic.IEnumerable`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-11-04 21:53:07.829 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.AdminCategoriesController.GetCategories (KhduSouvenirShop.API) in 29.134ms
+2026-11-04 21:53:07.830 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.AdminCategoriesController.GetCategories (KhduSouvenirShop.API)'
+2026-11-04 21:53:07.830 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/admin/categories - 200 null application/json; charset=utf-8 36.1627ms
+2026-11-04 21:53:07.832 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/admin/products - null null
+2026-11-04 21:53:07.833 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.AdminProductsController.GetProducts (KhduSouvenirShop.API)'
+2026-11-04 21:53:07.840 +02:00 [INF] Route matched with {action = "GetProducts", controller = "AdminProducts"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetProducts(Int32, Int32, System.Nullable`1[System.Int32], System.String, System.String, Boolean, System.Nullable`1[System.Boolean]) on controller KhduSouvenirShop.API.Controllers.AdminProductsController (KhduSouvenirShop.API).
+2026-11-04 21:53:07.856 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM `products` AS `p`
+WHERE NOT (`p`.`IsDeleted`)
+2026-11-04 21:53:07.915 +02:00 [INF] Executed DbCommand (47ms) [Parameters=[@__p_1='?' (DbType = Int32), @__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `t`.`ProductId`, `t`.`Name`, `t`.`NameEn`, `t`.`Price`, `t`.`Stock`, `t`.`CategoryId`, `t0`.`Name` AS `categoryName`, `t`.`CreatedAt`, `t`.`UpdatedAt`
+FROM (
+    SELECT `p`.`ProductId`, `p`.`CategoryId`, `p`.`CreatedAt`, `p`.`Name`, `p`.`NameEn`, `p`.`Price`, `p`.`Stock`, `p`.`UpdatedAt`
+    FROM `products` AS `p`
+    WHERE NOT (`p`.`IsDeleted`)
+    ORDER BY `p`.`Name`
+    LIMIT @__p_1 OFFSET @__p_0
+) AS `t`
+INNER JOIN (
+    SELECT `c`.`CategoryId`, `c`.`Name`
+    FROM `categories` AS `c`
+    WHERE NOT (`c`.`IsDeleted`)
+) AS `t0` ON `t`.`CategoryId` = `t0`.`CategoryId`
+ORDER BY `t`.`Name`
+2026-11-04 21:53:07.917 +02:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[KhduSouvenirShop.API.Models.Common.PagedResponse`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], KhduSouvenirShop.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-11-04 21:53:07.920 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.AdminProductsController.GetProducts (KhduSouvenirShop.API) in 80.091ms
+2026-11-04 21:53:07.921 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.AdminProductsController.GetProducts (KhduSouvenirShop.API)'
+2026-11-04 21:53:07.921 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/admin/products - 200 null application/json; charset=utf-8 88.6585ms
+2026-11-04 21:53:07.924 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Promotions - null null
+2026-11-04 21:53:07.925 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.PromotionsController.GetAllPromotions (KhduSouvenirShop.API)'
+2026-11-04 21:53:07.933 +02:00 [INF] Route matched with {action = "GetAllPromotions", controller = "Promotions"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetAllPromotions(Int32, Int32, System.String, System.Nullable`1[System.Boolean]) on controller KhduSouvenirShop.API.Controllers.PromotionsController (KhduSouvenirShop.API).
+2026-11-04 21:53:07.945 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM `promotions` AS `p`
+WHERE NOT (`p`.`IsDeleted`)
+2026-11-04 21:53:07.955 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[@__p_1='?' (DbType = Int32), @__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `p`.`PromotionId`, `p`.`AudienceType`, `p`.`CreatedAt`, `p`.`CreatedBy`, `p`.`CurrentUsage`, `p`.`DeletedAt`, `p`.`DeletedBy`, `p`.`Description`, `p`.`DescriptionEn`, `p`.`EndDate`, `p`.`IsActive`, `p`.`IsDeleted`, `p`.`MinOrderAmount`, `p`.`MinQuantity`, `p`.`Name`, `p`.`NameEn`, `p`.`Priority`, `p`.`PromoCode`, `p`.`StartDate`, `p`.`TargetId`, `p`.`TargetType`, `p`.`Type`, `p`.`UpdatedAt`, `p`.`UpdatedBy`, `p`.`UsageLimit`, `p`.`Value`
+FROM `promotions` AS `p`
+WHERE NOT (`p`.`IsDeleted`)
+ORDER BY `p`.`CreatedAt` DESC
+LIMIT @__p_1 OFFSET @__p_0
+2026-11-04 21:53:07.957 +02:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[KhduSouvenirShop.API.Models.Common.PagedResponse`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], KhduSouvenirShop.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-11-04 21:53:07.987 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.PromotionsController.GetAllPromotions (KhduSouvenirShop.API) in 54.1629ms
+2026-11-04 21:53:07.988 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.PromotionsController.GetAllPromotions (KhduSouvenirShop.API)'
+2026-11-04 21:53:07.988 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Promotions - 200 null application/json; charset=utf-8 64.372ms
+2026-11-04 21:53:07.990 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Orders/all - null null
+2026-11-04 21:53:07.991 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.OrdersController.GetAllOrders (KhduSouvenirShop.API)'
+2026-11-04 21:53:07.997 +02:00 [INF] Route matched with {action = "GetAllOrders", controller = "Orders"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetAllOrders(Int32, Int32, System.String) on controller KhduSouvenirShop.API.Controllers.OrdersController (KhduSouvenirShop.API).
+2026-11-04 21:53:08.055 +02:00 [INF] Executed DbCommand (19ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM `orders` AS `o`
+2026-11-04 21:53:08.072 +02:00 [INF] Executed DbCommand (4ms) [Parameters=[@__p_1='?' (DbType = Int32), @__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `t`.`OrderId`, `t`.`OrderNumber`, `t`.`Status`, `t`.`TotalAmount`, `t`.`CreatedAt`, CONCAT(CONCAT(`t0`.`FirstName`, ' '), `t0`.`LastName`) AS `userName`, `t0`.`Email` AS `userEmail`
+FROM (
+    SELECT `o`.`OrderId`, `o`.`CreatedAt`, `o`.`OrderNumber`, `o`.`Status`, `o`.`TotalAmount`, `o`.`UserId`
+    FROM `orders` AS `o`
+    ORDER BY `o`.`CreatedAt` DESC
+    LIMIT @__p_1 OFFSET @__p_0
+) AS `t`
+INNER JOIN (
+    SELECT `u`.`UserId`, `u`.`Email`, `u`.`FirstName`, `u`.`LastName`
+    FROM `users` AS `u`
+    WHERE NOT (`u`.`IsDeleted`)
+) AS `t0` ON `t`.`UserId` = `t0`.`UserId`
+ORDER BY `t`.`CreatedAt` DESC
+2026-11-04 21:53:08.073 +02:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[KhduSouvenirShop.API.Models.Common.PagedResponse`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], KhduSouvenirShop.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-11-04 21:53:08.077 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.OrdersController.GetAllOrders (KhduSouvenirShop.API) in 79.4034ms
+2026-11-04 21:53:08.077 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.OrdersController.GetAllOrders (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.077 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Orders/all - 200 null application/json; charset=utf-8 87.2025ms
+2026-11-04 21:53:08.079 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Orders/admin - null null
+2026-11-04 21:53:08.079 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.OrdersController.GetAllOrders (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.085 +02:00 [INF] Route matched with {action = "GetAllOrders", controller = "Orders"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetAllOrders(System.String) on controller KhduSouvenirShop.API.Controllers.OrdersController (KhduSouvenirShop.API).
+2026-11-04 21:53:08.107 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `o`.`OrderId`, `o`.`CreatedAt`, `o`.`OrderNumber`, `o`.`ShippingCost`, `o`.`Status`, `o`.`TotalAmount`, `o`.`UserId`, `t`.`UserId`, `t`.`CreatedAt`, `t`.`CreatedBy`, `t`.`DeletedAt`, `t`.`DeletedBy`, `t`.`Email`, `t`.`FirstName`, `t`.`GPA`, `t`.`IsDeleted`, `t`.`LastName`, `t`.`Password`, `t`.`Phone`, `t`.`Role`, `t`.`StudentExpiresAt`, `t`.`StudentStatus`, `t`.`StudentVerifiedAt`, `t`.`UpdatedAt`, `t`.`UpdatedBy`
+FROM `orders` AS `o`
+INNER JOIN (
+    SELECT `u`.`UserId`, `u`.`CreatedAt`, `u`.`CreatedBy`, `u`.`DeletedAt`, `u`.`DeletedBy`, `u`.`Email`, `u`.`FirstName`, `u`.`GPA`, `u`.`IsDeleted`, `u`.`LastName`, `u`.`Password`, `u`.`Phone`, `u`.`Role`, `u`.`StudentExpiresAt`, `u`.`StudentStatus`, `u`.`StudentVerifiedAt`, `u`.`UpdatedAt`, `u`.`UpdatedBy`
+    FROM `users` AS `u`
+    WHERE NOT (`u`.`IsDeleted`)
+) AS `t` ON `o`.`UserId` = `t`.`UserId`
+ORDER BY `o`.`CreatedAt` DESC
+2026-11-04 21:53:08.136 +02:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-11-04 21:53:08.141 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.OrdersController.GetAllOrders (KhduSouvenirShop.API) in 56.2218ms
+2026-11-04 21:53:08.142 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.OrdersController.GetAllOrders (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.142 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Orders/admin - 200 null application/json; charset=utf-8 63.0875ms
+2026-11-04 21:53:08.143 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Companies - null null
+2026-11-04 21:53:08.144 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.CompaniesController.GetCompanies (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.149 +02:00 [INF] Route matched with {action = "GetCompanies", controller = "Companies"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetCompanies(Int32, Int32, System.String, System.Nullable`1[System.Boolean]) on controller KhduSouvenirShop.API.Controllers.CompaniesController (KhduSouvenirShop.API).
+2026-11-04 21:53:08.159 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM `companies` AS `c`
+WHERE NOT (`c`.`IsDeleted`)
+2026-11-04 21:53:08.167 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[@__p_1='?' (DbType = Int32), @__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `c`.`CompanyId`, `c`.`Address`, `c`.`ContactPerson`, `c`.`CreatedAt`, `c`.`CreatedBy`, `c`.`DeletedAt`, `c`.`DeletedBy`, `c`.`Email`, `c`.`IsActive`, `c`.`IsDeleted`, `c`.`Name`, `c`.`Notes`, `c`.`Phone`, `c`.`UpdatedAt`, `c`.`UpdatedBy`
+FROM `companies` AS `c`
+WHERE NOT (`c`.`IsDeleted`)
+ORDER BY `c`.`Name`
+LIMIT @__p_1 OFFSET @__p_0
+2026-11-04 21:53:08.168 +02:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[KhduSouvenirShop.API.Models.Common.PagedResponse`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], KhduSouvenirShop.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-11-04 21:53:08.179 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.CompaniesController.GetCompanies (KhduSouvenirShop.API) in 29.1829ms
+2026-11-04 21:53:08.179 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.CompaniesController.GetCompanies (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.179 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Companies - 200 null application/json; charset=utf-8 35.4143ms
+2026-11-04 21:53:08.181 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Analytics/summary - null null
+2026-11-04 21:53:08.181 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.AnalyticsController.GetSummary (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.186 +02:00 [INF] Route matched with {action = "GetSummary", controller = "Analytics"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetSummary(System.Nullable`1[System.DateTime], System.Nullable`1[System.DateTime]) on controller KhduSouvenirShop.API.Controllers.AnalyticsController (KhduSouvenirShop.API).
+2026-11-04 21:53:08.213 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[@__startDate_0='?' (DbType = DateTime), @__endDate_1='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+SELECT `o`.`OrderId`, `o`.`CreatedAt`, `o`.`OrderNumber`, `o`.`ShippingCost`, `o`.`Status`, `o`.`TotalAmount`, `o`.`UserId`
+FROM `orders` AS `o`
+WHERE `o`.`Status` IN ('Paid', 'Delivered', 'Shipped') AND ((`o`.`CreatedAt` >= @__startDate_0) AND (`o`.`CreatedAt` <= @__endDate_1))
+2026-11-04 21:53:08.241 +02:00 [ERR] Failed executing DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `i`.`DocumentId`, `i`.`CompanyId`, `i`.`CreatedAt`, `i`.`CreatedBy`, `i`.`DeletedAt`, `i`.`DeletedBy`, `i`.`DocumentDate`, `i`.`IsDeleted`, `i`.`Notes`, `i`.`ProductId`, `i`.`PurchasePrice`, `i`.`Quantity`, `i`.`UpdatedAt`, `i`.`UpdatedBy`, `t`.`ProductId`, `t`.`CategoryId`, `t`.`CreatedAt`, `t`.`CreatedBy`, `t`.`DeletedAt`, `t`.`DeletedBy`, `t`.`Description`, `t`.`DescriptionEn`, `t`.`IsDeleted`, `t`.`Name`, `t`.`NameEn`, `t`.`Price`, `t`.`Stock`, `t`.`UpdatedAt`, `t`.`UpdatedBy`, `t`.`Weight`, `t0`.`CompanyId`, `t0`.`Address`, `t0`.`ContactPerson`, `t0`.`CreatedAt`, `t0`.`CreatedBy`, `t0`.`DeletedAt`, `t0`.`DeletedBy`, `t0`.`Email`, `t0`.`IsActive`, `t0`.`IsDeleted`, `t0`.`Name`, `t0`.`Notes`, `t0`.`Phone`, `t0`.`UpdatedAt`, `t0`.`UpdatedBy`
+FROM `incomingdocuments` AS `i`
+INNER JOIN (
+    SELECT `p`.`ProductId`, `p`.`CategoryId`, `p`.`CreatedAt`, `p`.`CreatedBy`, `p`.`DeletedAt`, `p`.`DeletedBy`, `p`.`Description`, `p`.`DescriptionEn`, `p`.`IsDeleted`, `p`.`Name`, `p`.`NameEn`, `p`.`Price`, `p`.`Stock`, `p`.`UpdatedAt`, `p`.`UpdatedBy`, `p`.`Weight`
+    FROM `products` AS `p`
+    WHERE NOT (`p`.`IsDeleted`)
+) AS `t` ON `i`.`ProductId` = `t`.`ProductId`
+INNER JOIN (
+    SELECT `c`.`CompanyId`, `c`.`Address`, `c`.`ContactPerson`, `c`.`CreatedAt`, `c`.`CreatedBy`, `c`.`DeletedAt`, `c`.`DeletedBy`, `c`.`Email`, `c`.`IsActive`, `c`.`IsDeleted`, `c`.`Name`, `c`.`Notes`, `c`.`Phone`, `c`.`UpdatedAt`, `c`.`UpdatedBy`
+    FROM `companies` AS `c`
+    WHERE NOT (`c`.`IsDeleted`)
+) AS `t0` ON `i`.`CompanyId` = `t0`.`CompanyId`
+WHERE NOT (`i`.`IsDeleted`)
+ORDER BY `i`.`DocumentDate` DESC
+2026-11-04 21:53:08.245 +02:00 [ERR] An exception occurred while iterating over the results of a query for context type 'KhduSouvenirShop.API.Data.AppDbContext'.
+MySqlConnector.MySqlException (0x80004005): Table 'khdu_souvenir_shop.incomingdocuments' doesn't exist
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+MySqlConnector.MySqlException (0x80004005): Table 'khdu_souvenir_shop.incomingdocuments' doesn't exist
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+2026-11-04 21:53:08.249 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.AnalyticsController.GetSummary (KhduSouvenirShop.API) in 62.8587ms
+2026-11-04 21:53:08.249 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.AnalyticsController.GetSummary (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.250 +02:00 [ERR] Table 'khdu_souvenir_shop.incomingdocuments' doesn't exist
+MySqlConnector.MySqlException (0x80004005): Table 'khdu_souvenir_shop.incomingdocuments' doesn't exist
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+   at Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync[TSource](IQueryable`1 source, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync[TSource](IQueryable`1 source, CancellationToken cancellationToken)
+   at KhduSouvenirShop.API.Repositories.WarehouseRepository.GetIncomingListAsync() in C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\Repositories\WarehouseRepository.cs:line 20
+   at KhduSouvenirShop.API.Controllers.AnalyticsController.GetSummary(Nullable`1 from, Nullable`1 to) in C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\Controllers\AnalyticsController.cs:line 32
+   at lambda_method885(Closure, Object)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
+   at Microsoft.AspNetCore.Routing.EndpointMiddleware.<Invoke>g__AwaitRequestTask|7_0(Endpoint endpoint, Task requestTask, ILogger logger)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.RateLimiting.RateLimitingMiddleware.InvokeInternal(HttpContext context, EnableRateLimitingAttribute enableRateLimitingAttribute)
+   at Program.<>c.<<<Main>$>b__0_9>d.MoveNext() in C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\Program.cs:line 211
+--- End of stack trace from previous location ---
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at KhduSouvenirShop.API.Middleware.ExceptionMiddleware.InvokeAsync(HttpContext context) in C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\Middleware\ExceptionMiddleware.cs:line 22
+2026-11-04 21:53:08.268 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Analytics/summary - 500 null application/json 86.9149ms
+2026-11-04 21:53:08.298 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/University/pending-verifications - null null
+2026-11-04 21:53:08.300 +02:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Admin|Manager)
+2026-11-04 21:53:08.300 +02:00 [INF] AuthenticationScheme: Bearer was forbidden.
+2026-11-04 21:53:08.300 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/University/pending-verifications - 403 0 null 2.4121ms
+2026-11-04 21:53:08.303 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/WarehouseDocuments/incoming - null null
+2026-11-04 21:53:08.303 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.WarehouseDocumentsController.GetIncomingDocuments (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.309 +02:00 [INF] Route matched with {action = "GetIncomingDocuments", controller = "WarehouseDocuments"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetIncomingDocuments(Int32, Int32, System.Nullable`1[System.Int32], System.Nullable`1[System.Int32]) on controller KhduSouvenirShop.API.Controllers.WarehouseDocumentsController (KhduSouvenirShop.API).
+2026-11-04 21:53:08.324 +02:00 [ERR] Failed executing DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM `incomingdocuments` AS `i`
+WHERE NOT (`i`.`IsDeleted`)
+2026-11-04 21:53:08.326 +02:00 [ERR] An exception occurred while iterating over the results of a query for context type 'KhduSouvenirShop.API.Data.AppDbContext'.
+MySqlConnector.MySqlException (0x80004005): Table 'khdu_souvenir_shop.incomingdocuments' doesn't exist
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+MySqlConnector.MySqlException (0x80004005): Table 'khdu_souvenir_shop.incomingdocuments' doesn't exist
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+2026-11-04 21:53:08.330 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.WarehouseDocumentsController.GetIncomingDocuments (KhduSouvenirShop.API) in 20.1676ms
+2026-11-04 21:53:08.330 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.WarehouseDocumentsController.GetIncomingDocuments (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.331 +02:00 [ERR] Table 'khdu_souvenir_shop.incomingdocuments' doesn't exist
+MySqlConnector.MySqlException (0x80004005): Table 'khdu_souvenir_shop.incomingdocuments' doesn't exist
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at KhduSouvenirShop.API.Controllers.WarehouseDocumentsController.GetIncomingDocuments(Int32 pageNumber, Int32 pageSize, Nullable`1 productId, Nullable`1 companyId) in C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\Controllers\WarehouseDocumentsController.cs:line 65
+   at lambda_method902(Closure, Object)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
+   at Microsoft.AspNetCore.Routing.EndpointMiddleware.<Invoke>g__AwaitRequestTask|7_0(Endpoint endpoint, Task requestTask, ILogger logger)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.RateLimiting.RateLimitingMiddleware.InvokeInternal(HttpContext context, EnableRateLimitingAttribute enableRateLimitingAttribute)
+   at Program.<>c.<<<Main>$>b__0_9>d.MoveNext() in C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\Program.cs:line 211
+--- End of stack trace from previous location ---
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at KhduSouvenirShop.API.Middleware.ExceptionMiddleware.InvokeAsync(HttpContext context) in C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\Middleware\ExceptionMiddleware.cs:line 22
+2026-11-04 21:53:08.337 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/WarehouseDocuments/incoming - 500 null application/json 34.5208ms
+2026-11-04 21:53:08.341 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/WarehouseDocuments/stock - null null
+2026-11-04 21:53:08.342 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.WarehouseDocumentsController.GetCurrentStock (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.347 +02:00 [INF] Route matched with {action = "GetCurrentStock", controller = "WarehouseDocuments"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetCurrentStock() on controller KhduSouvenirShop.API.Controllers.WarehouseDocumentsController (KhduSouvenirShop.API).
+2026-11-04 21:53:08.368 +02:00 [ERR] Failed executing DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `p`.`ProductId` AS `productId`, `p`.`Name` AS `name`, `p`.`Stock` AS `currentStock`, (
+    SELECT COALESCE(SUM(`i`.`Quantity`), 0)
+    FROM `incomingdocuments` AS `i`
+    WHERE NOT (`i`.`IsDeleted`) AND (`i`.`ProductId` = `p`.`ProductId`)) AS `totalIncoming`, (
+    SELECT COALESCE(SUM(`o`.`Quantity`), 0)
+    FROM `outgoingdocuments` AS `o`
+    WHERE NOT (`o`.`IsDeleted`) AND (`o`.`ProductId` = `p`.`ProductId`)) AS `totalOutgoing`
+FROM `products` AS `p`
+WHERE NOT (`p`.`IsDeleted`)
+2026-11-04 21:53:08.370 +02:00 [ERR] An exception occurred while iterating over the results of a query for context type 'KhduSouvenirShop.API.Data.AppDbContext'.
+MySqlConnector.MySqlException (0x80004005): Table 'khdu_souvenir_shop.incomingdocuments' doesn't exist
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+MySqlConnector.MySqlException (0x80004005): Table 'khdu_souvenir_shop.incomingdocuments' doesn't exist
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+2026-11-04 21:53:08.375 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.WarehouseDocumentsController.GetCurrentStock (KhduSouvenirShop.API) in 27.6068ms
+2026-11-04 21:53:08.375 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.WarehouseDocumentsController.GetCurrentStock (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.375 +02:00 [ERR] Table 'khdu_souvenir_shop.incomingdocuments' doesn't exist
+MySqlConnector.MySqlException (0x80004005): Table 'khdu_souvenir_shop.incomingdocuments' doesn't exist
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+   at Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync[TSource](IQueryable`1 source, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync[TSource](IQueryable`1 source, CancellationToken cancellationToken)
+   at KhduSouvenirShop.API.Controllers.WarehouseDocumentsController.GetCurrentStock() in C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\Controllers\WarehouseDocumentsController.cs:line 175
+   at lambda_method912(Closure, Object)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
+   at Microsoft.AspNetCore.Routing.EndpointMiddleware.<Invoke>g__AwaitRequestTask|7_0(Endpoint endpoint, Task requestTask, ILogger logger)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.RateLimiting.RateLimitingMiddleware.InvokeInternal(HttpContext context, EnableRateLimitingAttribute enableRateLimitingAttribute)
+   at Program.<>c.<<<Main>$>b__0_9>d.MoveNext() in C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\Program.cs:line 211
+--- End of stack trace from previous location ---
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at KhduSouvenirShop.API.Middleware.ExceptionMiddleware.InvokeAsync(HttpContext context) in C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\Middleware\ExceptionMiddleware.cs:line 22
+2026-11-04 21:53:08.382 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/WarehouseDocuments/stock - 500 null application/json 40.3817ms
+2026-11-04 21:53:08.385 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Cart - null null
+2026-11-04 21:53:08.386 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.CartController.GetCart (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.390 +02:00 [INF] Route matched with {action = "GetCart", controller = "Cart"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetCart() on controller KhduSouvenirShop.API.Controllers.CartController (KhduSouvenirShop.API).
+2026-11-04 21:53:08.437 +02:00 [WRN] Compiling a query which loads related collections for more than one collection navigation, either via 'Include' or through projection, but no 'QuerySplittingBehavior' has been configured. By default, Entity Framework will use 'QuerySplittingBehavior.SingleQuery', which can potentially result in slow query performance. See https://go.microsoft.com/fwlink/?linkid=2134277 for more information. To identify the query that's triggering this warning call 'ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning))'.
+2026-11-04 21:53:08.447 +02:00 [ERR] Failed executing DbCommand (3ms) [Parameters=[@__userId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `t`.`CartId`, `t`.`CreatedAt`, `t`.`UserId`, `t1`.`CartItemId`, `t1`.`AddedAt`, `t1`.`CartId`, `t1`.`ProductId`, `t1`.`Quantity`, `t1`.`ProductId0`, `t1`.`CategoryId`, `t1`.`CreatedAt`, `t1`.`CreatedBy`, `t1`.`DeletedAt`, `t1`.`DeletedBy`, `t1`.`Description`, `t1`.`DescriptionEn`, `t1`.`IsDeleted`, `t1`.`Name`, `t1`.`NameEn`, `t1`.`Price`, `t1`.`Stock`, `t1`.`UpdatedAt`, `t1`.`UpdatedBy`, `t1`.`Weight`, `t1`.`CategoryId0`, `t1`.`CreatedAt0`, `t1`.`CreatedBy0`, `t1`.`DeletedAt0`, `t1`.`DeletedBy0`, `t1`.`Description0`, `t1`.`DescriptionEn0`, `t1`.`DisplayOrder`, `t1`.`IsDeleted0`, `t1`.`Name0`, `t1`.`NameEn0`, `t1`.`ParentCategoryId`, `t1`.`UpdatedAt0`, `t1`.`UpdatedBy0`, `t1`.`ImageId`, `t1`.`DisplayOrder0`, `t1`.`ImageURL`, `t1`.`IsPrimary`, `t1`.`ProductId1`
+FROM (
+    SELECT `c`.`CartId`, `c`.`CreatedAt`, `c`.`UserId`
+    FROM `cart` AS `c`
+    WHERE `c`.`UserId` = @__userId_0
+    LIMIT 1
+) AS `t`
+LEFT JOIN (
+    SELECT `c0`.`CartItemId`, `c0`.`AddedAt`, `c0`.`CartId`, `c0`.`ProductId`, `c0`.`Quantity`, `t0`.`ProductId` AS `ProductId0`, `t0`.`CategoryId`, `t0`.`CreatedAt`, `t0`.`CreatedBy`, `t0`.`DeletedAt`, `t0`.`DeletedBy`, `t0`.`Description`, `t0`.`DescriptionEn`, `t0`.`IsDeleted`, `t0`.`Name`, `t0`.`NameEn`, `t0`.`Price`, `t0`.`Stock`, `t0`.`UpdatedAt`, `t0`.`UpdatedBy`, `t0`.`Weight`, `t2`.`CategoryId` AS `CategoryId0`, `t2`.`CreatedAt` AS `CreatedAt0`, `t2`.`CreatedBy` AS `CreatedBy0`, `t2`.`DeletedAt` AS `DeletedAt0`, `t2`.`DeletedBy` AS `DeletedBy0`, `t2`.`Description` AS `Description0`, `t2`.`DescriptionEn` AS `DescriptionEn0`, `t2`.`DisplayOrder`, `t2`.`IsDeleted` AS `IsDeleted0`, `t2`.`Name` AS `Name0`, `t2`.`NameEn` AS `NameEn0`, `t2`.`ParentCategoryId`, `t2`.`UpdatedAt` AS `UpdatedAt0`, `t2`.`UpdatedBy` AS `UpdatedBy0`, `p0`.`ImageId`, `p0`.`DisplayOrder` AS `DisplayOrder0`, `p0`.`ImageURL`, `p0`.`IsPrimary`, `p0`.`ProductId` AS `ProductId1`
+    FROM `cartitems` AS `c0`
+    INNER JOIN (
+        SELECT `p`.`ProductId`, `p`.`CategoryId`, `p`.`CreatedAt`, `p`.`CreatedBy`, `p`.`DeletedAt`, `p`.`DeletedBy`, `p`.`Description`, `p`.`DescriptionEn`, `p`.`IsDeleted`, `p`.`Name`, `p`.`NameEn`, `p`.`Price`, `p`.`Stock`, `p`.`UpdatedAt`, `p`.`UpdatedBy`, `p`.`Weight`
+        FROM `products` AS `p`
+        WHERE NOT (`p`.`IsDeleted`)
+    ) AS `t0` ON `c0`.`ProductId` = `t0`.`ProductId`
+    INNER JOIN (
+        SELECT `c1`.`CategoryId`, `c1`.`CreatedAt`, `c1`.`CreatedBy`, `c1`.`DeletedAt`, `c1`.`DeletedBy`, `c1`.`Description`, `c1`.`DescriptionEn`, `c1`.`DisplayOrder`, `c1`.`IsDeleted`, `c1`.`Name`, `c1`.`NameEn`, `c1`.`ParentCategoryId`, `c1`.`UpdatedAt`, `c1`.`UpdatedBy`
+        FROM `categories` AS `c1`
+        WHERE NOT (`c1`.`IsDeleted`)
+    ) AS `t2` ON `t0`.`CategoryId` = `t2`.`CategoryId`
+    LEFT JOIN `productimages` AS `p0` ON `t0`.`ProductId` = `p0`.`ProductId`
+) AS `t1` ON `t`.`CartId` = `t1`.`CartId`
+ORDER BY `t`.`CartId`, `t1`.`CartItemId`, `t1`.`ProductId0`, `t1`.`CategoryId0`
+2026-11-04 21:53:08.449 +02:00 [ERR] An exception occurred while iterating over the results of a query for context type 'KhduSouvenirShop.API.Data.AppDbContext'.
+MySqlConnector.MySqlException (0x80004005): Table 'khdu_souvenir_shop.cartitems' doesn't exist
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+MySqlConnector.MySqlException (0x80004005): Table 'khdu_souvenir_shop.cartitems' doesn't exist
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+2026-11-04 21:53:08.452 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.CartController.GetCart (KhduSouvenirShop.API) in 61.8535ms
+2026-11-04 21:53:08.453 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.CartController.GetCart (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.453 +02:00 [ERR] Table 'khdu_souvenir_shop.cartitems' doesn't exist
+MySqlConnector.MySqlException (0x80004005): Table 'khdu_souvenir_shop.cartitems' doesn't exist
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at KhduSouvenirShop.API.Controllers.CartController.GetCart() in C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\Controllers\CartController.cs:line 41
+   at lambda_method922(Closure, Object)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
+   at Microsoft.AspNetCore.Routing.EndpointMiddleware.<Invoke>g__AwaitRequestTask|7_0(Endpoint endpoint, Task requestTask, ILogger logger)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.RateLimiting.RateLimitingMiddleware.InvokeInternal(HttpContext context, EnableRateLimitingAttribute enableRateLimitingAttribute)
+   at Program.<>c.<<<Main>$>b__0_9>d.MoveNext() in C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\Program.cs:line 211
+--- End of stack trace from previous location ---
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at KhduSouvenirShop.API.Middleware.ExceptionMiddleware.InvokeAsync(HttpContext context) in C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend\Middleware\ExceptionMiddleware.cs:line 22
+2026-11-04 21:53:08.461 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Cart - 500 null application/json 75.9862ms
+2026-11-04 21:53:08.463 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Orders/my - null null
+2026-11-04 21:53:08.464 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.OrdersController.GetMyOrders (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.469 +02:00 [INF] Route matched with {action = "GetMyOrders", controller = "Orders"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetMyOrders() on controller KhduSouvenirShop.API.Controllers.OrdersController (KhduSouvenirShop.API).
+2026-11-04 21:53:08.517 +02:00 [INF] Executed DbCommand (4ms) [Parameters=[@__userId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `o`.`OrderId`, `o`.`CreatedAt`, `o`.`OrderNumber`, `o`.`ShippingCost`, `o`.`Status`, `o`.`TotalAmount`, `o`.`UserId`, `s`.`ShippingId`, `t0`.`OrderItemId`, `t0`.`AppliedPromotionId`, `t0`.`DiscountAmount`, `t0`.`FinalPrice`, `t0`.`OrderId`, `t0`.`OriginalPrice`, `t0`.`ProductId`, `t0`.`Quantity`, `t0`.`ProductId0`, `t0`.`CategoryId`, `t0`.`CreatedAt`, `t0`.`CreatedBy`, `t0`.`DeletedAt`, `t0`.`DeletedBy`, `t0`.`Description`, `t0`.`DescriptionEn`, `t0`.`IsDeleted`, `t0`.`Name`, `t0`.`NameEn`, `t0`.`Price`, `t0`.`Stock`, `t0`.`UpdatedAt`, `t0`.`UpdatedBy`, `t0`.`Weight`, `s`.`City`, `s`.`CityRef`, `s`.`OrderId`, `s`.`RecipientName`, `s`.`RecipientPhone`, `s`.`TrackingNumber`, `s`.`WarehouseNumber`, `s`.`WarehouseRef`
+FROM `orders` AS `o`
+LEFT JOIN `shipping` AS `s` ON `o`.`OrderId` = `s`.`OrderId`
+LEFT JOIN (
+    SELECT `o0`.`OrderItemId`, `o0`.`AppliedPromotionId`, `o0`.`DiscountAmount`, `o0`.`FinalPrice`, `o0`.`OrderId`, `o0`.`OriginalPrice`, `o0`.`ProductId`, `o0`.`Quantity`, `t`.`ProductId` AS `ProductId0`, `t`.`CategoryId`, `t`.`CreatedAt`, `t`.`CreatedBy`, `t`.`DeletedAt`, `t`.`DeletedBy`, `t`.`Description`, `t`.`DescriptionEn`, `t`.`IsDeleted`, `t`.`Name`, `t`.`NameEn`, `t`.`Price`, `t`.`Stock`, `t`.`UpdatedAt`, `t`.`UpdatedBy`, `t`.`Weight`
+    FROM `orderitems` AS `o0`
+    INNER JOIN (
+        SELECT `p`.`ProductId`, `p`.`CategoryId`, `p`.`CreatedAt`, `p`.`CreatedBy`, `p`.`DeletedAt`, `p`.`DeletedBy`, `p`.`Description`, `p`.`DescriptionEn`, `p`.`IsDeleted`, `p`.`Name`, `p`.`NameEn`, `p`.`Price`, `p`.`Stock`, `p`.`UpdatedAt`, `p`.`UpdatedBy`, `p`.`Weight`
+        FROM `products` AS `p`
+        WHERE NOT (`p`.`IsDeleted`)
+    ) AS `t` ON `o0`.`ProductId` = `t`.`ProductId`
+) AS `t0` ON `o`.`OrderId` = `t0`.`OrderId`
+WHERE `o`.`UserId` = @__userId_0
+ORDER BY `o`.`CreatedAt` DESC, `o`.`OrderId`, `s`.`ShippingId`, `t0`.`OrderItemId`
+2026-11-04 21:53:08.517 +02:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Collections.Generic.IEnumerable`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-11-04 21:53:08.518 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.OrdersController.GetMyOrders (KhduSouvenirShop.API) in 48.1662ms
+2026-11-04 21:53:08.518 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.OrdersController.GetMyOrders (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.518 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Orders/my - 200 null application/json; charset=utf-8 54.6437ms
+2026-11-04 21:53:08.542 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Promotions/my - null null
+2026-11-04 21:53:08.544 +02:00 [INF] Executing endpoint 'KhduSouvenirShop.API.Controllers.PromotionsController.GetMyPromotions (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.548 +02:00 [INF] Route matched with {action = "GetMyPromotions", controller = "Promotions"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] GetMyPromotions() on controller KhduSouvenirShop.API.Controllers.PromotionsController (KhduSouvenirShop.API).
+2026-11-04 21:53:08.554 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[@__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `u`.`UserId`, `u`.`CreatedAt`, `u`.`CreatedBy`, `u`.`DeletedAt`, `u`.`DeletedBy`, `u`.`Email`, `u`.`FirstName`, `u`.`GPA`, `u`.`IsDeleted`, `u`.`LastName`, `u`.`Password`, `u`.`Phone`, `u`.`Role`, `u`.`StudentExpiresAt`, `u`.`StudentStatus`, `u`.`StudentVerifiedAt`, `u`.`UpdatedAt`, `u`.`UpdatedBy`
+FROM `users` AS `u`
+WHERE NOT (`u`.`IsDeleted`) AND (`u`.`UserId` = @__p_0)
+LIMIT 1
+2026-11-04 21:53:08.557 +02:00 [INF] Executed DbCommand (1ms) [Parameters=[@__now_0='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+SELECT `p`.`PromotionId`, `p`.`AudienceType`, `p`.`CreatedAt`, `p`.`CreatedBy`, `p`.`CurrentUsage`, `p`.`DeletedAt`, `p`.`DeletedBy`, `p`.`Description`, `p`.`DescriptionEn`, `p`.`EndDate`, `p`.`IsActive`, `p`.`IsDeleted`, `p`.`MinOrderAmount`, `p`.`MinQuantity`, `p`.`Name`, `p`.`NameEn`, `p`.`Priority`, `p`.`PromoCode`, `p`.`StartDate`, `p`.`TargetId`, `p`.`TargetType`, `p`.`Type`, `p`.`UpdatedAt`, `p`.`UpdatedBy`, `p`.`UsageLimit`, `p`.`Value`
+FROM `promotions` AS `p`
+WHERE NOT (`p`.`IsDeleted`) AND (((`p`.`IsActive` AND (`p`.`PromoCode` IS NULL OR (`p`.`PromoCode` = ''))) AND (`p`.`StartDate` IS NULL OR (`p`.`StartDate` <= @__now_0))) AND (`p`.`EndDate` IS NULL OR (`p`.`EndDate` >= @__now_0)))
+2026-11-04 21:53:08.559 +02:00 [INF] Executing OkObjectResult, writing value of type 'KhduSouvenirShop.API.Models.Common.ApiResponse`1[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-11-04 21:53:08.563 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.PromotionsController.GetMyPromotions (KhduSouvenirShop.API) in 14.0752ms
+2026-11-04 21:53:08.563 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.PromotionsController.GetMyPromotions (KhduSouvenirShop.API)'
+2026-11-04 21:53:08.563 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Promotions/my - 200 null application/json; charset=utf-8 20.5193ms

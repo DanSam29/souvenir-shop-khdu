@@ -1,4 +1,4 @@
-using KhduSouvenirShop.API.Data;
+using KhduSouvenirShop.API.Repositories;
 using KhduSouvenirShop.API.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -12,17 +12,17 @@ namespace KhduSouvenirShop.API.Services
     }
     public class UniversityService : IUniversityService
     {
-        private readonly AppDbContext _context;
+        private readonly IUserRepository _userRepository;
         private readonly ILogger<UniversityService> _logger;
         private readonly IConfiguration _configuration;
         private readonly HttpClient _httpClient;
         public UniversityService(
-            AppDbContext context, 
+            IUserRepository userRepository, 
             ILogger<UniversityService> logger, 
             IConfiguration configuration,
             HttpClient httpClient)
         {
-            _context = context;
+            _userRepository = userRepository;
             _logger = logger;
             _configuration = configuration;
             _httpClient = httpClient;
@@ -50,7 +50,7 @@ namespace KhduSouvenirShop.API.Services
         }
         public async Task<bool> VerifyAndApplyStudentStatusAsync(int userId)
         {
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null) return false;
             var studentInfo = await GetStudentInfoAsync(user.Email);
             if (studentInfo != null && studentInfo.IsActive)
@@ -62,7 +62,7 @@ namespace KhduSouvenirShop.API.Services
                 else user.StudentStatus = "REGULAR";
                 user.StudentVerifiedAt = DateTime.UtcNow;
                 user.StudentExpiresAt = DateTime.UtcNow.AddMonths(4); // Згідно з планом: термін дії 4 міс
-                await _context.SaveChangesAsync();
+                await _userRepository.SaveChangesAsync();
                 _logger.LogInformation("Користувач {UserId} автоматично верифікований як студент. Статус: {Status}", userId, user.StudentStatus);
                 return true;
             }

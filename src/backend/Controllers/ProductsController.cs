@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
+using KhduSouvenirShop.API.Repositories;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Authorization;
 
@@ -12,14 +12,18 @@ namespace KhduSouvenirShop.API.Controllers
     [ApiController]
     public class ProductsController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IProductRepository _productRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IRepository<ProductImage> _productImageRepository;
         private readonly ILogger<ProductsController> _logger;
         private readonly IMemoryCache _cache;
         private readonly KhduSouvenirShop.API.Services.PromotionService _promotionService;
         private readonly KhduSouvenirShop.API.Services.IImageService _imageService;
-        public ProductsController(AppDbContext context, ILogger<ProductsController> logger, IMemoryCache cache, KhduSouvenirShop.API.Services.PromotionService promotionService, KhduSouvenirShop.API.Services.IImageService imageService)
+        public ProductsController(IProductRepository productRepository, IUserRepository userRepository, IRepository<ProductImage> productImageRepository, ILogger<ProductsController> logger, IMemoryCache cache, KhduSouvenirShop.API.Services.PromotionService promotionService, KhduSouvenirShop.API.Services.IImageService imageService)
         {
-            _context = context;
+            _productRepository = productRepository;
+            _userRepository = userRepository;
+            _productImageRepository = productImageRepository;
             _logger = logger;
             _cache = cache;
             _promotionService = promotionService;
@@ -43,7 +47,7 @@ namespace KhduSouvenirShop.API.Controllers
                 var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 if (int.TryParse(userIdClaim, out var uid))
                 {
-                    var user = await _context.Users.FindAsync(uid);
+                    var user = await _userRepository.GetByIdAsync(uid);
                     if (user != null) studentStatus = user.StudentStatus ?? "NONE";
                 }
             }
@@ -53,7 +57,7 @@ namespace KhduSouvenirShop.API.Controllers
             string cacheKey = $"v{cacheVersion}_Products_{categoryId}_{search}_{sortBy}_{minPrice}_{maxPrice}_{studentStatus}";
             if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
             {
-                var query = _context.Products
+                var query = _productRepository.Query()
                     .Include(p => p.Category)
                     .Include(p => p.Images)
                     .AsQueryable();
@@ -115,7 +119,7 @@ namespace KhduSouvenirShop.API.Controllers
                 var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 if (int.TryParse(userIdClaim, out var uid))
                 {
-                    var user = await _context.Users.FindAsync(uid);
+                    var user = await _userRepository.GetByIdAsync(uid);
                     if (user != null) studentStatus = user.StudentStatus ?? "NONE";
                 }
             }
@@ -123,7 +127,7 @@ namespace KhduSouvenirShop.API.Controllers
             var cacheKey = $"v{cacheVersion}_product:{id}:{studentStatus}";
             if (!_cache.TryGetValue(cacheKey, out object? dto))
             {
-                var product = await _context.Products
+                var product = await _productRepository.Query()
                     .Include(p => p.Category)
                     .Include(p => p.Images)
                     .FirstOrDefaultAsync(p => p.ProductId == id);
@@ -180,7 +184,7 @@ namespace KhduSouvenirShop.API.Controllers
                 var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 if (int.TryParse(userIdClaim, out var uid))
                 {
-                    var user = await _context.Users.FindAsync(uid);
+                    var user = await _userRepository.GetByIdAsync(uid);
                     if (user != null) studentStatus = user.StudentStatus ?? "NONE";
                 }
             }
@@ -188,7 +192,7 @@ namespace KhduSouvenirShop.API.Controllers
             var cacheKey = $"v{cacheVersion}_products:search:{norm}:{studentStatus}";
             if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
             {
-                var products = await _context.Products
+                var products = await _productRepository.Query()
                     .Include(p => p.Category)
                     .Include(p => p.Images)
                     .Where(p => p.Name.Contains(query) || p.Description.Contains(query) || 
@@ -232,7 +236,7 @@ namespace KhduSouvenirShop.API.Controllers
                 var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 if (int.TryParse(userIdClaim, out var uid))
                 {
-                    var user = await _context.Users.FindAsync(uid);
+                    var user = await _userRepository.GetByIdAsync(uid);
                     if (user != null) studentStatus = user.StudentStatus ?? "NONE";
                 }
             }
@@ -240,7 +244,7 @@ namespace KhduSouvenirShop.API.Controllers
             var cacheKey = $"v{cacheVersion}_products:category:{categoryId}:{studentStatus}";
             if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
             {
-                var products = await _context.Products
+                var products = await _productRepository.Query()
                     .Include(p => p.Category)
                     .Include(p => p.Images)
                     .Where(p => p.CategoryId == categoryId)
@@ -277,8 +281,8 @@ namespace KhduSouvenirShop.API.Controllers
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
+            await _productRepository.AddAsync(product);
+            await _productRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(product, "Товар створено"));
         }
@@ -286,7 +290,7 @@ namespace KhduSouvenirShop.API.Controllers
         [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> UpdateProduct(int id, [FromBody] ProductUpdateDto dto)
         {
-            var product = await _context.Products.FindAsync(id);
+            var product = await _productRepository.GetByIdAsync(id);
             if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
 
             product.Name = dto.Name!;
@@ -296,7 +300,7 @@ namespace KhduSouvenirShop.API.Controllers
             product.CategoryId = dto.CategoryId;
             product.Weight = dto.Weight;
             product.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await _productRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(product, "Товар оновлено"));
         }
@@ -304,7 +308,7 @@ namespace KhduSouvenirShop.API.Controllers
         [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> DeleteProduct(int id)
         {
-            var product = await _context.Products
+            var product = await _productRepository.Query()
                 .Include(p => p.Images)
                 .FirstOrDefaultAsync(p => p.ProductId == id);
 
@@ -314,8 +318,8 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 await _imageService.DeleteImageAsync(img.ImageURL);
             }
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+            _productRepository.Remove(product);
+            await _productRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Товар видалено"));
         }
@@ -323,7 +327,7 @@ namespace KhduSouvenirShop.API.Controllers
         [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> UploadImage(int id, IFormFile file, [FromQuery] bool isPrimary = false)
         {
-            var product = await _context.Products.Include(p => p.Images).FirstOrDefaultAsync(p => p.ProductId == id);
+            var product = await _productRepository.Query().Include(p => p.Images).FirstOrDefaultAsync(p => p.ProductId == id);
             if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
             try
             {
@@ -342,8 +346,8 @@ namespace KhduSouvenirShop.API.Controllers
                     IsPrimary = isPrimary,
                     DisplayOrder = product.Images.Count
                 };
-                _context.ProductImages.Add(productImage);
-                await _context.SaveChangesAsync();
+                await _productImageRepository.AddAsync(productImage);
+                await _productImageRepository.SaveChangesAsync();
                 InvalidateCache();
                 return Ok(ApiResponse<object>.SuccessResult(productImage, "Зображення додано"));
             }
@@ -357,11 +361,11 @@ namespace KhduSouvenirShop.API.Controllers
         [Authorize(Roles = "Administrator,Manager")]
         public async Task<ActionResult> DeleteImage(int imageId)
         {
-            var img = await _context.ProductImages.FindAsync(imageId);
+            var img = await _productImageRepository.GetByIdAsync(imageId);
             if (img == null) return NotFound(ApiResponse<object>.FailureResult("Зображення не знайдено", "NotFound"));
             await _imageService.DeleteImageAsync(img.ImageURL);
-            _context.ProductImages.Remove(img);
-            await _context.SaveChangesAsync();
+            _productImageRepository.Remove(img);
+            await _productImageRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Зображення видалено"));
         }

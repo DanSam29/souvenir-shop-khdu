@@ -1,4 +1,4 @@
-using KhduSouvenirShop.API.Data;
+using KhduSouvenirShop.API.Repositories;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
 using KhduSouvenirShop.API.Services;
@@ -13,12 +13,12 @@ namespace KhduSouvenirShop.API.Controllers
     [Authorize(Roles = "Admin,Manager")]
     public class UniversityController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IUserRepository _userRepository;
         private readonly IUniversityService _universityService;
         private readonly ILogger<UniversityController> _logger;
-        public UniversityController(AppDbContext context, IUniversityService universityService, ILogger<UniversityController> logger)
+        public UniversityController(IUserRepository userRepository, IUniversityService universityService, ILogger<UniversityController> logger)
         {
-            _context = context;
+            _userRepository = userRepository;
             _universityService = universityService;
             _logger = logger;
         }
@@ -26,7 +26,7 @@ namespace KhduSouvenirShop.API.Controllers
         public async Task<ActionResult> GetPendingVerifications()
         {
             // Користувачі з університетською поштою, але без статусу студента (або з застарілим статусом)
-            var users = await _context.Users
+            var users = await _userRepository.Query()
                 .Where(u => (u.Email.EndsWith("@ksu.edu.ua") || u.Email.EndsWith("@student.ksu.edu.ua")) 
                              && (u.StudentStatus == "NONE" || u.StudentExpiresAt < DateTime.UtcNow))
                 .Select(u => new {
@@ -54,13 +54,13 @@ namespace KhduSouvenirShop.API.Controllers
         [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> ManualStatusUpdate(int userId, [FromBody] ManualStatusDto dto)
         {
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null) return NotFound();
             user.StudentStatus = dto.Status;
             user.GPA = dto.GPA;
             user.StudentVerifiedAt = DateTime.UtcNow;
             user.StudentExpiresAt = dto.ExpiresAt ?? DateTime.UtcNow.AddMonths(4);
-            await _context.SaveChangesAsync();
+            await _userRepository.SaveChangesAsync();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Статус оновлено вручну адміністратором"));
         }
     }
