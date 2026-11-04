@@ -76,7 +76,7 @@
   - AutoMapper
   - xUnit, Moq, FluentAssertions (тести)
 
-1.5. Seed-додаткові дані
+1.5. Seed-додаткові дані ✅
 - Ролі користувачів (окрема таблиця AspNetRoles або вбудована в User)
 - Тестові користувачі: superadmin@ksu.edu.ua, admin@ksu.edu.ua, manager@ksu.edu.ua, customer@ksu.edu.ua, student@ksu.edu.ua
 - Тестові промоакції та промокоди

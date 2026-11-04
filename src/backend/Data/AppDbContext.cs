@@ -276,11 +276,19 @@ namespace KhduSouvenirShop.API.Data
                         case EntityState.Added:
                             auditable.CreatedAt = DateTime.UtcNow;
                             auditable.UpdatedAt = auditable.CreatedAt; // Set UpdatedAt to match CreatedAt on creation
-                            auditable.CreatedBy = userId;
+                            // Автора записуємо лише за наявності автентифікованого користувача,
+                            // щоб не затирати значення, задане системним кодом (напр. початковим наповненням БД)
+                            if (userId.HasValue)
+                            {
+                                auditable.CreatedBy = userId;
+                            }
                             break;
                         case EntityState.Modified:
                             auditable.UpdatedAt = DateTime.UtcNow;
-                            auditable.UpdatedBy = userId;
+                            if (userId.HasValue)
+                            {
+                                auditable.UpdatedBy = userId;
+                            }
                             break;
                     }
                 }

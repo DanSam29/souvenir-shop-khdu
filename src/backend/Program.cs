@@ -173,6 +173,19 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 var app = builder.Build();
+// Початкове наповнення БД корисними тестовими даними (виконується один раз, повторні запуски нічого не змінюють)
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<KhduSouvenirShop.API.Data.AppDbContext>();
+        await KhduSouvenirShop.API.Data.DbSeeder.SeedAsync(dbContext, app.Logger);
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Не вдалося виконати початкове наповнення БД");
+    }
+}
 // Глобальний обробник помилок для зручного відображення помилок
 app.UseMiddleware<ExceptionMiddleware>();
 // Налаштування увімкнення Swagger в режимі розробки
