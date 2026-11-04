@@ -197,7 +197,7 @@ namespace KhduSouvenirShop.API.Controllers
                         ProductId = oi.ProductId,
                         Quantity = oi.Quantity,
                         OrderId = order.OrderId,
-                        Reason = "ORDER",
+                        Reason = "Order",
                         OriginalPrice = oi.OriginalPrice,
                         AppliedPromotionId = oi.AppliedPromotionId,
                         DiscountAmount = oi.DiscountAmount,

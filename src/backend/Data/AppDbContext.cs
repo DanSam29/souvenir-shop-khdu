@@ -61,6 +61,34 @@ namespace KhduSouvenirShop.API.Data
             modelBuilder.Entity<UserPromotion>()
                 .HasIndex(up => new { up.UserId, up.PromotionId })
                 .IsUnique();
+            // Типи колонок для enum-полів MySQL (синхронізовано з реальною схемою БД)
+            modelBuilder.Entity<User>()
+                .Property(u => u.Role)
+                .HasColumnType("enum('Guest','Customer','Manager','Administrator','SuperAdmin')");
+            modelBuilder.Entity<User>()
+                .Property(u => u.StudentStatus)
+                .HasColumnType("enum('NONE','REGULAR','SCHOLARSHIP','HIGH_ACHIEVER')");
+            modelBuilder.Entity<Order>()
+                .Property(o => o.Status)
+                .HasColumnType("enum('Processing','Paid','Shipped','Delivered','Cancelled')");
+            modelBuilder.Entity<Payment>()
+                .Property(p => p.Method)
+                .HasColumnType("enum('Card','CashOnDelivery')");
+            modelBuilder.Entity<Payment>()
+                .Property(p => p.Status)
+                .HasColumnType("enum('Pending','Completed','Failed','Refunded')");
+            modelBuilder.Entity<Promotion>()
+                .Property(p => p.Type)
+                .HasColumnType("enum('PERCENTAGE','FIXED_AMOUNT','SPECIAL_PRICE')");
+            modelBuilder.Entity<Promotion>()
+                .Property(p => p.TargetType)
+                .HasColumnType("enum('PRODUCT','CATEGORY','CART','SHIPPING')");
+            modelBuilder.Entity<Promotion>()
+                .Property(p => p.AudienceType)
+                .HasColumnType("enum('ALL','STUDENTS','STAFF','ALUMNI','CUSTOM','NONE','REGULAR','SCHOLARSHIP','HIGH_ACHIEVER')");
+            modelBuilder.Entity<OutgoingDocument>()
+                .Property(o => o.Reason)
+                .HasColumnType("enum('Order','Damaged','Lost','Return','Inventory','Other')");
             // Налаштування каскадного видалення
             modelBuilder.Entity<Cart>()
                 .HasOne(c => c.User)
@@ -83,6 +111,24 @@ namespace KhduSouvenirShop.API.Data
                 .WithMany(c => c.SubCategories)
                 .HasForeignKey(c => c.ParentCategoryId)
                 .OnDelete(DeleteBehavior.SetNull);
+            // Товар належить категорії: категорію з товарами видалити не можна
+            modelBuilder.Entity<Product>()
+                .HasOne(p => p.Category)
+                .WithMany(c => c.Products)
+                .HasForeignKey(p => p.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+            // Замовлення належить користувачу: користувача із замовленнями видалити не можна
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.User)
+                .WithMany(u => u.Orders)
+                .HasForeignKey(o => o.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            // Позиція замовлення посилається на товар
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(oi => oi.Product)
+                .WithMany(p => p.OrderItems)
+                .HasForeignKey(oi => oi.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
             // Налаштування зв'язків Order
             modelBuilder.Entity<Order>()
                 .HasOne(o => o.Shipping)
@@ -99,6 +145,11 @@ namespace KhduSouvenirShop.API.Data
                 .WithMany(o => o.OrderHistories)
                 .HasForeignKey(oh => oh.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<OrderHistory>()
+                .HasOne(oh => oh.ChangedByUser)
+                .WithMany()
+                .HasForeignKey(oh => oh.ChangedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
             // Налаштування зв'язків Promotion
             modelBuilder.Entity<Promotion>()
                 .HasOne(p => p.CreatedByUser)
@@ -147,7 +198,7 @@ namespace KhduSouvenirShop.API.Data
                 .HasOne(od => od.Company)
                 .WithMany(c => c.OutgoingDocuments)
                 .HasForeignKey(od => od.CompanyId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<OutgoingDocument>()
                 .HasOne(od => od.AppliedPromotion)
                 .WithMany()

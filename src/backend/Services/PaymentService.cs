@@ -381,7 +381,7 @@ namespace KhduSouvenirShop.API.Services
                         ProductId = oi.ProductId,
                         Quantity = oi.Quantity,
                         OrderId = order.OrderId,
-                        Reason = "ORDER",
+                        Reason = "Order",
                         OriginalPrice = oi.OriginalPrice,
                         AppliedPromotionId = oi.AppliedPromotionId,
                         DiscountAmount = oi.DiscountAmount,
@@ -447,7 +447,7 @@ namespace KhduSouvenirShop.API.Services
                     item.Product.Stock += item.Quantity;
                 }
                 // Видалення видаткових накладних, пов'язаних з цим замовленням
-                var docs = await _context.OutgoingDocuments.Where(d => d.OrderId == orderId && d.Reason == "ORDER").ToListAsync();
+                var docs = await _context.OutgoingDocuments.Where(d => d.OrderId == orderId && d.Reason == "Order").ToListAsync();
                 _context.OutgoingDocuments.RemoveRange(docs);
                 if (order.Payment != null)
                 {
@@ -507,7 +507,7 @@ namespace KhduSouvenirShop.API.Services
                     item.Product.Stock += item.Quantity;
                 }
                 // Видалення видаткових накладних, пов'язаних з цим замовленням
-                var docs = await _context.OutgoingDocuments.Where(d => d.OrderId == orderId && d.Reason == "ORDER").ToListAsync();
+                var docs = await _context.OutgoingDocuments.Where(d => d.OrderId == orderId && d.Reason == "Order").ToListAsync();
                 _context.OutgoingDocuments.RemoveRange(docs);
                 order.Status = "Cancelled";
                 if (order.Payment != null)

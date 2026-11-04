@@ -123,7 +123,7 @@ namespace KhduSouvenirShop.API.Controllers
             if (product.Stock < dto.Quantity)
                 return BadRequest(ApiResponse<object>.FailureResult($"Недостатньо товару на складі. Доступно: {product.Stock}", "BadRequest"));
             // Валідація правил reason з плану
-            if (dto.Reason == "RETURN" && !dto.CompanyId.HasValue)
+            if (dto.Reason == "Return" && !dto.CompanyId.HasValue)
                 return BadRequest(ApiResponse<object>.FailureResult("Для повернення (RETURN) обов'язково вказати компанію", "ValidationError"));
             using var transaction = await _context.Database.BeginTransactionAsync();
             try

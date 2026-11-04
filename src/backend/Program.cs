@@ -10,6 +10,7 @@ using Serilog;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
+using KhduSouvenirShop.API.DTOs.Mappings;
 
 var builder = WebApplication.CreateBuilder(args);
 // Захист від занадто частого звернення до сервера
@@ -112,6 +113,8 @@ builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IPromotionRepositor
 builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IWarehouseRepository, KhduSouvenirShop.API.Repositories.WarehouseRepository>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.ICompanyRepository, KhduSouvenirShop.API.Repositories.CompanyRepository>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IAnalyticsRepository, KhduSouvenirShop.API.Repositories.AnalyticsRepository>();
+// Реєстрація AutoMapper (шар перетворення сутностей у DTO)
+builder.Services.AddAutoMapper(cfg => { }, typeof(MappingProfile).Assembly);
 // Автоматична перевірка правильності введених даних (валідація)
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
