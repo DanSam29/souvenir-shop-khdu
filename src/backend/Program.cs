@@ -99,6 +99,19 @@ builder.Services.AddScoped<KhduSouvenirShop.API.Services.IEmailService, KhduSouv
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IImageService, KhduSouvenirShop.API.Services.ImageService>();
 builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.INovaPoshtaService, KhduSouvenirShop.API.Services.NovaPoshtaService>();
 builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.IUniversityService, KhduSouvenirShop.API.Services.UniversityService>();
+// Реєстрація репозиторіїв (шар доступу до даних)
+builder.Services.AddScoped(typeof(KhduSouvenirShop.API.Repositories.IRepository<>), typeof(KhduSouvenirShop.API.Repositories.Repository<>));
+builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IUserRepository, KhduSouvenirShop.API.Repositories.UserRepository>();
+builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IProductRepository, KhduSouvenirShop.API.Repositories.ProductRepository>();
+builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.ICategoryRepository, KhduSouvenirShop.API.Repositories.CategoryRepository>();
+builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.ICartRepository, KhduSouvenirShop.API.Repositories.CartRepository>();
+builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IOrderRepository, KhduSouvenirShop.API.Repositories.OrderRepository>();
+builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IPaymentRepository, KhduSouvenirShop.API.Repositories.PaymentRepository>();
+builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IShippingRepository, KhduSouvenirShop.API.Repositories.ShippingRepository>();
+builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IPromotionRepository, KhduSouvenirShop.API.Repositories.PromotionRepository>();
+builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IWarehouseRepository, KhduSouvenirShop.API.Repositories.WarehouseRepository>();
+builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.ICompanyRepository, KhduSouvenirShop.API.Repositories.CompanyRepository>();
+builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IAnalyticsRepository, KhduSouvenirShop.API.Repositories.AnalyticsRepository>();
 // Автоматична перевірка правильності введених даних (валідація)
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();

@@ -35,14 +35,14 @@
 **Мета:** Привести кодову базу до єдиного стандарту, завершити архітектуру DAL та підготувати фундамент для швидкої реалізації бізнес-логіки.
 
 1.1. Аудит поточного коду ✅
-- ✅ Перевірити всі контролери на наявність [Authorize] атрибутів та RBAC
-- ✅ Перевірити сервіси на наявність асинхронних операцій (async/await)
-- ✅ Визначити порожні/частково реалізовані методи
-- ✅ Сформувати backlog технічного боргу
-- ✅ Зафіксовано базовий стан компіляції: `dotnet build khdu-souvenir-shop.sln` → 0 errors, 0 warnings
-- ✅ Детальний звіт аудиту: [stage-1.1-code-audit-report.md](./code-audit-report.md)
+- Перевірити всі контролери на наявність [Authorize] атрибутів та RBAC
+- Перевірити сервіси на наявність асинхронних операцій (async/await)
+- Визначити порожні/частково реалізовані методи
+- Сформувати backlog технічного боргу
+- Зафіксовано базовий стан компіляції: `dotnet build khdu-souvenir-shop.sln` → 0 errors, 0 warnings
+- Детальний звіт аудиту: [stage-1.1-code-audit-report.md](./stage-1.1-code-audit-report.md)
 
-1.2. Реалізація Repository Layer
+1.2. Реалізація Repository Layer ✅
 - Створити загальний інтерфейс `IRepository<T>` з базовими CRUD операціями
 - Створити `Repository<T>` generic реалізацію на основі DbSet
 - Створити спеціалізовані репозиторії:
@@ -58,6 +58,7 @@
   - ICompanyRepository / CompanyRepository
   - IAnalyticsRepository / AnalyticsRepository
 - Зареєструвати репозиторії в DI контейнер (Scoped)
+- Детальний звіт: [stage-1.2-repository-layer.md](./stage-1.2-repository-layer.md)
 
 1.3. DTO Layer та AutoMapper
 - Встановити NuGet пакет AutoMapper та AutoMapper.Extensions.Microsoft.DependencyInjection
