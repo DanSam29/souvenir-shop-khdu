@@ -67,7 +67,7 @@
 - Створити MappingProfile з усіма конфігураціями маппінгу
 - Зареєструвати AutoMapper в Program.cs
 
-1.4. Додаткові NuGet пакети
+1.4. Додаткові NuGet пакети ✅
 - Встановити:
   - EPPlus (Excel export)
   - iTextSharp / iText7 (PDF export)
