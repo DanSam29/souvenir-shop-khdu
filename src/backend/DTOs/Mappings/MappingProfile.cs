@@ -60,6 +60,26 @@ namespace KhduSouvenirShop.API.DTOs.Mappings
                 .ForMember(d => d.Orders, o => o.Ignore())
                 .ForMember(d => d.UserPromotions, o => o.Ignore())
                 .IgnoreAuditFields();
+
+            // Збережені адреси доставки користувача (таблиця shipping)
+            CreateMap<Shipping, AddressResponse>();
+            CreateMap<AddressRequest, Shipping>()
+                .ForMember(d => d.ShippingId, o => o.Ignore())
+                .ForMember(d => d.OrderId, o => o.Ignore())
+                .ForMember(d => d.UserId, o => o.Ignore())
+                .ForMember(d => d.TrackingNumber, o => o.Ignore())
+                .ForMember(d => d.Order, o => o.Ignore())
+                .ForMember(d => d.User, o => o.Ignore());
+
+            // Акції, призначені/використані користувачем
+            CreateMap<UserPromotion, UserPromotionResponse>()
+                .ForMember(d => d.Name, o => o.MapFrom(s => s.Promotion != null ? s.Promotion.Name : string.Empty))
+                .ForMember(d => d.NameEn, o => o.MapFrom(s => s.Promotion != null ? s.Promotion.NameEn : null))
+                .ForMember(d => d.Type, o => o.MapFrom(s => s.Promotion != null ? s.Promotion.Type : string.Empty))
+                .ForMember(d => d.Value, o => o.MapFrom(s => s.Promotion != null ? s.Promotion.Value : 0))
+                .ForMember(d => d.AudienceType, o => o.MapFrom(s => s.Promotion != null ? s.Promotion.AudienceType : string.Empty))
+                .ForMember(d => d.StartDate, o => o.MapFrom(s => s.Promotion != null ? s.Promotion.StartDate : null))
+                .ForMember(d => d.EndDate, o => o.MapFrom(s => s.Promotion != null ? s.Promotion.EndDate : null));
         }
 
         // Каталог: товари та категорії
@@ -130,7 +150,8 @@ namespace KhduSouvenirShop.API.DTOs.Mappings
         private void MapOrders()
         {
             CreateMap<Order, OrderResponse>()
-                .ForMember(d => d.Items, o => o.MapFrom(s => s.OrderItems));
+                .ForMember(d => d.Items, o => o.MapFrom(s => s.OrderItems))
+                .ForMember(d => d.History, o => o.MapFrom(s => s.OrderHistories));
             CreateMap<Order, OrderSummaryResponse>();
             CreateMap<Order, AdminOrderListItemResponse>()
                 .ForMember(d => d.UserName, o => o.MapFrom(s => s.User != null

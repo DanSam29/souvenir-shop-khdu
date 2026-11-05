@@ -22,7 +22,11 @@ namespace KhduSouvenirShop.API.Controllers
         ILogger<UsersController> logger,
         IConfiguration configuration,
         IUniversityService universityService,
-        IEmailService emailService) : ControllerBase
+        IEmailService emailService,
+        IOrderRepository orderRepository,
+        IShippingRepository shippingRepository,
+        IRepository<UserPromotion> userPromotionRepository,
+        PromotionService promotionService) : ControllerBase
     {
         private readonly IUserRepository _userRepository = userRepository;
         private readonly IAuthService _authService = authService;
@@ -31,6 +35,16 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly IConfiguration _configuration = configuration;
         private readonly IUniversityService _universityService = universityService;
         private readonly IEmailService _emailService = emailService;
+        private readonly IOrderRepository _orderRepository = orderRepository;
+        private readonly IShippingRepository _shippingRepository = shippingRepository;
+        private readonly IRepository<UserPromotion> _userPromotionRepository = userPromotionRepository;
+        private readonly PromotionService _promotionService = promotionService;
+        // Допоміжний метод: отримання ідентифікатора поточного користувача з токена
+        private int? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(userIdClaim, out var userId) ? userId : null;
+        }
         // POST: api/Users/register
         [HttpPost("register")]
         [EnableRateLimiting("AuthPolicy")]
@@ -311,6 +325,218 @@ namespace KhduSouvenirShop.API.Controllers
 
             await _userRepository.SaveChangesAsync();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Пароль змінено"));
+        }
+        // GET: api/Users/me/orders - історія замовлень поточного користувача (пагінація, фільтр за статусом)
+        [Authorize]
+        [HttpGet("me/orders")]
+        [ProducesResponseType(typeof(ApiResponse<PagedResponse<OrderSummaryResponse>>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetMyOrders(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? status = null)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1 || pageSize > 50) pageSize = 10;
+            var query = _orderRepository.Query().Where(o => o.UserId == userId);
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                query = query.Where(o => o.Status == status);
+            }
+            var count = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(o => o.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(o => new OrderSummaryResponse
+                {
+                    OrderId = o.OrderId,
+                    OrderNumber = o.OrderNumber,
+                    Status = o.Status,
+                    TotalAmount = o.TotalAmount,
+                    CreatedAt = o.CreatedAt
+                })
+                .ToListAsync();
+            var response = new PagedResponse<OrderSummaryResponse>(items, count, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResponse<OrderSummaryResponse>>.SuccessResult(response));
+        }
+        // GET: api/Users/me/orders/{id} - деталі замовлення з історією зміни статусів
+        [Authorize]
+        [HttpGet("me/orders/{id:int}")]
+        [ProducesResponseType(typeof(ApiResponse<OrderResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> GetMyOrderById(int id)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            var order = await _orderRepository.Query()
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .Include(o => o.Shipping)
+                .Include(o => o.Payment)
+                .Include(o => o.OrderHistories)
+                .FirstOrDefaultAsync(o => o.OrderId == id);
+            if (order == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResult("Замовлення не знайдено", "NotFound"));
+            }
+            // Доступ лише власнику замовлення
+            if (order.UserId != userId)
+            {
+                return Forbid();
+            }
+            var result = _mapper.Map<OrderResponse>(order);
+            result.History = _mapper.Map<List<OrderHistoryResponse>>(order.OrderHistories.OrderByDescending(h => h.Timestamp).ToList());
+            return Ok(ApiResponse<OrderResponse>.SuccessResult(result));
+        }
+        // GET: api/Users/me/addresses - збережені адреси доставки
+        [Authorize]
+        [HttpGet("me/addresses")]
+        [ProducesResponseType(typeof(ApiResponse<List<AddressResponse>>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetMyAddresses()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            var addresses = await _shippingRepository.Query()
+                .Where(s => s.UserId == userId && s.OrderId == null)
+                .OrderByDescending(s => s.IsDefault)
+                .ThenByDescending(s => s.ShippingId)
+                .ToListAsync();
+            var result = _mapper.Map<List<AddressResponse>>(addresses);
+            return Ok(ApiResponse<List<AddressResponse>>.SuccessResult(result));
+        }
+        // POST: api/Users/me/addresses - додати збережену адресу
+        [Authorize]
+        [HttpPost("me/addresses")]
+        [ProducesResponseType(typeof(ApiResponse<AddressResponse>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> CreateAddress([FromBody] AddressRequest dto)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            var address = _mapper.Map<Shipping>(dto);
+            address.UserId = userId;
+            address.OrderId = null;
+            if (address.IsDefault)
+            {
+                // Ознаку "за замовчуванням" може мати лише одна адреса користувача
+                var others = await _shippingRepository.Query()
+                    .Where(s => s.UserId == userId && s.OrderId == null && s.IsDefault)
+                    .ToListAsync();
+                foreach (var other in others) other.IsDefault = false;
+            }
+            await _shippingRepository.AddAsync(address);
+            await _shippingRepository.SaveChangesAsync();
+            var result = _mapper.Map<AddressResponse>(address);
+            return Ok(ApiResponse<AddressResponse>.SuccessResult(result, "Адресу додано"));
+        }
+        // PUT: api/Users/me/addresses/{id} - редагувати збережену адресу
+        [Authorize]
+        [HttpPut("me/addresses/{id:int}")]
+        [ProducesResponseType(typeof(ApiResponse<AddressResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> UpdateAddress(int id, [FromBody] AddressRequest dto)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            var address = await _shippingRepository.Query()
+                .FirstOrDefaultAsync(s => s.ShippingId == id && s.UserId == userId && s.OrderId == null);
+            if (address == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResult("Адресу не знайдено", "NotFound"));
+            }
+            address.City = dto.City;
+            address.WarehouseNumber = dto.WarehouseNumber;
+            address.CityRef = dto.CityRef;
+            address.WarehouseRef = dto.WarehouseRef;
+            address.RecipientName = dto.RecipientName;
+            address.RecipientPhone = dto.RecipientPhone;
+            address.IsDefault = dto.IsDefault;
+            if (dto.IsDefault)
+            {
+                var others = await _shippingRepository.Query()
+                    .Where(s => s.UserId == userId && s.OrderId == null && s.IsDefault && s.ShippingId != id)
+                    .ToListAsync();
+                foreach (var other in others) other.IsDefault = false;
+            }
+            await _shippingRepository.SaveChangesAsync();
+            var result = _mapper.Map<AddressResponse>(address);
+            return Ok(ApiResponse<AddressResponse>.SuccessResult(result, "Адресу оновлено"));
+        }
+        // DELETE: api/Users/me/addresses/{id} - видалити збережену адресу
+        [Authorize]
+        [HttpDelete("me/addresses/{id:int}")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> DeleteAddress(int id)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            var address = await _shippingRepository.Query()
+                .FirstOrDefaultAsync(s => s.ShippingId == id && s.UserId == userId && s.OrderId == null);
+            if (address == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResult("Адресу не знайдено", "NotFound"));
+            }
+            _shippingRepository.Remove(address);
+            await _shippingRepository.SaveChangesAsync();
+            return Ok(ApiResponse<object?>.SuccessResult(null, "Адресу видалено"));
+        }
+        // POST: api/Users/me/addresses/{id}/default - зробити адресу основною
+        [Authorize]
+        [HttpPost("me/addresses/{id:int}/default")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> SetDefaultAddress(int id)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            var addresses = await _shippingRepository.Query()
+                .Where(s => s.UserId == userId && s.OrderId == null)
+                .ToListAsync();
+            if (!addresses.Any(a => a.ShippingId == id))
+            {
+                return NotFound(ApiResponse<object>.FailureResult("Адресу не знайдено", "NotFound"));
+            }
+            foreach (var address in addresses)
+            {
+                address.IsDefault = address.ShippingId == id;
+            }
+            await _shippingRepository.SaveChangesAsync();
+            return Ok(ApiResponse<object?>.SuccessResult(null, "Адресу встановлено за замовчуванням"));
+        }
+        // GET: api/Users/me/promotions - доступні персональні/студентські знижки
+        [Authorize]
+        [HttpGet("me/promotions")]
+        [ProducesResponseType(typeof(ApiResponse<List<PromotionResponse>>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetMyPromotions()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            var user = await _userRepository.GetByIdAsync(userId.Value);
+            if (user == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено", "NotFound"));
+            }
+            var promotions = await _promotionService.GetActivePromotionsForUserAsync(user.StudentStatus);
+            var result = _mapper.Map<List<PromotionResponse>>(promotions);
+            return Ok(ApiResponse<List<PromotionResponse>>.SuccessResult(result));
+        }
+        // GET: api/Users/me/promotions/history - історія використаних/призначених знижок
+        [Authorize]
+        [HttpGet("me/promotions/history")]
+        [ProducesResponseType(typeof(ApiResponse<List<UserPromotionResponse>>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetMyPromotionsHistory()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            var history = await _userPromotionRepository.Query()
+                .Include(up => up.Promotion)
+                .Where(up => up.UserId == userId)
+                .OrderByDescending(up => up.AssignedAt)
+                .ToListAsync();
+            var result = _mapper.Map<List<UserPromotionResponse>>(history);
+            return Ok(ApiResponse<List<UserPromotionResponse>>.SuccessResult(result));
         }
         // GET: api/Users/5
         [HttpGet("{id}")]

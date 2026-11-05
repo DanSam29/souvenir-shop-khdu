@@ -1012,7 +1012,10 @@ namespace KhduSouvenirShop.API.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<int>("OrderId")
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int?>("OrderId")
                         .HasColumnType("int");
 
                     b.Property<string>("RecipientName")
@@ -1029,6 +1032,9 @@ namespace KhduSouvenirShop.API.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
                     b.Property<string>("WarehouseNumber")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -1042,6 +1048,8 @@ namespace KhduSouvenirShop.API.Migrations
 
                     b.HasIndex("OrderId")
                         .IsUnique();
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("shipping");
                 });
@@ -1376,10 +1384,16 @@ namespace KhduSouvenirShop.API.Migrations
                     b.HasOne("KhduSouvenirShop.API.Models.Order", "Order")
                         .WithOne("Shipping")
                         .HasForeignKey("KhduSouvenirShop.API.Models.Shipping", "OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("KhduSouvenirShop.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Order");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("KhduSouvenirShop.API.Models.UserPromotion", b =>

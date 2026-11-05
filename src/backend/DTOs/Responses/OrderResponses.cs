@@ -12,6 +12,7 @@ namespace KhduSouvenirShop.API.DTOs.Responses
         public decimal ShippingCost { get; set; }
         public DateTime CreatedAt { get; set; }
         public List<OrderItemResponse> Items { get; set; } = new();
+        public List<OrderHistoryResponse> History { get; set; } = new();
         public ShippingResponse? Shipping { get; set; }
         public PaymentResponse? Payment { get; set; }
     }

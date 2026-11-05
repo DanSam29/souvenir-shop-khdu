@@ -102,7 +102,7 @@
 - Автоматичне створення кошика для нового користувача
 - Автоматична перевірка email на домен @ksu.edu.ua / @student.ksu.edu.ua та запуск верифікації (Етап 9)
 
-2.2. Особистий кабінет (Customer)
+2.2. Особистий кабінет (Customer) ✅
 - GET /api/users/me - поточний профіль
 - PUT /api/users/me - оновлення профілю (FirstName, LastName, Phone)
 - POST /api/users/change-password - зміна паролю (зі старого паролю)

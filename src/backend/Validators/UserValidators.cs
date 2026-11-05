@@ -97,4 +97,22 @@ namespace KhduSouvenirShop.API.Validators
                 .NotEqual(x => x.OldPassword).WithMessage("Новий пароль не може співпадати зі старим");
         }
     }
+    public class AddressRequestValidator : AbstractValidator<AddressRequest>
+    {
+        public AddressRequestValidator()
+        {
+            RuleFor(x => x.City)
+                .NotEmpty().WithMessage("Місто обов'язкове")
+                .MaximumLength(100).WithMessage("Місто не може бути довшим за 100 символів");
+            RuleFor(x => x.WarehouseNumber)
+                .NotEmpty().WithMessage("Номер відділення обов'язковий")
+                .MaximumLength(500).WithMessage("Номер відділення не може бути довшим за 500 символів");
+            RuleFor(x => x.RecipientName)
+                .NotEmpty().WithMessage("Ім'я отримувача обов'язкове")
+                .MaximumLength(100).WithMessage("Ім'я отримувача не може бути довшим за 100 символів");
+            RuleFor(x => x.RecipientPhone)
+                .NotEmpty().WithMessage("Телефон отримувача обов'язковий")
+                .Matches(@"^\+380\d{9}$").WithMessage("Телефон має бути у форматі +380XXXXXXXXX");
+        }
+    }
 }

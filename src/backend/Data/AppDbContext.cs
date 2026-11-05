@@ -154,6 +154,12 @@ namespace KhduSouvenirShop.API.Data
                 .WithOne(s => s.Order)
                 .HasForeignKey<Shipping>(s => s.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
+            // Збережені адреси користувача (shipping із заповненим UserId, OrderId = null)
+            modelBuilder.Entity<Shipping>()
+                .HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<Order>()
                 .HasOne(o => o.Payment)
                 .WithOne(p => p.Order)
