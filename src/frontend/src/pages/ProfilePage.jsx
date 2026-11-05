@@ -4,6 +4,67 @@ import { useTranslation } from 'react-i18next';
 import { usersAPI, ordersAPI, promotionsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
+// Лінійний життєвий цикл замовлення (без врахування скасування)
+const ORDER_STEPS = ['Processing', 'Paid', 'Shipped', 'Delivered'];
+const STATUS_COLORS = {
+  Processing: { bg: '#e6f7ff', fg: '#1890ff', border: '#91d5ff' },
+  Pending: { bg: '#fff7e6', fg: '#d46b08', border: '#ffd591' },
+  Paid: { bg: '#e6ffed', fg: '#28a745', border: '#b7eb8f' },
+  Shipped: { bg: '#e6f7ff', fg: '#1890ff', border: '#91d5ff' },
+  Delivered: { bg: '#e6ffed', fg: '#28a745', border: '#b7eb8f' },
+  Cancelled: { bg: '#fff1f0', fg: '#cf1322', border: '#ffa39e' }
+};
+
+const EMPTY_ADDRESS = {
+  city: '',
+  warehouseNumber: '',
+  recipientName: '',
+  recipientPhone: '',
+  isDefault: false
+};
+
+// Безпечне виконання запиту: помилка одного ендпоінта не зриває загальне завантаження
+const safe = (promise) => promise.catch(() => null);
+
+// Прогрес-бар статусів замовлення
+function StatusProgress({ status, t }) {
+  if (status === 'Cancelled') {
+    const c = STATUS_COLORS.Cancelled;
+    return (
+      <span style={{ padding: '4px 10px', borderRadius: 20, fontSize: '0.85rem', background: c.bg, color: c.fg, border: `1px solid ${c.border}` }}>
+        {t('order.status_Cancelled')}
+      </span>
+    );
+  }
+  const currentIndex = ORDER_STEPS.indexOf(status);
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, width: '100%' }}>
+      {ORDER_STEPS.map((step, i) => {
+        const done = currentIndex >= 0 && i <= currentIndex;
+        return (
+          <React.Fragment key={step}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 62 }}>
+              <div style={{
+                width: 20, height: 20, borderRadius: '50%', fontSize: '0.7rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: done ? '#28a745' : '#e0e0e0', color: '#fff'
+              }}>
+                {done ? '✓' : ''}
+              </div>
+              <small style={{ fontSize: '0.7rem', textAlign: 'center', color: done ? '#28a745' : '#999' }}>
+                {t(`order.status_${step}`)}
+              </small>
+            </div>
+            {i < ORDER_STEPS.length - 1 && (
+              <div style={{ flex: 1, height: 2, minWidth: 10, background: i < currentIndex ? '#28a745' : '#e0e0e0' }} />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
 function ProfilePage() {
   const { logout } = useAuth();
   const { t, i18n } = useTranslation();
@@ -11,26 +72,40 @@ function ProfilePage() {
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
   const [promos, setPromos] = useState([]);
+  const [promoHistory, setPromoHistory] = useState([]);
+  const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('profile');
   const [editing, setEditing] = useState(false);
-  const [formData, setForm] = useState({ firstName: '', lastName: '', phone: '', language: 'ua' });
+  const [formData, setForm] = useState({ firstName: '', lastName: '', phone: '' });
   const [passData, setPass] = useState({ oldPassword: '', newPassword: '' });
   const [msg, setMsg] = useState({ type: '', text: '' });
+  // Стан для керування адресами
+  const [addressForm, setAddressForm] = useState(EMPTY_ADDRESS);
+  const [editingAddressId, setEditingAddressId] = useState(null);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [studentBusy, setStudentBusy] = useState(false);
+
   const handleLogout = () => {
     logout();
     navigate('/');
   };
+
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [uRes, oRes, pRes] = await Promise.all([
+      const [uRes, oRes, pRes, hRes, aRes] = await Promise.all([
         usersAPI.getCurrentUser(),
-        ordersAPI.getOrders(),
-        promotionsAPI.getMyPromotions()
+        safe(ordersAPI.getOrders()),
+        safe(promotionsAPI.getMyPromotions()),
+        safe(promotionsAPI.getMyPromotionsHistory()),
+        safe(usersAPI.getAddresses())
       ]);
       setUser(uRes.data);
-      setOrders(oRes.data);
-      setPromos(pRes.data || []);
+      setOrders(oRes?.data || []);
+      setPromos(pRes?.data || []);
+      setPromoHistory(hRes?.data || []);
+      setAddresses(aRes?.data || []);
       setForm({
         firstName: uRes.data.firstName,
         lastName: uRes.data.lastName,
@@ -42,13 +117,14 @@ function ProfilePage() {
       setLoading(false);
     }
   }, []);
+
   useEffect(() => {
     loadData();
   }, [loadData]);
+
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     try {
-      // Відправка даних, враховуючи обрану у формі мову
       await usersAPI.updateProfile(formData);
       setMsg({ type: 'success', text: t('profile.update_success') });
       setEditing(false);
@@ -57,6 +133,7 @@ function ProfilePage() {
       setMsg({ type: 'error', text: t('profile.update_error') });
     }
   };
+
   const handleChangePassword = async (e) => {
     e.preventDefault();
     try {
@@ -67,58 +144,292 @@ function ProfilePage() {
       setMsg({ type: 'error', text: err.response?.data?.error || t('profile.password_error') });
     }
   };
+
+  // ---- Адреси ----
+  const openAddressForm = (address) => {
+    if (address) {
+      setEditingAddressId(address.shippingId);
+      setAddressForm({
+        city: address.city || '',
+        warehouseNumber: address.warehouseNumber || '',
+        recipientName: address.recipientName || '',
+        recipientPhone: address.recipientPhone || '',
+        isDefault: !!address.isDefault
+      });
+    } else {
+      setEditingAddressId(null);
+      setAddressForm(EMPTY_ADDRESS);
+    }
+    setShowAddressForm(true);
+  };
+
+  const handleSaveAddress = async (e) => {
+    e.preventDefault();
+    if (!addressForm.city || !addressForm.warehouseNumber || !addressForm.recipientName || !addressForm.recipientPhone) {
+      setMsg({ type: 'error', text: t('common.load_error') });
+      return;
+    }
+    try {
+      if (editingAddressId) {
+        await usersAPI.updateAddress(editingAddressId, addressForm);
+      } else {
+        await usersAPI.createAddress(addressForm);
+      }
+      setMsg({ type: 'success', text: t('profile.address_saved') });
+      setShowAddressForm(false);
+      setAddressForm(EMPTY_ADDRESS);
+      setEditingAddressId(null);
+      const aRes = await safe(usersAPI.getAddresses());
+      setAddresses(aRes?.data || []);
+    } catch (err) {
+      setMsg({ type: 'error', text: t('common.update_error') });
+    }
+  };
+
+  const handleDeleteAddress = async (id) => {
+    if (!window.confirm(t('profile.address_delete_confirm'))) return;
+    try {
+      await usersAPI.deleteAddress(id);
+      setMsg({ type: 'success', text: t('profile.address_deleted') });
+      const aRes = await safe(usersAPI.getAddresses());
+      setAddresses(aRes?.data || []);
+    } catch (err) {
+      setMsg({ type: 'error', text: t('common.remove_error') });
+    }
+  };
+
+  const handleSetDefaultAddress = async (id) => {
+    try {
+      await usersAPI.setDefaultAddress(id);
+      const aRes = await safe(usersAPI.getAddresses());
+      setAddresses(aRes?.data || []);
+    } catch (err) {
+      setMsg({ type: 'error', text: t('common.update_error') });
+    }
+  };
+
+  // ---- Студентський статус ----
+  const handleVerifyStudent = async () => {
+    setStudentBusy(true);
+    setMsg({ type: '', text: '' });
+    try {
+      const res = await usersAPI.verifyStudentStatus();
+      setUser((prev) => ({ ...prev, ...res.data }));
+      setMsg({ type: 'success', text: t('profile.student_refresh_success') });
+    } catch (err) {
+      setMsg({ type: 'error', text: err.response?.data?.message || t('profile.student_refresh_error') });
+    } finally {
+      setStudentBusy(false);
+    }
+  };
+
   if (loading || !user) return <div className="loading">{t('common.loading')}</div>;
+
+  const isEn = i18n.language === 'en';
+  const studentLabel = user.studentStatus && user.studentStatus !== 'NONE'
+    ? t(`profile.student_status_${user.studentStatus}`, { defaultValue: user.studentStatus })
+    : t('profile.status_none');
+
+  const cardStyle = { background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' };
+  const inputStyle = { width: '100%', padding: 10, marginBottom: 10, borderRadius: 6, border: '1px solid #ddd' };
+  const tabs = [
+    { id: 'profile', label: t('profile.tabs.profile') },
+    { id: 'security', label: t('profile.tabs.security') },
+    { id: 'orders', label: t('profile.tabs.orders') },
+    { id: 'addresses', label: t('profile.tabs.addresses') },
+    { id: 'discounts', label: t('profile.tabs.discounts') },
+    { id: 'student', label: t('profile.tabs.student') }
+  ];
+
   return (
     <div className="profile-page" style={{ maxWidth: 1000, margin: '40px auto', padding: '0 20px' }}>
-      <h1>{t('profile.title')}</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>{t('profile.title')}</h1>
+        <button onClick={handleLogout} style={{ padding: '10px 18px', borderRadius: 6, border: 'none', background: '#dc3545', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>
+          {t('profile.logout')}
+        </button>
+      </div>
+
       {msg.text && (
-        <div style={{ padding: 15, marginBottom: 20, borderRadius: 8, background: msg.type === 'success' ? '#e6ffed' : '#fff1f0', border: `1px solid ${msg.type === 'success' ? '#b7eb8f' : '#ffa39e'}`, color: msg.type === 'success' ? '#1e4620' : '#cf1322' }}>
+        <div style={{ padding: 15, margin: '15px 0', borderRadius: 8, background: msg.type === 'success' ? '#e6ffed' : '#fff1f0', border: `1px solid ${msg.type === 'success' ? '#b7eb8f' : '#ffa39e'}`, color: msg.type === 'success' ? '#1e4620' : '#cf1322' }}>
           {msg.text}
         </div>
       )}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 30 }}>
-        {/* Ліва колонка: Профіль */}
-        <aside>
-          <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginBottom: 20 }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>{t('profile.my_profile')}</h2>
-            {!editing ? (
-              <div>
-                <p><strong>{t('profile.first_name')}:</strong> {user.firstName} {user.lastName}</p>
-                <p><strong>{t('profile.email')}:</strong> {user.email}</p>
-                <p><strong>{t('profile.phone')}:</strong> {user.phone || t('profile.not_specified')}</p>
-                <p><strong>{t('profile.status')}:</strong> <span style={{ color: user.studentStatus !== 'NONE' ? '#28a745' : '#666', fontWeight: 600 }}>{user.studentStatus}</span></p>
-                {user.studentExpiresAt && <p><small>{t('profile.expires_at')}: {new Date(user.studentExpiresAt).toLocaleDateString()}</small></p>}
-                <button onClick={() => setEditing(true)} style={{ width: '100%', marginTop: 15, padding: '10px', borderRadius: 6, border: '1px solid #007bff', background: 'none', color: '#007bff', cursor: 'pointer' }}>{t('profile.edit')}</button>
+
+      {/* Вкладки */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, margin: '20px 0', borderBottom: '1px solid #eee', paddingBottom: 12 }}>
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => { setActiveTab(tab.id); setMsg({ type: '', text: '' }); }}
+            style={{
+              padding: '8px 16px', borderRadius: 20, cursor: 'pointer', fontWeight: 500,
+              border: activeTab === tab.id ? '1px solid #007bff' : '1px solid #ddd',
+              background: activeTab === tab.id ? '#007bff' : '#fff',
+              color: activeTab === tab.id ? '#fff' : '#333'
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Вкладка: Профіль */}
+      {activeTab === 'profile' && (
+        <div style={cardStyle}>
+          <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>{t('profile.my_profile')}</h2>
+          {!editing ? (
+            <div>
+              <p><strong>{t('profile.first_name')}:</strong> {user.firstName} {user.lastName}</p>
+              <p><strong>{t('profile.email')}:</strong> {user.email}</p>
+              <p><strong>{t('profile.phone')}:</strong> {user.phone || t('profile.not_specified')}</p>
+              <p><strong>{t('profile.status')}:</strong>{' '}
+                <span style={{ color: user.studentStatus !== 'NONE' ? '#28a745' : '#666', fontWeight: 600 }}>{studentLabel}</span>
+              </p>
+              <button onClick={() => setEditing(true)} style={{ marginTop: 15, padding: '10px 20px', borderRadius: 6, border: '1px solid #007bff', background: 'none', color: '#007bff', cursor: 'pointer' }}>
+                {t('profile.edit')}
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleUpdateProfile}>
+              <input type="text" value={formData.firstName} onChange={e => setForm({ ...formData, firstName: e.target.value })} placeholder={t('profile.first_name')} style={inputStyle} required />
+              <input type="text" value={formData.lastName} onChange={e => setForm({ ...formData, lastName: e.target.value })} placeholder={t('profile.last_name')} style={inputStyle} required />
+              <input type="text" value={formData.phone} onChange={e => setForm({ ...formData, phone: e.target.value })} placeholder={t('profile.phone')} style={inputStyle} />
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button type="submit" style={{ flex: 1, padding: 10, borderRadius: 6, border: 'none', background: '#28a745', color: '#fff', cursor: 'pointer' }}>{t('common.save')}</button>
+                <button type="button" onClick={() => setEditing(false)} style={{ flex: 1, padding: 10, borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}>{t('common.cancel')}</button>
               </div>
-            ) : (
-              <form onSubmit={handleUpdateProfile}>
-                <input type="text" value={formData.firstName} onChange={e => setForm({...formData, firstName: e.target.value})} placeholder={t('profile.first_name')} style={{ width: '100%', padding: 10, marginBottom: 10, borderRadius: 6, border: '1px solid #ddd' }} required />
-                <input type="text" value={formData.lastName} onChange={e => setForm({...formData, lastName: e.target.value})} placeholder={t('profile.last_name')} style={{ width: '100%', padding: 10, marginBottom: 10, borderRadius: 6, border: '1px solid #ddd' }} required />
-                <input type="text" value={formData.phone} onChange={e => setForm({...formData, phone: e.target.value})} placeholder={t('profile.phone')} style={{ width: '100%', padding: 10, marginBottom: 10, borderRadius: 6, border: '1px solid #ddd' }} />
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button type="submit" style={{ flex: 1, padding: 10, borderRadius: 6, border: 'none', background: '#28a745', color: '#fff', cursor: 'pointer' }}>{t('common.save')}</button>
-                  <button type="button" onClick={() => setEditing(false)} style={{ flex: 1, padding: 10, borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}>{t('common.cancel')}</button>
-                </div>
-              </form>
+            </form>
+          )}
+        </div>
+      )}
+
+      {/* Вкладка: Безпека */}
+      {activeTab === 'security' && (
+        <div style={cardStyle}>
+          <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>{t('profile.change_password')}</h2>
+          <form onSubmit={handleChangePassword} style={{ maxWidth: 420 }}>
+            <input type="password" value={passData.oldPassword} onChange={e => setPass({ ...passData, oldPassword: e.target.value })} placeholder={t('profile.old_password')} style={inputStyle} required />
+            <input type="password" value={passData.newPassword} onChange={e => setPass({ ...passData, newPassword: e.target.value })} placeholder={t('profile.new_password')} style={inputStyle} minLength={8} required />
+            <button type="submit" style={{ width: '100%', padding: 10, borderRadius: 6, border: 'none', background: '#666', color: '#fff', cursor: 'pointer' }}>{t('profile.update_password')}</button>
+          </form>
+        </div>
+      )}
+
+      {/* Вкладка: Замовлення */}
+      {activeTab === 'orders' && (
+        <div>
+          {orders.length === 0 ? (
+            <div style={{ ...cardStyle, textAlign: 'center' }}>
+              <p style={{ color: '#888' }}>{t('profile.no_orders')}</p>
+              <Link to="/" style={{ color: '#007bff' }}>{t('profile.go_shopping')}</Link>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: 16 }}>
+              {orders.map(order => {
+                const c = STATUS_COLORS[order.status] || STATUS_COLORS.Processing;
+                return (
+                  <div key={order.orderId} style={cardStyle}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                      <div>
+                        <strong style={{ fontSize: '1.05rem' }}>{order.orderNumber}</strong>
+                        <div style={{ color: '#888', fontSize: '0.85rem' }}>{new Date(order.createdAt).toLocaleDateString()}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontWeight: 700 }}>{order.totalAmount.toFixed(2)} {t('common.currency')}</span>
+                        <span style={{ padding: '4px 10px', borderRadius: 20, fontSize: '0.85rem', background: c.bg, color: c.fg, border: `1px solid ${c.border}` }}>
+                          {t(`order.status_${order.status}`, { defaultValue: order.status })}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ margin: '18px 0' }}>
+                      <StatusProgress status={order.status} t={t} />
+                    </div>
+                    <Link to={`/order/${order.orderId}`} state={{ from: 'profile' }} style={{ color: '#007bff', textDecoration: 'none', fontSize: '0.9rem' }}>
+                      {t('profile.details')} →
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Вкладка: Адреси */}
+      {activeTab === 'addresses' && (
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h2 style={{ fontSize: '1.2rem', margin: 0 }}>{t('common.addresses')}</h2>
+            {!showAddressForm && (
+              <button onClick={() => openAddressForm(null)} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#007bff', color: '#fff', cursor: 'pointer' }}>
+                + {t('profile.address_add')}
+              </button>
             )}
           </div>
-          <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginBottom: 20 }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>{t('profile.change_password')}</h2>
-            <form onSubmit={handleChangePassword}>
-              <input type="password" value={passData.oldPassword} onChange={e => setPass({...passData, oldPassword: e.target.value})} placeholder={t('profile.old_password')} style={{ width: '100%', padding: 10, marginBottom: 10, borderRadius: 6, border: '1px solid #ddd' }} required />
-              <input type="password" value={passData.newPassword} onChange={e => setPass({...passData, newPassword: e.target.value})} placeholder={t('profile.new_password')} style={{ width: '100%', padding: 10, marginBottom: 15, borderRadius: 6, border: '1px solid #ddd' }} required />
-              <button type="submit" style={{ width: '100%', padding: 10, borderRadius: 6, border: 'none', background: '#666', color: '#fff', cursor: 'pointer' }}>{t('profile.update_password')}</button>
+
+          {showAddressForm && (
+            <form onSubmit={handleSaveAddress} style={{ maxWidth: 520, marginBottom: 24, padding: 16, background: '#f8f9fa', borderRadius: 8 }}>
+              <input type="text" value={addressForm.city} onChange={e => setAddressForm({ ...addressForm, city: e.target.value })} placeholder={t('profile.address_city')} style={inputStyle} required />
+              <input type="text" value={addressForm.warehouseNumber} onChange={e => setAddressForm({ ...addressForm, warehouseNumber: e.target.value })} placeholder={t('profile.address_warehouse')} style={inputStyle} required />
+              <input type="text" value={addressForm.recipientName} onChange={e => setAddressForm({ ...addressForm, recipientName: e.target.value })} placeholder={t('profile.address_recipient')} style={inputStyle} required />
+              <input type="tel" value={addressForm.recipientPhone} onChange={e => setAddressForm({ ...addressForm, recipientPhone: e.target.value })} placeholder="+380501234567" style={inputStyle} required />
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <input type="checkbox" checked={addressForm.isDefault} onChange={e => setAddressForm({ ...addressForm, isDefault: e.target.checked })} />
+                {t('profile.address_is_default')}
+              </label>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button type="submit" style={{ flex: 1, padding: 10, borderRadius: 6, border: 'none', background: '#28a745', color: '#fff', cursor: 'pointer' }}>{t('common.save')}</button>
+                <button type="button" onClick={() => { setShowAddressForm(false); setAddressForm(EMPTY_ADDRESS); setEditingAddressId(null); }} style={{ flex: 1, padding: 10, borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}>{t('common.cancel')}</button>
+              </div>
             </form>
-          </div>
-          <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginBottom: 20 }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>{t('profile.my_discounts')}</h2>
+          )}
+
+          {addresses.length === 0 && !showAddressForm ? (
+            <p style={{ color: '#888' }}>{t('profile.no_addresses')}</p>
+          ) : (
+            <div style={{ display: 'grid', gap: 12 }}>
+              {addresses.map(a => (
+                <div key={a.shippingId} style={{ padding: 16, borderRadius: 8, border: a.isDefault ? '1px solid #91d5ff' : '1px solid #eee', background: a.isDefault ? '#f0f7ff' : '#fff' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                    <div>
+                      <strong>{a.recipientName}</strong> · {a.recipientPhone}
+                      {a.isDefault && <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 12, fontSize: '0.75rem', background: '#e6f7ff', color: '#1890ff' }}>{t('profile.address_default')}</span>}
+                      <div style={{ color: '#666', marginTop: 4 }}>{t('checkout.city_prefix')} {a.city}, {a.warehouseNumber}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                      {!a.isDefault && (
+                        <button onClick={() => handleSetDefaultAddress(a.shippingId)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #007bff', background: 'none', color: '#007bff', cursor: 'pointer', fontSize: '0.85rem' }}>
+                          {t('profile.address_set_default')}
+                        </button>
+                      )}
+                      <button onClick={() => openAddressForm(a)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}>
+                        {t('profile.address_edit')}
+                      </button>
+                      <button onClick={() => handleDeleteAddress(a.shippingId)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ffa39e', background: '#fff', color: '#cf1322', cursor: 'pointer', fontSize: '0.85rem' }}>
+                        {t('profile.address_delete')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Вкладка: Знижки */}
+      {activeTab === 'discounts' && (
+        <div style={{ display: 'grid', gap: 20 }}>
+          <div style={cardStyle}>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>{t('profile.discounts_available')}</h2>
             {promos.length === 0 ? <p style={{ color: '#888' }}>{t('profile.no_discounts')}</p> : (
               <ul style={{ listStyle: 'none', padding: 0 }}>
                 {promos.map(p => {
-                  const displayName = (i18n.language === 'en' && p.nameEn) ? p.nameEn : p.name;
-                  const displayDesc = (i18n.language === 'en' && p.descriptionEn) ? p.descriptionEn : p.description;
+                  const displayName = (isEn && p.nameEn) ? p.nameEn : p.name;
+                  const displayDesc = (isEn && p.descriptionEn) ? p.descriptionEn : p.description;
                   return (
-                    <li key={p.promotionId} style={{ marginBottom: 12, padding: 10, background: '#f8f9fa', borderRadius: 8, borderLeft: '4px solid #28a745' }}>
+                    <li key={p.promotionId} style={{ marginBottom: 12, padding: 12, background: '#f8f9fa', borderRadius: 8, borderLeft: '4px solid #28a745' }}>
                       <strong>{displayName}</strong>
                       <p style={{ margin: '4px 0', fontSize: '0.9rem' }}>{displayDesc}</p>
                       <span style={{ color: '#28a745', fontWeight: 700 }}>-{p.type === 'PERCENTAGE' ? `${p.value}%` : `${p.value} ${t('common.currency')}`}</span>
@@ -128,61 +439,51 @@ function ProfilePage() {
               </ul>
             )}
           </div>
-          <div>
-            <button onClick={handleLogout} style={{ width: '100%', padding: 12, borderRadius: 6, border: 'none', background: '#dc3545', color: '#fff', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' }}>{t('profile.logout')}</button>
-          </div>
-        </aside>
-        {/* Права колонка: Замовлення */}
-        <main>
-          <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>{t('profile.order_history')}</h2>
-            {orders.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                <p style={{ color: '#888' }}>{t('profile.no_orders')}</p>
-                <Link to="/" style={{ color: '#007bff' }}>{t('profile.go_shopping')}</Link>
-              </div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid #eee', textAlign: 'left' }}>
-                      <th style={{ padding: '12px 8px' }}>{t('profile.order_num')}</th>
-                      <th style={{ padding: '12px 8px' }}>{t('profile.order_date')}</th>
-                      <th style={{ padding: '12px 8px' }}>{t('profile.order_amount')}</th>
-                      <th style={{ padding: '12px 8px' }}>{t('profile.order_status')}</th>
-                      <th style={{ padding: '12px 8px' }}>{t('profile.order_actions')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map(order => (
-                      <tr key={order.orderId} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                        <td style={{ padding: '15px 8px', fontWeight: 500 }}>{order.orderNumber}</td>
-                        <td style={{ padding: '15px 8px', color: '#666' }}>{new Date(order.createdAt).toLocaleDateString()}</td>
-                        <td style={{ padding: '15px 8px', fontWeight: 600 }}>{order.totalAmount.toFixed(2)} {t('common.currency')}</td>
-                        <td style={{ padding: '15px 8px' }}>
-                          <span style={{ 
-                            padding: '4px 10px', 
-                            borderRadius: 20, 
-                            fontSize: '0.85rem',
-                            background: order.status === 'Paid' ? '#e6ffed' : (order.status === 'Cancelled' ? '#fff1f0' : '#e6f7ff'),
-                            color: order.status === 'Paid' ? '#28a745' : (order.status === 'Cancelled' ? '#cf1322' : '#1890ff'),
-                            border: `1px solid ${order.status === 'Paid' ? '#b7eb8f' : (order.status === 'Cancelled' ? '#ffa39e' : '#91d5ff')}`
-                          }}>
-                            {order.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '15px 8px' }}>
-                          <Link to={`/order/${order.orderId}`} state={{ from: 'profile' }} style={{ color: '#007bff', textDecoration: 'none', fontSize: '0.9rem' }}>{t('profile.details')} →</Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          <div style={cardStyle}>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>{t('profile.discounts_history')}</h2>
+            {promoHistory.length === 0 ? <p style={{ color: '#888' }}>{t('profile.no_discounts_history')}</p> : (
+              <ul style={{ listStyle: 'none', padding: 0 }}>
+                {promoHistory.map(h => {
+                  const displayName = (isEn && h.nameEn) ? h.nameEn : h.name;
+                  return (
+                    <li key={h.userPromotionId} style={{ marginBottom: 10, padding: 12, background: '#fff', border: '1px solid #eee', borderRadius: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                        <strong>{displayName}</strong>
+                        <span style={{ color: '#666', fontSize: '0.85rem' }}>{t('profile.student_assigned_at')}: {h.assignedAt ? new Date(h.assignedAt).toLocaleDateString() : '—'}</span>
+                      </div>
+                      <div style={{ fontSize: '0.9rem', color: '#555', marginTop: 4 }}>
+                        -{h.type === 'PERCENTAGE' ? `${h.value}%` : `${h.value} ${t('common.currency')}`}
+                        {typeof h.usedCount === 'number' && <> · {t('profile.discount_used')}: {h.usedCount}</>}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
-        </main>
-      </div>
+        </div>
+      )}
+
+      {/* Вкладка: Студентський статус */}
+      {activeTab === 'student' && (
+        <div style={cardStyle}>
+          <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>{t('profile.student_title')}</h2>
+          <p><strong>{t('profile.status')}:</strong>{' '}
+            <span style={{ color: user.studentStatus !== 'NONE' ? '#28a745' : '#666', fontWeight: 600 }}>{studentLabel}</span>
+          </p>
+          {user.gpa != null && <p><strong>{t('profile.student_gpa')}:</strong> {user.gpa}</p>}
+          {user.studentVerifiedAt && <p><strong>{t('profile.student_verified_at')}:</strong> {new Date(user.studentVerifiedAt).toLocaleDateString()}</p>}
+          {user.studentExpiresAt && <p><strong>{t('profile.expires_at')}:</strong> {new Date(user.studentExpiresAt).toLocaleDateString()}</p>}
+          <p style={{ color: '#888', fontSize: '0.9rem' }}>{t('profile.student_hint')}</p>
+          <button
+            onClick={handleVerifyStudent}
+            disabled={studentBusy}
+            style={{ marginTop: 10, padding: '10px 20px', borderRadius: 6, border: 'none', background: '#007bff', color: '#fff', cursor: 'pointer', opacity: studentBusy ? 0.6 : 1 }}
+          >
+            {studentBusy ? t('profile.student_refreshing') : t('profile.student_refresh')}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

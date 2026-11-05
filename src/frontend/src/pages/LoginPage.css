@@ -100,3 +100,21 @@
 .form-footer .link:hover {
   text-decoration: underline;
 }
+
+.form-group.checkbox-group {
+  margin-bottom: 1.25rem;
+}
+
+.remember-label {
+  display: flex !important;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0 !important;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.remember-label input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}

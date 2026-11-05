@@ -125,7 +125,7 @@
 - PUT /api/admin/users/{id}/unblock - розблокування
 - POST /api/admin/users/{id}/reset-password - скидання паролю адміністратором
 
-2.4. Frontend - користувацькі сторінки
+2.4. Frontend - користувацькі сторінки ✅
 - LoginPage - форма входу, перемикання UA/EN, перехід до реєстрації, Remember Me
 - RegisterPage - форма реєстрації з валідацією, перемикання UA/EN
 - ProfilePage - вкладки:

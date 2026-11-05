@@ -9,6 +9,7 @@ export const AuthProvider = ({ children }) => {
   // Вихід (потрібен для loadUserData, тому визначений першим)
   const logout = useCallback(() => {
     localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     setUser(null);
   }, []);
   // Завантаження даних користувача (Обертаємо в useCallback для стабілізації)
@@ -26,18 +27,24 @@ export const AuthProvider = ({ children }) => {
   }, [logout]); // Залежність: logout
   // Перевірка токену при завантаженні додатку
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (token) {
       loadUserData();
     } else {
       setLoading(false);
     }
   }, [loadUserData]); // Залежність: loadUserData
-  // Авторизація
-  const login = async (email, password) => {
+  // Авторизація. remember=true -> токен зберігається в localStorage, інакше - в sessionStorage
+  const login = async (email, password, remember = true) => {
     const response = await usersAPI.login({ email, password });
     const { token, ...userData } = response.data;
-    localStorage.setItem('token', token);
+    if (remember) {
+      localStorage.setItem('token', token);
+      sessionStorage.removeItem('token');
+    } else {
+      sessionStorage.setItem('token', token);
+      localStorage.removeItem('token');
+    }
     setUser(userData);
     return response.data;
   };

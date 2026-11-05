@@ -465,6 +465,32 @@ namespace KhduSouvenirShop.API.Controllers
             var result = _mapper.Map<List<UserPromotionResponse>>(history);
             return Ok(ApiResponse<List<UserPromotionResponse>>.SuccessResult(result));
         }
+        // POST: api/Users/me/student/verify - повторна верифікація студентського статусу самим користувачем
+        [Authorize]
+        [HttpPost("me/student/verify")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> VerifyMyStudentStatus()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            var success = await _universityService.VerifyAndApplyStudentStatusAsync(userId.Value);
+            if (!success)
+            {
+                return BadRequest(ApiResponse<object>.FailureResult(
+                    "Не вдалося підтвердити студентський статус. Переконайтеся, що ви використовуєте університетську пошту (@ksu.edu.ua).",
+                    "VerificationError"));
+            }
+            var user = await _userRepository.GetByIdAsync(userId.Value);
+            var result = new
+            {
+                studentStatus = user!.StudentStatus,
+                studentVerifiedAt = user.StudentVerifiedAt,
+                studentExpiresAt = user.StudentExpiresAt,
+                gpa = user.GPA
+            };
+            return Ok(ApiResponse<object>.SuccessResult(result, "Студентський статус оновлено"));
+        }
         // GET: api/Users/5
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]

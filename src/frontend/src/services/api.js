@@ -12,7 +12,8 @@ const api = axios.create({
 // Interceptor для додавання JWT токену до кожного запиту
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    // Токен зберігається в localStorage ("Запам'ятати мене") або в sessionStorage (до закриття вкладки)
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -36,6 +37,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Токен невалідний або закінчився
       localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -86,12 +88,20 @@ export const usersAPI = {
   register: (userData) => api.post('/Users/register', userData),
   // POST авторизація
   login: (credentials) => api.post('/Users/login', credentials),
-  // GET поточний користувач (потребує токену)
+  // GET поточний користувач (потрібен токен)
   getCurrentUser: () => api.get('/Users/me'),
   // GET користувач за ID
   getById: (id) => api.get(`/Users/${id}`),
   updateProfile: (data) => api.put('/Users/me', data),
   changePassword: (data) => api.post('/Users/change-password', data),
+  // Збережені адреси доставки
+  getAddresses: () => api.get('/Users/me/addresses'),
+  createAddress: (data) => api.post('/Users/me/addresses', data),
+  updateAddress: (id, data) => api.put(`/Users/me/addresses/${id}`, data),
+  deleteAddress: (id) => api.delete(`/Users/me/addresses/${id}`),
+  setDefaultAddress: (id) => api.post(`/Users/me/addresses/${id}/default`),
+  // Повторна верифікація студентського статусу
+  verifyStudentStatus: () => api.post('/Users/me/student/verify'),
 };
 // API функції для Cart (потребують авторизації)
 export const cartAPI = {
@@ -113,6 +123,8 @@ export const ordersAPI = {
   verifyPayment: (sessionId) => api.get(`/Orders/verify-payment?sessionId=${sessionId}`),
   getOrders: () => api.get('/Orders/my'),
   getOrder: (id) => api.get(`/Orders/${id}`),
+  // Деталі власного замовлення з історією зміни статусів
+  getMyOrder: (id) => api.get(`/Users/me/orders/${id}`),
   // Методи адміністратора
   getAll: (params) => api.get('/Orders/all', { params }),
   updateStatus: (id, data) => api.patch(`/Orders/${id}/status`, data),
@@ -175,6 +187,8 @@ export const novaPoshtaAPI = {
 export const promotionsAPI = {
   // Отримання доступних акційц для користувача
   getMyPromotions: () => api.get('/Promotions/my'),
+  // Історія призначених/використаних знижок користувача
+  getMyPromotionsHistory: () => api.get('/Users/me/promotions/history'),
   // Перевірка промокоду
   validatePromoCode: (code, totalAmount) => api.get(`/Promotions/validate?code=${code}&totalAmount=${totalAmount}`),
   // Методи адміністратора

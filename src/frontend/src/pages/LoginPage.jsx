@@ -12,6 +12,7 @@ function LoginPage() {
     email: '',
     password: ''
   });
+  const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { login } = useAuth();
@@ -38,7 +39,7 @@ function LoginPage() {
       return;
     }
     try {
-      await login(formData.email, formData.password);
+      await login(formData.email, formData.password, remember);
       console.log('Авторизація успішна!');
       // Перенаправлення на головну сторінку
       navigate('/');
@@ -106,6 +107,18 @@ function LoginPage() {
               minLength="8"
               placeholder={t('auth.password')}
             />
+          </div>
+          <div className="form-group checkbox-group">
+            <label htmlFor="remember" className="remember-label">
+              <input
+                type="checkbox"
+                id="remember"
+                name="remember"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+              />
+              <span>{t('auth.remember_me')}</span>
+            </label>
           </div>
           <button type="submit" disabled={loading} className="submit-btn">
             {loading ? t('auth.logging_in') : t('auth.login_btn')}
