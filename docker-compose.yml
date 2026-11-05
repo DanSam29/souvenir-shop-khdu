@@ -1,18 +1,4 @@
 services:
-  db:
-    image: mysql:8.0
-    restart: always
-    environment:
-      MYSQL_DATABASE: souvenir_shop
-      MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_USER: shop_user
-      MYSQL_PASSWORD: shop_password
-    ports:
-      - "3307:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-      - ./database/dump.sql:/docker-entrypoint-initdb.d/dump.sql
-
   backend:
     build:
       context: ./src/backend
@@ -20,11 +6,10 @@ services:
     restart: always
     ports:
       - "5225:8080"
+    env_file:
+      - .env
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=db;Database=souvenir_shop;Uid=shop_user;Pwd=shop_password;
-    depends_on:
-      - db
 
   frontend:
     build:
@@ -37,6 +22,3 @@ services:
       - REACT_APP_API_URL=http://localhost:5225/api
     depends_on:
       - backend
-
-volumes:
-  db_data:
