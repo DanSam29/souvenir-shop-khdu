@@ -57,6 +57,16 @@ namespace KhduSouvenirShop.API.DTOs.Requests
     }
 
     /// <summary>
+    /// Вхідний DTO для скидання паролю користувача адміністратором.
+    /// Якщо NewPassword не вказано — буде згенеровано тимчасовий пароль.
+    /// </summary>
+    public class AdminResetPasswordRequest
+    {
+        [MaxLength(100)]
+        public string? NewPassword { get; set; }
+    }
+
+    /// <summary>
     /// Вхідний DTO для створення/редагування збереженої адреси доставки.
     /// </summary>
     public class AddressRequest

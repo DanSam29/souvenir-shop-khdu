@@ -120,9 +120,13 @@ export const ordersAPI = {
 };
 // API функції для користувачів (адмін)
 export const adminUsersAPI = {
-  getAll: (params) => api.get('/Users', { params }),
-  updateRole: (id, role) => api.patch(`/Users/${id}/role`, { role }),
-  toggleBlock: (id) => api.post(`/Users/${id}/toggle-block`),
+  getAll: (params) => api.get('/admin/users', { params }),
+  getById: (id) => api.get(`/admin/users/${id}`),
+  getOrders: (id, params) => api.get(`/admin/users/${id}/orders`, { params }),
+  updateRole: (id, data) => api.put(`/admin/users/${id}/role`, data),
+  block: (id) => api.put(`/admin/users/${id}/block`),
+  unblock: (id) => api.put(`/admin/users/${id}/unblock`),
+  resetPassword: (id, data) => api.post(`/admin/users/${id}/reset-password`, data),
 };
 // API функції для складу
 export const warehouseAPI = {

@@ -116,7 +116,7 @@
 - GET /api/users/me/promotions - доступні персональні/студентські знижки
 - GET /api/users/me/promotions/history - історія використаних знижок
 
-2.3. Керування користувачами (Admin/SuperAdmin)
+2.3. Керування користувачами (Admin/SuperAdmin) ✅
 - GET /api/admin/users - список користувачів (пагінація, фільтри по ролі/статусу/пошук)
 - GET /api/admin/users/{id} - деталі профілю
 - GET /api/admin/users/{id}/orders - замовлення користувача

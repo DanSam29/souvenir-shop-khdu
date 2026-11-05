@@ -115,4 +115,26 @@ namespace KhduSouvenirShop.API.Validators
                 .Matches(@"^\+380\d{9}$").WithMessage("Телефон має бути у форматі +380XXXXXXXXX");
         }
     }
+    public class UpdateRoleRequestValidator : AbstractValidator<UpdateRoleRequest>
+    {
+        private static readonly string[] AllowedRoles = { "Customer", "Manager", "Administrator", "SuperAdmin" };
+        public UpdateRoleRequestValidator()
+        {
+            RuleFor(x => x.Role)
+                .NotEmpty().WithMessage("Роль обов'язкова")
+                .Must(r => AllowedRoles.Contains(r)).WithMessage("Неприпустиме значення ролі");
+        }
+    }
+    public class AdminResetPasswordRequestValidator : AbstractValidator<AdminResetPasswordRequest>
+    {
+        public AdminResetPasswordRequestValidator()
+        {
+            RuleFor(x => x.NewPassword)
+                .MinimumLength(8).WithMessage("Пароль має бути не менше 8 символів")
+                .Matches(@"[A-Z]").WithMessage("Пароль має містити хоча б одну велику літеру")
+                .Matches(@"[a-z]").WithMessage("Пароль має містити хоча б одну малу літеру")
+                .Matches(@"[0-9]").WithMessage("Пароль має містити хоча б одну цифру")
+                .When(x => !string.IsNullOrWhiteSpace(x.NewPassword));
+        }
+    }
 }

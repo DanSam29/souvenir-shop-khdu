@@ -216,79 +216,6 @@ namespace KhduSouvenirShop.API.Controllers
             };
             return Ok(ApiResponse<object>.SuccessResult(result));
         }
-        // Методи керування користувачами для адміністраторів (перегляд списку, зміна ролей та блокування)
-        [HttpGet]
-        [Authorize(Roles = "Administrator")]
-        [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
-        public async Task<ActionResult> GetAllUsers(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10,
-            [FromQuery] string? search = null,
-            [FromQuery] string? role = null)
-        {
-            var query = _userRepository.Query();
-
-            if (!string.IsNullOrEmpty(search))
-            {
-                var s = search.Trim().ToLower();
-                query = query.Where(u => u.Email.ToLower().Contains(s) || u.FirstName.ToLower().Contains(s) || u.LastName.ToLower().Contains(s));
-            }
-            if (!string.IsNullOrEmpty(role))
-            {
-                query = query.Where(u => u.Role == role);
-            }
-            var count = await query.CountAsync();
-            var items = await query
-                .OrderByDescending(u => u.CreatedAt)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .Select(u => new {
-                    u.UserId,
-                    u.Email,
-                    u.FirstName,
-                    u.LastName,
-                    u.Role,
-                    u.StudentStatus,
-                    u.CreatedAt,
-                    u.IsDeleted
-                })
-                .ToListAsync();
-            var response = new PagedResponse<object>(items, count, pageNumber, pageSize);
-            return Ok(ApiResponse<PagedResponse<object>>.SuccessResult(response));
-        }
-        [HttpPatch("{id}/role")]
-        [Authorize(Roles = "Administrator")]
-        public async Task<ActionResult> UpdateUserRole(int id, [FromBody] UpdateRoleDto dto)
-        {
-            var user = await _userRepository.GetByIdAsync(id);
-            if (user == null) return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено"));
-            user.Role = dto.Role;
-            await _userRepository.SaveChangesAsync();
-            return Ok(ApiResponse<object?>.SuccessResult(null, "Роль користувача оновлено"));
-        }
-        [HttpPost("{id}/toggle-block")]
-        [Authorize(Roles = "Administrator")]
-        public async Task<ActionResult> ToggleBlockUser(int id)
-        {
-            var user = await _userRepository.Query().IgnoreQueryFilters().FirstOrDefaultAsync(u => u.UserId == id);
-            if (user == null) return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено"));
-            if (user.IsDeleted)
-            {
-                user.IsDeleted = false;
-                user.DeletedAt = null;
-                user.DeletedBy = null;
-                await _userRepository.SaveChangesAsync();
-                return Ok(ApiResponse<object>.SuccessResult(new { isBlocked = false }, "Користувача розблоковано"));
-            }
-            else
-            {
-                user.IsDeleted = true;
-                user.DeletedAt = DateTime.UtcNow;
-                // Ідентифікатор того, хто видалив, буде встановлено автоматично в SaveChangesAsync
-                await _userRepository.SaveChangesAsync();
-                return Ok(ApiResponse<object>.SuccessResult(new { isBlocked = true }, "Користувача заблоковано (Soft Delete)"));
-            }
-        }
         // PUT: api/Users/me
         [Authorize]
         [HttpPut("me")]
@@ -577,9 +504,5 @@ namespace KhduSouvenirShop.API.Controllers
     {
         public string OldPassword { get; set; } = string.Empty;
         public string NewPassword { get; set; } = string.Empty;
-    }
-    public class UpdateRoleDto
-    {
-        public string Role { get; set; } = string.Empty;
     }
 }
