@@ -1,11 +1,12 @@
 using FluentValidation;
 using KhduSouvenirShop.API.Controllers;
+using KhduSouvenirShop.API.DTOs.Requests;
 
 namespace KhduSouvenirShop.API.Validators
 {
-    public class RegisterDtoValidator : AbstractValidator<RegisterDto>
+    public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
     {
-        public RegisterDtoValidator()
+        public RegisterRequestValidator()
         {
             RuleFor(x => x.FirstName)
                 .NotEmpty().WithMessage("Ім'я обов'язкове")
@@ -23,20 +24,48 @@ namespace KhduSouvenirShop.API.Validators
                 .Matches(@"[A-Z]").WithMessage("Пароль має містити хоча б одну велику літеру")
                 .Matches(@"[a-z]").WithMessage("Пароль має містити хоча б одну малу літеру")
                 .Matches(@"[0-9]").WithMessage("Пароль має містити хоча б одну цифру");
+            RuleFor(x => x.ConfirmPassword)
+                .NotEmpty().WithMessage("Підтвердження паролю обов'язкове")
+                .Equal(x => x.Password).WithMessage("Паролі не співпадають");
             RuleFor(x => x.Phone)
                 .Matches(@"^\+380\d{9}$").WithMessage("Телефон має бути у форматі +380XXXXXXXXX")
                 .When(x => !string.IsNullOrEmpty(x.Phone));
         }
     }
-    public class LoginDtoValidator : AbstractValidator<LoginDto>
+    public class LoginRequestValidator : AbstractValidator<LoginRequest>
     {
-        public LoginDtoValidator()
+        public LoginRequestValidator()
         {
             RuleFor(x => x.Email)
                 .NotEmpty().WithMessage("Email обов'язковий")
                 .EmailAddress().WithMessage("Некоректний формат Email");
             RuleFor(x => x.Password)
                 .NotEmpty().WithMessage("Пароль обов'язковий");
+        }
+    }
+    public class ForgotPasswordRequestValidator : AbstractValidator<ForgotPasswordRequest>
+    {
+        public ForgotPasswordRequestValidator()
+        {
+            RuleFor(x => x.Email)
+                .NotEmpty().WithMessage("Email обов'язковий")
+                .EmailAddress().WithMessage("Некоректний формат Email");
+        }
+    }
+    public class ResetPasswordRequestValidator : AbstractValidator<ResetPasswordRequest>
+    {
+        public ResetPasswordRequestValidator()
+        {
+            RuleFor(x => x.Token).NotEmpty().WithMessage("Токен скидання обов'язковий");
+            RuleFor(x => x.NewPassword)
+                .NotEmpty().WithMessage("Новий пароль обов'язковий")
+                .MinimumLength(8).WithMessage("Новий пароль має бути не менше 8 символів")
+                .Matches(@"[A-Z]").WithMessage("Новий пароль має містити хоча б одну велику літеру")
+                .Matches(@"[a-z]").WithMessage("Новий пароль має містити хоча б одну малу літеру")
+                .Matches(@"[0-9]").WithMessage("Новий пароль має містити хоча б одну цифру");
+            RuleFor(x => x.ConfirmPassword)
+                .NotEmpty().WithMessage("Підтвердження паролю обов'язкове")
+                .Equal(x => x.NewPassword).WithMessage("Паролі не співпадають");
         }
     }
     public class UserUpdateDtoValidator : AbstractValidator<UserUpdateDto>

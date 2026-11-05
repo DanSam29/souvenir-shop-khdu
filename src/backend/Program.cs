@@ -98,6 +98,7 @@ builder.Services.AddScoped<KhduSouvenirShop.API.Services.PromotionService>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IPaymentService, KhduSouvenirShop.API.Services.PaymentService>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IEmailService, KhduSouvenirShop.API.Services.EmailService>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IImageService, KhduSouvenirShop.API.Services.ImageService>();
+builder.Services.AddScoped<KhduSouvenirShop.API.Services.IAuthService, KhduSouvenirShop.API.Services.AuthService>();
 builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.INovaPoshtaService, KhduSouvenirShop.API.Services.NovaPoshtaService>();
 builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.IUniversityService, KhduSouvenirShop.API.Services.UniversityService>();
 // Реєстрація репозиторіїв (шар доступу до даних)

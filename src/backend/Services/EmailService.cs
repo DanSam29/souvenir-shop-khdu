@@ -9,6 +9,7 @@ namespace KhduSouvenirShop.API.Services
         Task SendOrderConfirmationAsync(string email, string orderNumber, string lang = "ua");
         Task SendPaymentConfirmationAsync(string email, string orderNumber, decimal amount, string lang = "ua");
         Task SendStudentVerificationEmailAsync(string email, string status, string lang = "ua");
+        Task SendPasswordResetEmailAsync(string email, string resetToken, string lang = "ua");
     }
     public class EmailService : IEmailService
     {
@@ -41,6 +42,16 @@ namespace KhduSouvenirShop.API.Services
             string body = lang == "en"
                 ? $"<h1>Congratulations!</h1><p>Your student status has been verified as: <b>{status}</b>. You can now use your discounts.</p>"
                 : $"<h1>Вітаємо!</h1><p>Ваш статус студента підтверджено: <b>{status}</b>. Тепер ви можете користуватися своїми знижками.</p>";
+            await SendEmailAsync(email, subject, body);
+        }
+        public async Task SendPasswordResetEmailAsync(string email, string resetToken, string lang = "ua")
+        {
+            var clientUrl = _configuration.GetSection("AllowedOrigins").Get<string[]>()?.FirstOrDefault() ?? "http://localhost:3000";
+            var resetLink = $"{clientUrl}/reset-password?token={resetToken}";
+            string subject = lang == "en" ? "Password Reset" : "Скидання паролю";
+            string body = lang == "en"
+                ? $"<h1>Password reset</h1><p>Follow the link to set a new password: <a href=\"{resetLink}\">Reset password</a></p><p>The link expires in 1 hour. If you didn't request this, ignore this email.</p>"
+                : $"<h1>Скидання паролю</h1><p>Перейдіть за посиланням, щоб встановити новий пароль: <a href=\"{resetLink}\">Скинути пароль</a></p><p>Посилання дійсне 1 годину. Якщо ви не робили цей запит, просто проігноруйте лист.</p>";
             await SendEmailAsync(email, subject, body);
         }
         private async Task SendEmailAsync(string toEmail, string subject, string body)

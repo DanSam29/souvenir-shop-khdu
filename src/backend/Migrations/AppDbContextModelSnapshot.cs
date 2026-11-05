@@ -475,6 +475,39 @@ namespace KhduSouvenirShop.API.Migrations
                     b.ToTable("outgoingdocuments");
                 });
 
+            modelBuilder.Entity("KhduSouvenirShop.API.Models.PasswordResetToken", b =>
+                {
+                    b.Property<int>("PasswordResetTokenId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("PasswordResetTokenId");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("passwordresettokens");
+                });
+
             modelBuilder.Entity("KhduSouvenirShop.API.Models.Payment", b =>
                 {
                     b.Property<int>("PaymentId")
@@ -931,6 +964,39 @@ namespace KhduSouvenirShop.API.Migrations
                     b.ToTable("promotions");
                 });
 
+            modelBuilder.Entity("KhduSouvenirShop.API.Models.RefreshToken", b =>
+                {
+                    b.Property<int>("RefreshTokenId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("RefreshTokenId");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("refreshtokens");
+                });
+
             modelBuilder.Entity("KhduSouvenirShop.API.Models.Shipping", b =>
                 {
                     b.Property<int>("ShippingId")
@@ -1240,6 +1306,17 @@ namespace KhduSouvenirShop.API.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("KhduSouvenirShop.API.Models.PasswordResetToken", b =>
+                {
+                    b.HasOne("KhduSouvenirShop.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("KhduSouvenirShop.API.Models.Payment", b =>
                 {
                     b.HasOne("KhduSouvenirShop.API.Models.Order", "Order")
@@ -1281,6 +1358,17 @@ namespace KhduSouvenirShop.API.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("CreatedByUser");
+                });
+
+            modelBuilder.Entity("KhduSouvenirShop.API.Models.RefreshToken", b =>
+                {
+                    b.HasOne("KhduSouvenirShop.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("KhduSouvenirShop.API.Models.Shipping", b =>

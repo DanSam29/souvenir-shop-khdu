@@ -30,6 +30,8 @@ namespace KhduSouvenirShop.API.Data
         public DbSet<Company> Companies { get; set; } = null!;
         public DbSet<IncomingDocument> IncomingDocuments { get; set; } = null!;
         public DbSet<OutgoingDocument> OutgoingDocuments { get; set; } = null!;
+        public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -61,6 +63,23 @@ namespace KhduSouvenirShop.API.Data
             modelBuilder.Entity<UserPromotion>()
                 .HasIndex(up => new { up.UserId, up.PromotionId })
                 .IsUnique();
+            // Токени автентифікації: унікальні значення, каскадне видалення разом із користувачем
+            modelBuilder.Entity<RefreshToken>()
+                .HasIndex(t => t.Token)
+                .IsUnique();
+            modelBuilder.Entity<RefreshToken>()
+                .HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<PasswordResetToken>()
+                .HasIndex(t => t.Token)
+                .IsUnique();
+            modelBuilder.Entity<PasswordResetToken>()
+                .HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
             // Типи колонок для enum-полів MySQL (синхронізовано з реальною схемою БД)
             modelBuilder.Entity<User>()
                 .Property(u => u.Role)

@@ -31,7 +31,8 @@ namespace KhduSouvenirShop.API.DTOs.Mappings
             CreateMap<User, UserSummaryResponse>();
             CreateMap<User, AdminUserListItemResponse>();
             CreateMap<User, AuthResponse>()
-                .ForMember(d => d.Token, o => o.Ignore()); // JWT токен генерується окремо
+                .ForMember(d => d.Token, o => o.Ignore()) // JWT токен генерується окремо
+                .ForMember(d => d.RefreshToken, o => o.Ignore()); // refresh-токен генерується окремо
 
             CreateMap<RegisterRequest, User>()
                 .ForMember(d => d.UserId, o => o.Ignore())
