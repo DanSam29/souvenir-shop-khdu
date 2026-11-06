@@ -55,16 +55,11 @@
     "search_placeholder": "Пошук товарів..."
   },
   "home": {
-    "title": "Вітаємо в KSU Souvenir Shop",
-    "subtitle": "Найкращі сувеніри Херсонського Державного Університету",
     "categories": "Категорії",
     "all_products": "Усі товари",
     "featured": "Рекомендовані товари",
     "new_arrivals": "Новинки",
-    "shop_now": "До каталогу",
-    "hero_feature_1": "Офіційна продукція ХДУ",
-    "hero_feature_2": "Доставка по Україні",
-    "hero_feature_3": "Знижки для студентів"
+    "shop_now": "До каталогу"
   },
   "product": {
     "add_to_cart": "Додати у кошик",

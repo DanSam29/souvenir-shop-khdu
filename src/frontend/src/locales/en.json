@@ -55,16 +55,11 @@
     "search_placeholder": "Search products..."
   },
   "home": {
-    "title": "Welcome to KSU Souvenir Shop",
-    "subtitle": "The best souvenirs of Kherson State University",
     "categories": "Categories",
     "all_products": "All Products",
     "featured": "Featured Products",
     "new_arrivals": "New Arrivals",
-    "shop_now": "Shop now",
-    "hero_feature_1": "Official KSU products",
-    "hero_feature_2": "Delivery across Ukraine",
-    "hero_feature_3": "Student discounts"
+    "shop_now": "Shop now"
   },
   "product": {
     "add_to_cart": "Add to Cart",
