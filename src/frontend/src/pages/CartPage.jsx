@@ -113,6 +113,10 @@ function CartPage() {
       </div>
     );
   }
+  const totalDiscount = cart.items.reduce((sum, item) => {
+    const original = item.originalPrice || item.productPrice || 0;
+    return sum + Math.max(0, original - item.productPrice) * item.quantity;
+  }, 0);
   return (
     <div className="cart-page">
       <div className="cart-container">
@@ -126,6 +130,7 @@ function CartPage() {
           <div className="cart-items">
             {cart.items.map(item => {
               const displayName = (isEn && item.productNameEn) ? item.productNameEn : item.productName;
+              const hasDiscount = item.originalPrice && item.originalPrice > item.productPrice;
               return (
                 <div key={item.cartItemId} className="cart-item">
                   <div className="item-image">
@@ -138,7 +143,16 @@ function CartPage() {
                     <Link to={`/product/${item.productId}?from=cart`}>
                       <h3>{displayName}</h3>
                     </Link>
-                    <p className="item-price">{item.productPrice} {t('common.currency')}</p>
+                    <p className="item-price">
+                      {hasDiscount ? (
+                        <>
+                          <span className="price-original">{item.originalPrice.toFixed(2)} {t('common.currency')}</span>
+                          <span className="price-current">{item.productPrice} {t('common.currency')}</span>
+                        </>
+                      ) : (
+                        <span>{item.productPrice} {t('common.currency')}</span>
+                      )}
+                    </p>
                   </div>
                   <div className="item-quantity">
                     <button className="quantity-btn" onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity - 1)}>-</button>
@@ -165,6 +179,12 @@ function CartPage() {
               <span>{t('cart.item_count')}:</span>
               <span>{cart.itemCount}</span>
             </div>
+            {totalDiscount > 0 && (
+              <div className="summary-row summary-discount">
+                <span>{t('cart.discount')}:</span>
+                <span>-{totalDiscount.toFixed(2)} {t('common.currency')}</span>
+              </div>
+            )}
             <div className="summary-row summary-total">
               <span>{t('cart.total')}:</span>
               <span className="total-amount">{cart.totalAmount.toFixed(2)} {t('common.currency')}</span>

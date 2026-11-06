@@ -278,7 +278,7 @@
   - Shipped → Delivered, Cancelled
   - Delivered → (термінальний, тільки Return process)
 
-4.6. Frontend
+4.6. Frontend ✅
 - CartPage: список позицій, зміна кількості, видалення, проміжні суми, знижки, total, кнопка "До оформлення"
 - CheckoutPage:
   - Крок 1: Контактні дані (автозаповнена з профілю)

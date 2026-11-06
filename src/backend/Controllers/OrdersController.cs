@@ -483,7 +483,20 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 var result = await _paymentService.HandleWebhookAsync(null, sessionId); // We'll modify HandleWebhookAsync to handle manual verify
                 if (result)
+                {
+                    var payment = await _paymentRepository.Query()
+                        .Include(p => p.Order)
+                        .FirstOrDefaultAsync(p => p.StripeSessionId == sessionId);
+                    if (payment?.Order != null)
+                    {
+                        return Ok(ApiResponse<object>.SuccessResult(new
+                        {
+                            orderId = payment.Order.OrderId,
+                            orderNumber = payment.Order.OrderNumber
+                        }, "Payment verified"));
+                    }
                     return Ok(ApiResponse<object>.SuccessResult(null, "Payment verified"));
+                }
                 else
                     return BadRequest(ApiResponse<object>.FailureResult("Payment verification failed"));
             }

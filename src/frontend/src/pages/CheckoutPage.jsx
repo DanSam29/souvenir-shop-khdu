@@ -4,17 +4,23 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { cartAPI, ordersAPI, usersAPI, novaPoshtaAPI, featuresAPI } from '../services/api';
 
+const TOTAL_STEPS = 4;
+const PHONE_REGEX = /^\+380\d{9}$/;
+
 function CheckoutPage() {
   const { t, i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [step, setStep] = useState(1);
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [orderResult, setOrderResult] = useState(null);
   const [calcPreview, setCalcPreview] = useState(null);
   const [features, setFeatures] = useState(null);
+  const [savedAddresses, setSavedAddresses] = useState([]);
   const isEn = i18n.language === 'en';
+  const isNpEnabled = !!features?.novaPoshtaEnabled;
   // Nova Poshta: стани
   const [cities, setCities] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
@@ -41,6 +47,7 @@ function CheckoutPage() {
     loadCart();
     loadUser();
     loadFeatures();
+    loadAddresses();
   }, [isAuthenticated, navigate]);
   const loadFeatures = async () => {
     try {
@@ -75,6 +82,14 @@ function CheckoutPage() {
         recipientName: '',
         recipientPhone: '',
       }));
+    }
+  };
+  const loadAddresses = async () => {
+    try {
+      const res = await usersAPI.getAddresses();
+      setSavedAddresses(res.data || []);
+    } catch {
+      setSavedAddresses([]);
     }
   };
   const handleChange = (e) => {
@@ -118,12 +133,12 @@ function CheckoutPage() {
     return () => clearTimeout(timer);
   }, [form.cityRef, form.warehouseRef, warehouseSearch]);
   const handleCitySelect = (city) => {
-    setForm(prev => ({ 
-      ...prev, 
-      city: city.description, 
+    setForm(prev => ({
+      ...prev,
+      city: city.description,
       cityRef: city.ref,
       warehouseNumber: '',
-      warehouseRef: '' 
+      warehouseRef: ''
     }));
     setCitySearch(city.description);
     setShowCityDropdown(false);
@@ -131,12 +146,26 @@ function CheckoutPage() {
     setWarehouseSearch('');
   };
   const handleWarehouseSelect = (wh) => {
-    setForm(prev => ({ 
-      ...prev, 
-      warehouseNumber: wh.description, 
-      warehouseRef: wh.ref 
+    setForm(prev => ({
+      ...prev,
+      warehouseNumber: wh.description,
+      warehouseRef: wh.ref
     }));
     setWarehouseSearch(wh.description);
+    setShowWarehouseDropdown(false);
+  };
+  // Вибір збереженої адреси
+  const handleAddressSelect = (a) => {
+    setForm(prev => ({
+      ...prev,
+      city: a.city,
+      cityRef: a.cityRef || '',
+      warehouseNumber: a.warehouseNumber,
+      warehouseRef: a.warehouseRef || ''
+    }));
+    setCitySearch(a.city);
+    setWarehouseSearch(a.warehouseNumber);
+    setShowCityDropdown(false);
     setShowWarehouseDropdown(false);
   };
   // Nova Poshta: обчислення вартості доставки
@@ -178,10 +207,42 @@ function CheckoutPage() {
     }, 600);
     return () => clearTimeout(timer);
   }, [form.promoCode, form.cityRef]);
+  // Валідація окремого кроку
+  const validateStep = (current) => {
+    if (current === 1) {
+      if ((form.recipientName || '').trim().length < 2) {
+        alert(t('checkout.name_required'));
+        return false;
+      }
+      if (!PHONE_REGEX.test((form.recipientPhone || '').trim())) {
+        alert(t('checkout.phone_invalid'));
+        return false;
+      }
+      return true;
+    }
+    if (current === 2) {
+      if (isNpEnabled) {
+        if (!form.cityRef || !form.warehouseRef) {
+          alert(t('checkout.select_city_warehouse'));
+          return false;
+        }
+      } else if (!form.city || !form.warehouseNumber) {
+        alert(t('checkout.select_city_warehouse'));
+        return false;
+      }
+      return true;
+    }
+    return true;
+  };
+  const handleNext = () => {
+    if (validateStep(step)) {
+      setStep((s) => Math.min(s + 1, TOTAL_STEPS));
+    }
+  };
+  const handleBack = () => setStep((s) => Math.max(s - 1, 1));
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.cityRef || !form.warehouseRef) {
-      alert('Будь ласка, виберіть місто та відділення зі списку');
+    if (!validateStep(1) || !validateStep(2)) {
       return;
     }
     try {
@@ -219,17 +280,17 @@ function CheckoutPage() {
           <h1 style={{ margin: '0 0 20px 0', color: '#1e4620' }}>✅ {t('checkout.success')}</h1>
           <p style={{ fontSize: '1.1rem', margin: '10px 0' }}><strong>{t('checkout.order_number')}:</strong> {orderResult.orderNumber}</p>
           <p style={{ fontSize: '1.1rem', margin: '10px 0' }}><strong>{t('cart.total')}:</strong> {orderResult.totalAmount.toFixed(2)} {t('common.currency')}</p>
-          <button 
-            onClick={() => navigate('/profile')} 
-            style={{ 
-              marginTop: 30, 
-              padding: '12px 24px', 
-              borderRadius: 8, 
-              border: 'none', 
-              background: '#007bff', 
-              color: '#fff', 
-              fontSize: '1rem', 
-              cursor: 'pointer' 
+          <button
+            onClick={() => navigate('/profile')}
+            style={{
+              marginTop: 30,
+              padding: '12px 24px',
+              borderRadius: 8,
+              border: 'none',
+              background: '#007bff',
+              color: '#fff',
+              fontSize: '1rem',
+              cursor: 'pointer'
             }}
           >
             {t('checkout.go_to_orders')}
@@ -250,157 +311,308 @@ function CheckoutPage() {
   }
   const cartTotal = cart?.totalAmount ?? 0;
   const previewTotal = calcPreview?.totalAmount ?? cartTotal;
+  const promoDiscount = Math.max(0, cartTotal - previewTotal);
   const finalTotal = previewTotal + (shippingCost || 0);
+  const stepLabels = [
+    t('checkout.step_contacts'),
+    t('checkout.delivery'),
+    t('checkout.payment'),
+    t('checkout.step_confirmation')
+  ];
+  const summaryItems = calcPreview?.items ?? cart.items;
   return (
     <div className="checkout-page" style={{ maxWidth: 900, margin: '0 auto', padding: 20 }}>
       <Link to="/cart" className="back-link" style={{ textDecoration: 'none', color: '#007bff', fontWeight: 500 }}>← {t('product.back_to_cart')}</Link>
-      <h1 style={{ marginBottom: 30 }}>{t('checkout.title')}</h1>
+      <h1 style={{ marginBottom: 20 }}>{t('checkout.title')}</h1>
+      {/* Індикатор кроків */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 30, flexWrap: 'wrap' }}>
+        {stepLabels.map((label, i) => {
+          const n = i + 1;
+          const active = step === n;
+          const done = step > n;
+          return (
+            <div key={n} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%', fontSize: '0.85rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: active ? '#007bff' : done ? '#28a745' : '#e0e0e0',
+                color: '#fff', fontWeight: 600, flexShrink: 0
+              }}>
+                {done ? '✓' : n}
+              </div>
+              <span style={{ color: active ? '#000' : '#888', fontWeight: active ? 600 : 400, fontSize: '0.9rem' }}>{label}</span>
+              {n < TOTAL_STEPS && <span style={{ color: '#ccc' }}>—</span>}
+            </div>
+          );
+        })}
+      </div>
+      <p style={{ color: '#888', marginTop: -20, marginBottom: 20, fontSize: '0.9rem' }}>
+        {t('checkout.step_of', { current: step, total: TOTAL_STEPS })}
+      </p>
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 30 }}>
         <form onSubmit={handleSubmit} style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
-          <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>{t('checkout.delivery')}</h2>
-          {features?.novaPoshtaEnabled ? (
+          {/* Крок 1: Контактні дані */}
+          {step === 1 && (
             <>
-              <div style={{ position: 'relative', marginBottom: 20 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.city_np')}</label>
-                <input
-                  type="text"
-                  value={citySearch}
-                  onChange={(e) => {
-                    setCitySearch(e.target.value);
-                    if (form.cityRef) setForm(p => ({ ...p, cityRef: '', warehouseRef: '' }));
-                  }}
-                  placeholder={t('checkout.city_placeholder')}
-                  style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
-                />
-                {showCityDropdown && cities.length > 0 && (
-                  <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderRadius: '0 0 8px 8px', listStyle: 'none', padding: 0, margin: 0, zIndex: 10, maxHeight: 200, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                    {cities.map(city => (
-                      <li 
-                        key={city.ref} 
-                        onClick={() => handleCitySelect(city)}
-                        style={{ padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
-                        onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
-                        onMouseLeave={(e) => e.target.style.background = '#fff'}
-                      >
-                        {city.description} <small style={{ color: '#888' }}>({city.areaDescription})</small>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              <div style={{ position: 'relative', marginBottom: 20 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.warehouse')}</label>
-                <input
-                  type="text"
-                  value={warehouseSearch}
-                  onChange={(e) => setWarehouseSearch(e.target.value)}
-                  disabled={!form.cityRef}
-                  placeholder={form.cityRef ? t('checkout.warehouse_placeholder') : t('checkout.select_city_first')}
-                  style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box', background: form.cityRef ? '#fff' : '#f9f9f9' }}
-                />
-                {showWarehouseDropdown && warehouses.length > 0 && (
-                  <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderRadius: '0 0 8px 8px', listStyle: 'none', padding: 0, margin: 0, zIndex: 10, maxHeight: 200, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                    {warehouses.map(wh => (
-                      <li 
-                        key={wh.ref} 
-                        onClick={() => handleWarehouseSelect(wh)}
-                        style={{ padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
-                        onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
-                        onMouseLeave={(e) => e.target.style.background = '#fff'}
-                      >
-                        {wh.description}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
+              <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>{t('checkout.step_contacts')}</h2>
               <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.city')}</label>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.full_name')}</label>
                 <input
                   type="text"
-                  name="city"
-                  value={form.city}
+                  name="recipientName"
+                  value={form.recipientName}
                   onChange={handleChange}
-                  placeholder={t('checkout.city_placeholder_manual')}
                   style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
-                  required
                 />
               </div>
               <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.warehouse')}</label>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.phone')}</label>
                 <input
-                  type="text"
-                  name="warehouseNumber"
-                  value={form.warehouseNumber}
+                  type="tel"
+                  name="recipientPhone"
+                  value={form.recipientPhone}
                   onChange={handleChange}
-                  placeholder={t('checkout.warehouse_placeholder_manual')}
+                  placeholder="+380XXXXXXXXX"
                   style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
-                  required
                 />
               </div>
             </>
           )}
-          <h2 style={{ fontSize: '1.2rem', margin: '30px 0 20px', borderBottom: '1px solid #eee', paddingBottom: 10 }}>{t('checkout.payment_promo')}</h2>
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.payment_method')}</label>
-            <select
-              name="paymentMethod"
-              value={form.paymentMethod}
-              onChange={handleChange}
-              style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', cursor: 'pointer' }}
-            >
-              {features?.stripeEnabled && <option value="Card">💳 {t('checkout.payment_card')}</option>}
-              <option value="CashOnDelivery">📦 {t('checkout.payment_cod')}</option>
-            </select>
+          {/* Крок 2: Доставка */}
+          {step === 2 && (
+            <>
+              <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>{t('checkout.delivery')}</h2>
+              {savedAddresses.length > 0 && (
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.addresses')}</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {savedAddresses.map((a) => {
+                      const isSelected = form.cityRef && a.cityRef === form.cityRef && a.warehouseRef === form.warehouseRef;
+                      return (
+                        <button
+                          type="button"
+                          key={a.shippingId}
+                          onClick={() => handleAddressSelect(a)}
+                          style={{
+                            textAlign: 'left',
+                            padding: '10px 12px',
+                            borderRadius: 8,
+                            border: isSelected ? '2px solid #007bff' : '1px solid #ddd',
+                            background: isSelected ? '#f0f7ff' : '#fff',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <strong>{a.city}</strong>, {a.warehouseNumber}
+                          {a.isDefault && <span style={{ marginLeft: 8, color: '#28a745', fontSize: '0.8rem' }}>★</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {isNpEnabled ? (
+                <>
+                  <div style={{ position: 'relative', marginBottom: 20 }}>
+                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.city_np')}</label>
+                    <input
+                      type="text"
+                      value={citySearch}
+                      onChange={(e) => {
+                        setCitySearch(e.target.value);
+                        if (form.cityRef) setForm(p => ({ ...p, cityRef: '', warehouseRef: '' }));
+                      }}
+                      placeholder={t('checkout.city_placeholder')}
+                      style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
+                    />
+                    {showCityDropdown && cities.length > 0 && (
+                      <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderRadius: '0 0 8px 8px', listStyle: 'none', padding: 0, margin: 0, zIndex: 10, maxHeight: 200, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                        {cities.map(city => (
+                          <li
+                            key={city.ref}
+                            onClick={() => handleCitySelect(city)}
+                            style={{ padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
+                            onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
+                            onMouseLeave={(e) => e.target.style.background = '#fff'}
+                          >
+                            {city.description} <small style={{ color: '#888' }}>({city.areaDescription})</small>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div style={{ position: 'relative', marginBottom: 20 }}>
+                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.warehouse')}</label>
+                    <input
+                      type="text"
+                      value={warehouseSearch}
+                      onChange={(e) => setWarehouseSearch(e.target.value)}
+                      disabled={!form.cityRef}
+                      placeholder={form.cityRef ? t('checkout.warehouse_placeholder') : t('checkout.select_city_first')}
+                      style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box', background: form.cityRef ? '#fff' : '#f9f9f9' }}
+                    />
+                    {showWarehouseDropdown && warehouses.length > 0 && (
+                      <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderRadius: '0 0 8px 8px', listStyle: 'none', padding: 0, margin: 0, zIndex: 10, maxHeight: 200, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                        {warehouses.map(wh => (
+                          <li
+                            key={wh.ref}
+                            onClick={() => handleWarehouseSelect(wh)}
+                            style={{ padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
+                            onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
+                            onMouseLeave={(e) => e.target.style.background = '#fff'}
+                          >
+                            {wh.description}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  {form.warehouseRef && (
+                    <div style={{ marginBottom: 20, padding: 12, background: '#f6ffed', borderRadius: 8, border: '1px solid #b7eb8f' }}>
+                      <p style={{ margin: 0 }}>
+                        <strong>{t('checkout.delivery_cost')}:</strong>{' '}
+                        {shippingCost > 0 ? `${shippingCost.toFixed(2)} ${t('common.currency')}` : t('checkout.will_be_calculated')}
+                      </p>
+                      <p style={{ margin: '6px 0 0 0', color: '#666', fontSize: '0.9rem' }}>
+                        {t('checkout.estimated_days')}: {t('checkout.estimated_days_value')}
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.city')}</label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={form.city}
+                      onChange={handleChange}
+                      placeholder={t('checkout.city_placeholder_manual')}
+                      style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.warehouse')}</label>
+                    <input
+                      type="text"
+                      name="warehouseNumber"
+                      value={form.warehouseNumber}
+                      onChange={handleChange}
+                      placeholder={t('checkout.warehouse_placeholder_manual')}
+                      style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </>
+              )}
+            </>
+          )}
+          {/* Крок 3: Оплата */}
+          {step === 3 && (
+            <>
+              <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>{t('checkout.payment_promo')}</h2>
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.payment_method')}</label>
+                <select
+                  name="paymentMethod"
+                  value={form.paymentMethod}
+                  onChange={handleChange}
+                  style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', cursor: 'pointer' }}
+                >
+                  {features?.stripeEnabled && <option value="Card">💳 {t('checkout.payment_card')}</option>}
+                  <option value="CashOnDelivery">📦 {t('checkout.payment_cod')}</option>
+                </select>
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.promo_code')}</label>
+                <input
+                  type="text"
+                  name="promoCode"
+                  value={form.promoCode}
+                  onChange={handleChange}
+                  placeholder={t('checkout.promo_placeholder')}
+                  style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
+                />
+              </div>
+            </>
+          )}
+          {/* Крок 4: Підтвердження */}
+          {step === 4 && (
+            <>
+              <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>{t('checkout.step_confirmation')}</h2>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: '#888', fontSize: '0.85rem' }}>{t('checkout.recipient')}</div>
+                <div>{form.recipientName} · {form.recipientPhone}</div>
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: '#888', fontSize: '0.85rem' }}>{t('checkout.address')}</div>
+                <div>{t('checkout.city_prefix')} {form.city}, {form.warehouseNumber}</div>
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: '#888', fontSize: '0.85rem' }}>{t('checkout.payment_method')}</div>
+                <div>{form.paymentMethod === 'Card' ? t('checkout.payment_card') : t('checkout.payment_cod')}</div>
+              </div>
+              <div style={{ marginTop: 20, paddingTop: 15, borderTop: '1px solid #eee' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ color: '#666' }}>{t('cart.items')}</span>
+                  <span>{previewTotal.toFixed(2)} {t('common.currency')}</span>
+                </div>
+                {promoDiscount > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ color: '#28a745' }}>{t('cart.discount')}</span>
+                    <span style={{ color: '#28a745' }}>-{promoDiscount.toFixed(2)} {t('common.currency')}</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ color: '#666' }}>{t('checkout.delivery_cost')}</span>
+                  <span style={{ color: shippingCost > 0 ? '#000' : '#888' }}>{shippingCost > 0 ? `${shippingCost.toFixed(2)} ${t('common.currency')}` : t('checkout.will_be_calculated')}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 700, marginTop: 10, color: '#000' }}>
+                  <span>{t('cart.total')}</span>
+                  <span>{finalTotal.toFixed(2)} {t('common.currency')}</span>
+                </div>
+              </div>
+            </>
+          )}
+          {/* Навігація кроками */}
+          <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+            {step > 1 && (
+              <button
+                type="button"
+                onClick={handleBack}
+                style={{ padding: '14px 24px', borderRadius: 8, border: '1px solid #ddd', background: '#fff', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' }}
+              >
+                {t('checkout.back')}
+              </button>
+            )}
+            {step < TOTAL_STEPS ? (
+              <button
+                type="button"
+                onClick={handleNext}
+                style={{ flex: 1, padding: '14px', borderRadius: 8, border: 'none', background: '#007bff', color: '#fff', fontSize: '1.1rem', fontWeight: 600, cursor: 'pointer' }}
+              >
+                {t('checkout.next')}
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={submitting}
+                style={{
+                  flex: 1, padding: '14px', borderRadius: 8, border: 'none',
+                  background: submitting ? '#ccc' : '#007bff', color: '#fff',
+                  fontSize: '1.1rem', fontWeight: 600, cursor: submitting ? 'default' : 'pointer'
+                }}
+              >
+                {submitting ? t('common.submitting') : t('checkout.confirm_order')}
+              </button>
+            )}
           </div>
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.promo_code')}</label>
-            <input
-              type="text"
-              name="promoCode"
-              value={form.promoCode}
-              onChange={handleChange}
-              placeholder={t('checkout.promo_placeholder')}
-              style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={
-              submitting || 
-              (features?.novaPoshtaEnabled && (!form.cityRef || !form.warehouseRef)) ||
-              (!features?.novaPoshtaEnabled && (!form.city || !form.warehouseNumber))
-            }
-            style={{ 
-              width: '100%', 
-              marginTop: 10, 
-              padding: '14px', 
-              borderRadius: 8, 
-              border: 'none', 
-              background: 
-                (submitting || 
-                (features?.novaPoshtaEnabled && (!form.cityRef || !form.warehouseRef)) ||
-                (!features?.novaPoshtaEnabled && (!form.city || !form.warehouseNumber))) 
-                  ? '#ccc' 
-                  : '#007bff', 
-              color: '#fff', 
-              fontSize: '1.1rem', 
-              fontWeight: 600, 
-              cursor: 'pointer',
-              transition: 'background 0.2s'
-            }}
-          >
-            {submitting ? t('common.submitting') : t('checkout.place_order')}
-          </button>
         </form>
+        {/* Підсумок замовлення */}
         <div style={{ position: 'sticky', top: 20 }}>
           <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
             <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>{t('checkout.your_order')}</h2>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {(calcPreview?.items ?? cart.items).map((item) => {
+              {summaryItems.map((item) => {
                 // Визначення ціни: з calcPreview (якщо є) або з кошика
                 const itemPrice = item.finalPrice ?? item.productPrice ?? item.price ?? 0;
                 const quantity = item.quantity ?? 0;
@@ -419,6 +631,12 @@ function CheckoutPage() {
                 <span style={{ color: '#666' }}>{t('cart.items')}</span>
                 <span>{previewTotal.toFixed(2)} {t('common.currency')}</span>
               </div>
+              {promoDiscount > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ color: '#28a745' }}>{t('cart.discount')}</span>
+                  <span style={{ color: '#28a745' }}>-{promoDiscount.toFixed(2)} {t('common.currency')}</span>
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                 <span style={{ color: '#666' }}>{t('checkout.delivery_cost')}</span>
                 <span style={{ color: shippingCost > 0 ? '#000' : '#888' }}>{shippingCost > 0 ? `${shippingCost.toFixed(2)} ${t('common.currency')}` : t('checkout.will_be_calculated')}</span>
