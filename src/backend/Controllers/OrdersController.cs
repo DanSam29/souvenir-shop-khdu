@@ -25,6 +25,7 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly IRepository<OrderItem> _orderItemRepository;
         private readonly IRepository<CartItem> _cartItemRepository;
         private readonly IRepository<OrderHistory> _orderHistoryRepository;
+        private readonly IRepository<UserPromotion> _userPromotionRepository;
         private readonly ILogger<OrdersController> _logger;
         private readonly KhduSouvenirShop.API.Services.PromotionService _promotionService;
         private readonly KhduSouvenirShop.API.Services.IPaymentService _paymentService;
@@ -44,6 +45,7 @@ namespace KhduSouvenirShop.API.Controllers
             IRepository<OrderItem> orderItemRepository,
             IRepository<CartItem> cartItemRepository,
             IRepository<OrderHistory> orderHistoryRepository,
+            IRepository<UserPromotion> userPromotionRepository,
             ILogger<OrdersController> logger, 
             KhduSouvenirShop.API.Services.PromotionService promotionService,
             KhduSouvenirShop.API.Services.IPaymentService paymentService,
@@ -63,6 +65,7 @@ namespace KhduSouvenirShop.API.Controllers
             _orderItemRepository = orderItemRepository;
             _cartItemRepository = cartItemRepository;
             _orderHistoryRepository = orderHistoryRepository;
+            _userPromotionRepository = userPromotionRepository;
             _logger = logger;
             _promotionService = promotionService;
             _paymentService = paymentService;
@@ -77,7 +80,8 @@ namespace KhduSouvenirShop.API.Controllers
             _cache.Set("Products_Cache_Version", currentVersion + 1);
             _cache.Remove("Public_Products_All");
         }
-        [HttpPost("checkout")]
+        // Оформлення замовлення (POST: api/Orders)
+        [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> Checkout([FromBody] CheckoutDto dto)
@@ -99,6 +103,7 @@ namespace KhduSouvenirShop.API.Controllers
             var user = await _userRepository.GetByIdAsync(userId);
             string studentStatus = user?.StudentStatus ?? "NONE";
             var userPromotions = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
+            // Крок 1. Перевірка наявності товару на складі
             foreach (var item in cart.CartItems)
             {
                 if (item.Product.Stock < item.Quantity)
@@ -106,10 +111,53 @@ namespace KhduSouvenirShop.API.Controllers
                     return BadRequest(ApiResponse<object>.FailureResult($"Недостатньо товару '{item.Product.Name}' на складі. Доступно: {item.Product.Stock}", "BadRequest"));
                 }
             }
+            // Крок 1. Перевірка промокоду до початку транзакції
+            decimal originalSubtotal = cart.CartItems.Sum(ci => ci.Product.Price * ci.Quantity);
+            Promotion? promoCodePromo = null;
+            if (!string.IsNullOrWhiteSpace(dto.PromoCode))
+            {
+                var now = DateTime.UtcNow;
+                promoCodePromo = await _promotionRepository.Query()
+                    .FirstOrDefaultAsync(p =>
+                        p.PromoCode == dto.PromoCode &&
+                        p.IsActive &&
+                        (p.StartDate == null || p.StartDate <= now) &&
+                        (p.EndDate == null || p.EndDate >= now) &&
+                        (p.UsageLimit == null || p.CurrentUsage < p.UsageLimit));
+                if (promoCodePromo == null)
+                {
+                    return BadRequest(ApiResponse<object>.FailureResult("Промокод недійсний або протермінований", "BadRequest"));
+                }
+                if (promoCodePromo.MinOrderAmount.HasValue && originalSubtotal < promoCodePromo.MinOrderAmount.Value)
+                {
+                    return BadRequest(ApiResponse<object>.FailureResult($"Мінімальна сума замовлення для цього промокоду: {promoCodePromo.MinOrderAmount.Value} грн", "BadRequest"));
+                }
+            }
+            // Крок 1. Перевірка існування відділення Nova Poshta (м'яка деградація: за помилок API перевірку пропускаємо)
+            if (_configuration.GetValue<bool>("Features:NovaPoshtaEnabled")
+                && !string.IsNullOrWhiteSpace(dto.CityRef)
+                && !string.IsNullOrWhiteSpace(dto.WarehouseRef))
+            {
+                try
+                {
+                    var warehouses = await _novaPoshtaService.GetWarehousesAsync(dto.CityRef);
+                    if (warehouses != null)
+                    {
+                        var warehouseList = warehouses.ToList();
+                        if (warehouseList.Count > 0 && !warehouseList.Any(w => w.Ref == dto.WarehouseRef))
+                        {
+                            return BadRequest(ApiResponse<object>.FailureResult("Вказане відділення не знайдено для обраного міста", "BadRequest"));
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Не вдалося перевірити відділення Nova Poshta для CityRef={CityRef}; перевірку пропущено", dto.CityRef);
+                }
+            }
             using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
-                var originalSubtotal = cart.CartItems.Sum(ci => ci.Product.Price * ci.Quantity);
                 var totalAfterUserPromosForShipping = cart.CartItems.Sum(ci => _promotionService.GetPriceAfterPromotions(ci.Product, userPromotions) * ci.Quantity);
                 var totalWeight = cart.CartItems.Sum(ci => ci.Product.Weight * ci.Quantity);
                 decimal shippingCost = 0;
@@ -117,7 +165,11 @@ namespace KhduSouvenirShop.API.Controllers
                 {
                     shippingCost = await _novaPoshtaService.CalculateDeliveryCostAsync(dto.CityRef, totalWeight, totalAfterUserPromosForShipping);
                 }
-                var orderNumber = $"ORD-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..6]}";
+                // Крок 5. Номер замовлення у форматі KSU-{yyyyMMdd}-{000000}
+                var orderNumberPrefix = $"KSU-{DateTime.UtcNow:yyyyMMdd}-";
+                var todayOrderCount = await _orderRepository.Query()
+                    .CountAsync(o => o.OrderNumber.StartsWith(orderNumberPrefix));
+                var orderNumber = $"{orderNumberPrefix}{(todayOrderCount + 1):D6}";
                 var order = new Order
                 {
                     UserId = userId,
@@ -129,6 +181,16 @@ namespace KhduSouvenirShop.API.Controllers
                 };
                 await _orderRepository.AddAsync(order);
                 await _unitOfWork.SaveChangesAsync();
+                // Крок 8. Запис історії створення замовлення
+                await _orderHistoryRepository.AddAsync(new OrderHistory
+                {
+                    OrderId = order.OrderId,
+                    OldStatus = null,
+                    NewStatus = "Processing",
+                    ChangedByUserId = userId,
+                    Comment = "Замовлення створено",
+                    Timestamp = DateTime.UtcNow
+                });
                 var shipping = new Shipping
                 {
                     OrderId = order.OrderId,
@@ -171,49 +233,45 @@ namespace KhduSouvenirShop.API.Controllers
                 }
                 decimal totalDiscount = originalSubtotal - totalAfterUserPromos;
                 decimal finalTotal = totalAfterUserPromos;
-                if (!string.IsNullOrWhiteSpace(dto.PromoCode))
+                if (promoCodePromo != null)
                 {
-                    var now = DateTime.UtcNow;
-                    var promo = await _promotionRepository.Query()
-                        .FirstOrDefaultAsync(p =>
-                            p.PromoCode == dto.PromoCode &&
-                            p.IsActive &&
-                            (p.StartDate == null || p.StartDate <= now) &&
-                            (p.EndDate == null || p.EndDate >= now) &&
-                            (p.UsageLimit == null || p.CurrentUsage < p.UsageLimit));
-                    if (promo != null)
+                    if (promoCodePromo.Type == "PERCENTAGE")
                     {
-                        if (promo.Type == "PERCENTAGE")
+                        var percent = Math.Clamp((double)promoCodePromo.Value, 0, 100);
+                        foreach (var oi in orderItems)
                         {
-                            var percent = Math.Clamp((double)promo.Value, 0, 100);
-                            foreach (var oi in orderItems)
-                            {
-                                var perUnitDiscount = Math.Round(oi.FinalPrice * (decimal)(percent / 100.0), 2);
-                                var totalItemDiscount = perUnitDiscount * oi.Quantity;
-                                oi.DiscountAmount += totalItemDiscount;
-                                oi.FinalPrice = Math.Max(0, oi.FinalPrice - perUnitDiscount);
-                                oi.AppliedPromotionId = promo.PromotionId;
-                                totalDiscount += totalItemDiscount;
-                            }
+                            var perUnitDiscount = Math.Round(oi.FinalPrice * (decimal)(percent / 100.0), 2);
+                            var totalItemDiscount = perUnitDiscount * oi.Quantity;
+                            oi.DiscountAmount += totalItemDiscount;
+                            oi.FinalPrice = Math.Max(0, oi.FinalPrice - perUnitDiscount);
+                            oi.AppliedPromotionId = promoCodePromo.PromotionId;
+                            totalDiscount += totalItemDiscount;
                         }
-                        else if (promo.Type == "FIXED_AMOUNT")
+                    }
+                    else if (promoCodePromo.Type == "FIXED_AMOUNT")
+                    {
+                        var fixedAmount = Math.Max(0, promoCodePromo.Value);
+                        var appliedTotal = Math.Min(fixedAmount, finalTotal);
+                        foreach (var oi in orderItems)
                         {
-                            var fixedAmount = Math.Max(0, promo.Value);
-                            var appliedTotal = Math.Min(fixedAmount, finalTotal);
-                            foreach (var oi in orderItems)
-                            {
-                                var itemSubtotal = oi.FinalPrice * oi.Quantity;
-                                var share = itemSubtotal / finalTotal;
-                                var itemDiscountTotal = Math.Round(appliedTotal * share, 2);
-                                var perUnitDiscount = Math.Round(itemDiscountTotal / oi.Quantity, 2);
-                                oi.DiscountAmount += itemDiscountTotal;
-                                oi.FinalPrice = Math.Max(0, oi.FinalPrice - perUnitDiscount);
-                                oi.AppliedPromotionId = promo.PromotionId;
-                                totalDiscount += itemDiscountTotal;
-                            }
+                            var itemSubtotal = oi.FinalPrice * oi.Quantity;
+                            var share = finalTotal > 0 ? itemSubtotal / finalTotal : 0;
+                            var itemDiscountTotal = Math.Round(appliedTotal * share, 2);
+                            var perUnitDiscount = Math.Round(itemDiscountTotal / oi.Quantity, 2);
+                            oi.DiscountAmount += itemDiscountTotal;
+                            oi.FinalPrice = Math.Max(0, oi.FinalPrice - perUnitDiscount);
+                            oi.AppliedPromotionId = promoCodePromo.PromotionId;
+                            totalDiscount += itemDiscountTotal;
                         }
-                        finalTotal = Math.Max(0, finalTotal - (totalDiscount - (originalSubtotal - totalAfterUserPromos)));
-                        promo.CurrentUsage += 1;
+                    }
+                    finalTotal = Math.Max(0, finalTotal - (totalDiscount - (originalSubtotal - totalAfterUserPromos)));
+                    // Крок 11. Збільшення лічильників використання промокоду
+                    promoCodePromo.CurrentUsage += 1;
+                    var userPromotion = await _userPromotionRepository.Query()
+                        .FirstOrDefaultAsync(up => up.UserId == userId && up.PromotionId == promoCodePromo.PromotionId);
+                    if (userPromotion != null)
+                    {
+                        userPromotion.UsedCount += 1;
                     }
                 }
                 finalTotal = Math.Max(0, orderItems.Sum(oi => oi.FinalPrice * oi.Quantity));

@@ -225,7 +225,7 @@
 - Автоматичне видалення позиції при quantity=0
 - Валідація: quantity > 0, товар існує, stock достатній (warehouse available)
 
-4.2. Оформлення замовлення (OrdersController)
+4.2. Оформлення замовлення (OrdersController) ✅
 - POST /api/orders - транзакційне створення замовлення:
   1. Валідувати кошик (не порожній, stock доступний, промокод валідний)
   2. Почати транзакцію (DbContext.Database.BeginTransactionAsync)

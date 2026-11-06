@@ -122,7 +122,7 @@ export const cartAPI = {
 };
 // API функції для замовлень
 export const ordersAPI = {
-  checkout: (payload) => api.post('/Orders/checkout', payload),
+  checkout: (payload) => api.post('/Orders', payload),
   calculate: (payload) => api.post('/Orders/calculate', payload),
   verifyPayment: (sessionId) => api.get(`/Orders/verify-payment?sessionId=${sessionId}`),
   getOrders: () => api.get('/Orders/my'),
