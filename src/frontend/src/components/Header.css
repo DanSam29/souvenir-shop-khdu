@@ -9,12 +9,13 @@
 }
 
 .header .container {
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 3rem;
 }
 
 .logo {
@@ -77,6 +78,7 @@
   border-radius: 8px;
   transition: all 0.3s;
   position: relative;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
