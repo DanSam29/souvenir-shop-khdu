@@ -7,6 +7,7 @@ namespace KhduSouvenirShop.API.Services
     public interface IEmailService
     {
         Task SendOrderConfirmationAsync(string email, string orderNumber, string lang = "ua");
+        Task SendOrderCancellationAsync(string email, string orderNumber, string? reason = null, string lang = "ua");
         Task SendPaymentConfirmationAsync(string email, string orderNumber, decimal amount, string lang = "ua");
         Task SendStudentVerificationEmailAsync(string email, string status, string lang = "ua");
         Task SendPasswordResetEmailAsync(string email, string resetToken, string lang = "ua");
@@ -26,6 +27,17 @@ namespace KhduSouvenirShop.API.Services
             string body = lang == "en" 
                 ? $"<h1>Thank you for your order!</h1><p>Your order number: <b>{orderNumber}</b></p>"
                 : $"<h1>Дякуємо за ваше замовлення!</h1><p>Номер вашого замовлення: <b>{orderNumber}</b></p>";
+            await SendEmailAsync(email, subject, body);
+        }
+        public async Task SendOrderCancellationAsync(string email, string orderNumber, string? reason = null, string lang = "ua")
+        {
+            string subject = lang == "en" ? "Order Cancelled" : "Замовлення скасовано";
+            string reasonText = string.IsNullOrWhiteSpace(reason)
+                ? (lang == "en" ? "not specified" : "не вказана")
+                : reason!;
+            string body = lang == "en"
+                ? $"<h1>Your order has been cancelled</h1><p>Order number: <b>{orderNumber}</b></p><p>Reason: {reasonText}</p>"
+                : $"<h1>Ваше замовлення скасовано</h1><p>Номер замовлення: <b>{orderNumber}</b></p><p>Причина: {reasonText}</p>";
             await SendEmailAsync(email, subject, body);
         }
         public async Task SendPaymentConfirmationAsync(string email, string orderNumber, decimal amount, string lang = "ua")

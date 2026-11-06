@@ -132,7 +132,7 @@ export const ordersAPI = {
   // Методи адміністратора
   getAll: (params) => api.get('/Orders/all', { params }),
   updateStatus: (id, data) => api.patch(`/Orders/${id}/status`, data),
-  cancel: (id, reason) => api.post(`/Orders/${id}/cancel`, reason),
+  cancel: (id, reason) => api.post(`/Orders/${id}/cancel`, { reason }),
 };
 // API функції для користувачів (адмін)
 export const adminUsersAPI = {

@@ -667,26 +667,77 @@ namespace KhduSouvenirShop.API.Controllers
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(new { orderId = order.OrderId, status = order.Status }, "Статус замовлення оновлено"));
         }
+        // Скасування замовлення (POST: api/Orders/{id}/cancel)
+        // Доступ: Customer - лише власне замовлення у статусі Processing;
+        //         Manager/Administrator/SuperAdmin - будь-яке замовлення до статусу Delivered.
         [HttpPost("{id}/cancel")]
-        [Authorize(Roles = "Administrator,Manager")]
-        public async Task<ActionResult> CancelOrder(int id, [FromBody] string? reason)
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> CancelOrder(int id, [FromBody] CancelOrderDto? dto)
         {
-            // Перевірка, чи замовлення взагалі існує
-            var order = await _orderRepository.GetByIdAsync(id);
-            if (order == null) return NotFound(ApiResponse<object>.FailureResult("Замовлення не знайдено", "NotFound"));
-            if (order.Status == "Cancelled") return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення вже скасоване"));
-            // Спроба зробити refund через Stripe, якщо оплата Completed
-            var refundResult = await _paymentService.RefundPaymentAsync(id, reason);
-            if (refundResult)
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
             {
-                InvalidateCache();
-                return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення скасовано, кошти повернуто"));
+                return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-            // Інакше - скасування замовлення та повернення товару (готовий метод з PaymentService)
-            var result = await _paymentService.CancelOrderAndRestoreStock(id, reason ?? "Скасовано адміністратором");
-            if (!result)
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            bool isAdmin = userRole == "Administrator" || userRole == "Manager" || userRole == "SuperAdmin";
+            var order = await _orderRepository.Query()
+                .Include(o => o.Payment)
+                .FirstOrDefaultAsync(o => o.OrderId == id);
+            if (order == null)
             {
-                return StatusCode(500, ApiResponse<object>.FailureResult("Не вдалося скасувати замовлення", "InternalServerError"));
+                return NotFound(ApiResponse<object>.FailureResult("Замовлення не знайдено", "NotFound"));
+            }
+            // Перевірка прав доступу: адміністратор або власник замовлення
+            bool isOwner = order.UserId == userId;
+            if (!isAdmin && !isOwner)
+            {
+                return Forbid();
+            }
+            // Крок 1. Перевірка поточного статусу
+            if (order.Status == "Cancelled")
+            {
+                return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення вже скасоване"));
+            }
+            if (order.Status == "Delivered")
+            {
+                return BadRequest(ApiResponse<object>.FailureResult("Доставлене замовлення не можна скасувати", "BadRequest"));
+            }
+            // Customer може скасувати лише власне замовлення у статусі Processing
+            if (!isAdmin && order.Status != "Processing")
+            {
+                return BadRequest(ApiResponse<object>.FailureResult("Скасувати замовлення можна лише у статусі 'Processing'. Зверніться до менеджера", "BadRequest"));
+            }
+            var cancelReason = string.IsNullOrWhiteSpace(dto?.Reason)
+                ? (isAdmin ? "Скасовано адміністратором" : "Скасовано клієнтом")
+                : dto!.Reason!;
+            // Крок 2. Якщо оплата завершена (Completed) - спроба повернути кошти через Stripe,
+            // інакше (або якщо refund недоступний) - скасування з поверненням товару на склад
+            bool cancelled;
+            if (order.Payment != null && order.Payment.Status == "Completed")
+            {
+                cancelled = await _paymentService.RefundPaymentAsync(id, cancelReason);
+                if (!cancelled)
+                {
+                    cancelled = await _paymentService.CancelOrderAndRestoreStock(id, cancelReason);
+                }
+            }
+            else
+            {
+                cancelled = await _paymentService.CancelOrderAndRestoreStock(id, cancelReason);
+            }
+            if (!cancelled)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<object>.FailureResult("Не вдалося скасувати замовлення", "InternalServerError"));
+            }
+            // Крок 8. Відправка листа про скасування замовлення
+            var user = await _userRepository.GetByIdAsync(order.UserId);
+            if (user != null)
+            {
+                await _emailService.SendOrderCancellationAsync(user.Email, order.OrderNumber, cancelReason, "ua");
             }
             InvalidateCache();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення скасовано"));
@@ -713,5 +764,9 @@ namespace KhduSouvenirShop.API.Controllers
         public string Status { get; set; } = string.Empty;
         public string? TrackingNumber { get; set; }
         public string? Comment { get; set; }
+    }
+    public class CancelOrderDto
+    {
+        public string? Reason { get; set; }
     }
 }
