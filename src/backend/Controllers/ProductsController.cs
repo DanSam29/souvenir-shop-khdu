@@ -90,7 +90,7 @@ namespace KhduSouvenirShop.API.Controllers
                 var items = products.Select(p => BuildProductDto(p, promos)).ToList();
 
                 paged = new PagedResponse<object>(items, totalItems, page, pageSize);
-                _cache.Set(cacheKey, paged, TimeSpan.FromMinutes(5));
+                _cache.Set(cacheKey, paged, TimeSpan.FromMinutes(3));
             }
             return Ok(ApiResponse<PagedResponse<object>>.SuccessResult(paged!));
         }
@@ -154,7 +154,7 @@ namespace KhduSouvenirShop.API.Controllers
                                        ?? r.Images.Select(i => i.ImageURL).FirstOrDefault()
                     }).ToList()
                 };
-                _cache.Set(cacheKey, dto, TimeSpan.FromMinutes(5));
+                _cache.Set(cacheKey, dto, TimeSpan.FromMinutes(2));
             }
             if (dto == null)
             {
@@ -190,7 +190,7 @@ namespace KhduSouvenirShop.API.Controllers
                     .ToListAsync();
                 var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
                 dtoList = products.Select(p => BuildProductDto(p, promos)).ToList();
-                _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(2));
+                _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(1));
             }
             return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
         }
@@ -218,7 +218,7 @@ namespace KhduSouvenirShop.API.Controllers
                     .ToListAsync();
                 var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
                 dtoList = products.Select(p => BuildProductDto(p, promos)).ToList();
-                _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(5));
+                _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(3));
             }
             return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
         }
@@ -244,7 +244,7 @@ namespace KhduSouvenirShop.API.Controllers
                     .ToListAsync();
                 var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
                 dtoList = products.Select(p => BuildProductDto(p, promos)).ToList();
-                _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(5));
+                _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(3));
             }
             return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
         }
@@ -266,7 +266,7 @@ namespace KhduSouvenirShop.API.Controllers
                     .ToListAsync();
                 var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
                 dtoList = products.Select(p => BuildProductDto(p, promos)).ToList();
-                _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(5));
+                _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(3));
             }
             return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
         }
