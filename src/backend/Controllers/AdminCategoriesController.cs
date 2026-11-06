@@ -12,7 +12,7 @@ namespace KhduSouvenirShop.API.Controllers
 {
     [Route("api/admin/categories")]
     [ApiController]
-    [Authorize(Roles = "Manager,Administrator")]
+    [Authorize(Roles = "Manager,Administrator,SuperAdmin")]
     public class AdminCategoriesController(ICategoryRepository categoryRepository, ILogger<AdminCategoriesController> logger, IMemoryCache cache) : ControllerBase
     {
         private readonly ICategoryRepository _categoryRepository = categoryRepository;
@@ -211,7 +211,7 @@ namespace KhduSouvenirShop.API.Controllers
         }
         [HttpDelete("{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> DeleteCategory(int id)
         {
@@ -225,16 +225,41 @@ namespace KhduSouvenirShop.API.Controllers
             }
             if (category.SubCategories.Count > 0)
             {
-                return BadRequest(ApiResponse<object>.FailureResult("Спочатку видаліть підкатегорії", "BadRequest"));
+                return Conflict(ApiResponse<object>.FailureResult("Спочатку видаліть підкатегорії", "Conflict"));
             }
             if (category.Products.Count > 0)
             {
-                return BadRequest(ApiResponse<object>.FailureResult("Категорія містить товари. Видаліть або перемістіть товари", "BadRequest"));
+                return Conflict(ApiResponse<object>.FailureResult("Категорія містить товари. Видаліть або перемістіть товари", "Conflict"));
             }
             _categoryRepository.Remove(category);
             await _categoryRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Категорію видалено"));
+        }
+        [HttpPost("reorder")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> ReorderCategories([FromBody] List<CategoryReorderDto> items)
+        {
+            if (items == null || items.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResult("Список для зміни порядку порожній", "BadRequest"));
+            }
+            var ids = items.Select(i => i.CategoryId).Distinct().ToList();
+            var categories = await _categoryRepository.Query()
+                .Where(c => ids.Contains(c.CategoryId))
+                .ToListAsync();
+            var orderMap = items.GroupBy(i => i.CategoryId).ToDictionary(g => g.Key, g => g.Last().DisplayOrder);
+            foreach (var category in categories)
+            {
+                if (orderMap.TryGetValue(category.CategoryId, out var order))
+                {
+                    category.DisplayOrder = order;
+                }
+            }
+            await _categoryRepository.SaveChangesAsync();
+            InvalidateCache();
+            return Ok(ApiResponse<object>.SuccessResult(new { updated = categories.Count }, "Порядок категорій оновлено"));
         }
     }
     public class AdminCategoryDto
@@ -243,5 +268,10 @@ namespace KhduSouvenirShop.API.Controllers
         public int? ParentCategoryId { get; set; }
         public string? Description { get; set; }
         public int DisplayOrder { get; set; } = 0;
+    }
+    public class CategoryReorderDto
+    {
+        public int CategoryId { get; set; }
+        public int DisplayOrder { get; set; }
     }
 }

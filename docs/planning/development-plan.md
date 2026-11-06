@@ -159,7 +159,7 @@
   - GET /api/products/new - новинки (останні додані)
   - Валідація: існування товару, обробка soft-deleted
 
-3.3. Admin: Categories
+3.3. Admin: Categories ✅
 - AdminCategoriesController (Authorize(Roles = "Manager,Administrator,SuperAdmin")):
   - CRUD для категорій
   - POST /api/admin/categories - створити (з перевіркою ParentCategoryId існування)
