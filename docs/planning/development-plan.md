@@ -203,7 +203,7 @@
 - Пошукова форма у Header з автодоповненням
 - Адаптивний дизайн: grid 4/3/2/1 колонка для desktop/tablet/mobile
 
-3.8. Frontend - Адмін каталог
+3.8. Frontend - Адмін каталог ✅
 - CategoriesAdmin: дерево категорій, drag-and-drop reorder, create/edit/delete модалки
 - ProductsAdmin: таблиця товарів, фільтри, bulk delete, create/edit product wizard, керування зображеннями (завантаження, drag-to-sort, призначення головного)
 - Перевірка ролей перед показом функціоналу

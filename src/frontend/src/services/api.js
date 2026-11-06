@@ -79,6 +79,10 @@ export const adminCategoriesAPI = {
   create: (data) => api.post('/admin/categories', data),
   update: (id, data) => api.put(`/admin/categories/${id}`, data),
   delete: (id) => api.delete(`/admin/categories/${id}`),
+  // POST зміна порядку відображення (drag-and-drop)
+  reorder: (items) => api.post('/admin/categories/reorder', items),
+  // POST масове видалення
+  bulkDelete: (ids) => api.post('/admin/categories/bulk-delete', ids),
 };
 // API функції для Users
 export const usersAPI = {
@@ -174,6 +178,8 @@ export const adminProductsAPI = {
   create: (data) => api.post('/admin/products', data),
   update: (id, data) => api.put(`/admin/products/${id}`, data),
   delete: (id) => api.delete(`/admin/products/${id}`),
+  // POST масове видалення
+  bulkDelete: (ids) => api.post('/admin/products/bulk-delete', ids),
   // POST завантаження зображення (multipart)
   uploadImage: (productId, formData, isPrimary = false) => api.post(`/admin/products/${productId}/images`, formData, {
     params: { isPrimary },
