@@ -26,7 +26,21 @@
     "remove_error": "Помилка видалення",
     "clear_error": "Помилка очищення",
     "submitting": "Оформлення...",
-    "addresses": "Адреси"
+    "addresses": "Адреси",
+    "sort": "Сортування",
+    "sort_newest": "Новинки",
+    "sort_price_asc": "Ціна: від дешевих",
+    "sort_price_desc": "Ціна: від дорогих",
+    "sort_name_asc": "Назва: А-Я",
+    "sort_name_desc": "Назва: Я-А",
+    "availability": "Наявність",
+    "in_stock_only": "Лише в наявності",
+    "prev": "Попередня",
+    "next": "Наступна",
+    "page": "Сторінка",
+    "found": "Знайдено",
+    "no_results": "Товарів не знайдено",
+    "view_all": "Дивитись усі"
   },
   "nav": {
     "home": "Головна",
@@ -37,11 +51,20 @@
     "logout": "Вийти",
     "admin": "Адмін-панель"
   },
+  "header": {
+    "search_placeholder": "Пошук товарів..."
+  },
   "home": {
     "title": "Вітаємо в KSU Souvenir Shop",
     "subtitle": "Найкращі сувеніри Херсонського Державного Університету",
     "categories": "Категорії",
-    "all_products": "Усі товари"
+    "all_products": "Усі товари",
+    "featured": "Рекомендовані товари",
+    "new_arrivals": "Новинки",
+    "shop_now": "До каталогу",
+    "hero_feature_1": "Офіційна продукція ХДУ",
+    "hero_feature_2": "Доставка по Україні",
+    "hero_feature_3": "Знижки для студентів"
   },
   "product": {
     "add_to_cart": "Додати у кошик",
@@ -59,7 +82,10 @@
     "pcs": "шт",
     "specs": "Характеристики",
     "kg": "кг",
-    "date_added": "Дата додавання"
+    "date_added": "Дата додавання",
+    "quantity": "Кількість",
+    "related": "Схожі товари",
+    "gallery": "Галерея"
   },
   "cart": {
     "title": "Ваш кошик",

@@ -14,6 +14,8 @@ function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [adding, setAdding] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [quantity, setQuantity] = useState(1);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const isEn = i18n.language === 'en';
@@ -25,6 +27,8 @@ function ProductPage() {
       setLoading(true);
       const response = await productsAPI.getById(id);
       setProduct(response.data);
+      setSelectedImage(0);
+      setQuantity(1);
       setError(null);
     } catch (err) {
       console.error('Помилка завантаження товару:', err);
@@ -41,7 +45,7 @@ function ProductPage() {
     }
     try {
       setAdding(true);
-      await cartAPI.addToCart(product.productId, 1);
+      await cartAPI.addToCart(product.productId, quantity);
       alert(t('common.added_to_cart') || 'Товар додано до кошика!');
       window.location.reload();
     } catch (err) {
@@ -72,9 +76,13 @@ function ProductPage() {
       </div>
     );
   }
-  const imageUrl = product.images && product.images.length > 0 
-    ? buildImageUrl(product.images[0].imageURL)
+  const images = product.images || [];
+  const activeImage = images[selectedImage];
+  const imageUrl = activeImage
+    ? buildImageUrl(activeImage.imageURL)
     : 'https://via.placeholder.com/500x500?text=No+Image';
+  const decreaseQuantity = () => setQuantity(q => Math.max(1, q - 1));
+  const increaseQuantity = () => setQuantity(q => Math.min(product.stock || 1, q + 1));
   return (
     <div className="product-page">
       <Link to={from === 'cart' ? '/cart' : '/'} className="back-link">
@@ -82,7 +90,21 @@ function ProductPage() {
       </Link>
       <div className="product-details">
         <div className="product-images">
-          <img src={imageUrl} alt={displayName} />
+          <img src={imageUrl} alt={displayName} className="main-image" />
+          {images.length > 1 && (
+            <div className="image-thumbnails">
+              {images.map((img, index) => (
+                <button
+                  key={img.imageId}
+                  type="button"
+                  className={`thumbnail ${index === selectedImage ? 'active' : ''}`}
+                  onClick={() => setSelectedImage(index)}
+                >
+                  <img src={buildImageUrl(img.imageURL)} alt={`${displayName} ${index + 1}`} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="product-info-detailed">
           <h1>{displayName}</h1>
@@ -119,8 +141,18 @@ function ProductPage() {
               </tbody>
             </table>
           </div>
-          <button 
-            className="add-to-cart-btn" 
+          {product.stock > 0 && (
+            <div className="quantity-selector">
+              <span className="quantity-label">{t('product.quantity')}:</span>
+              <div className="quantity-controls">
+                <button type="button" onClick={decreaseQuantity} disabled={quantity <= 1}>−</button>
+                <span className="quantity-value">{quantity}</span>
+                <button type="button" onClick={increaseQuantity} disabled={quantity >= product.stock}>+</button>
+              </div>
+            </div>
+          )}
+          <button
+            className="add-to-cart-btn"
             disabled={product.stock === 0 || adding}
             onClick={handleAddToCart}
           >
@@ -128,6 +160,42 @@ function ProductPage() {
           </button>
         </div>
       </div>
+
+      {/* Схожі товари */}
+      {product.relatedProducts && product.relatedProducts.length > 0 && (
+        <section className="related-products">
+          <h2>{t('product.related')}</h2>
+          <div className="product-grid">
+            {product.relatedProducts.map(rel => {
+              const relName = (isEn && rel.nameEn) ? rel.nameEn : rel.name;
+              return (
+                <Link key={rel.productId} to={`/product/${rel.productId}`} className="related-card">
+                  <div className="related-image">
+                    {rel.primaryImage ? (
+                      <img src={buildImageUrl(rel.primaryImage)} alt={relName} />
+                    ) : (
+                      <div className="no-image">{t('product.no_image')}</div>
+                    )}
+                  </div>
+                  <div className="related-info">
+                    <h3>{relName}</h3>
+                    <div className="related-price">
+                      {rel.originalPrice && rel.originalPrice !== rel.price ? (
+                        <>
+                          <span className="price-original">{rel.originalPrice.toFixed(2)} {t('common.currency')}</span>
+                          <span className="price">{rel.price.toFixed(2)} {t('common.currency')}</span>
+                        </>
+                      ) : (
+                        <span className="price">{rel.price.toFixed(2)} {t('common.currency')}</span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

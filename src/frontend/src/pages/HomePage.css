@@ -115,3 +115,90 @@
     align-items: center;
   }
 }
+
+/* Секції головної сторінки */
+.home-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 20px 0;
+}
+
+.home-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.home-section-header h2 {
+  margin: 0;
+  color: #1a1a1a;
+  font-size: 1.8rem;
+}
+
+.home-section-link {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.home-section-link:hover {
+  text-decoration: underline;
+}
+
+/* Плитки категорій */
+.category-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+}
+
+.category-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.5rem 1.25rem;
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.category-tile:hover {
+  transform: translateY(-4px);
+  border-color: #007bff;
+  box-shadow: 0 6px 16px rgba(0, 86, 179, 0.15);
+}
+
+.category-tile-name {
+  color: #1a1a1a;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.category-tile-sub {
+  color: #6c757d;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 1200px) {
+  .category-tiles {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .category-tiles {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .category-tiles {
+    grid-template-columns: 1fr;
+  }
+}

@@ -30,6 +30,48 @@
   border-radius: 8px;
 }
 
+/* Галерея зображень */
+.main-image {
+  width: 100%;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.image-thumbnails {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.thumbnail {
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+.thumbnail:hover {
+  border-color: #007bff;
+}
+
+.thumbnail.active {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
 .product-info-detailed h1 {
   margin: 0 0 1rem 0;
   color: #333;
@@ -134,6 +176,110 @@
 .add-to-cart-btn:disabled {
   background: #6c757d;
   cursor: not-allowed;
+}
+
+/* Селектор кількості */
+.quantity-selector {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.quantity-label {
+  font-weight: 600;
+  color: #495057;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.quantity-controls button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: #f8f9fa;
+  color: #1a1a1a;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.quantity-controls button:hover:not(:disabled) {
+  background: #e9ecef;
+}
+
+.quantity-controls button:disabled {
+  color: #adb5bd;
+  cursor: not-allowed;
+}
+
+.quantity-value {
+  min-width: 50px;
+  text-align: center;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* Схожі товари */
+.related-products {
+  margin-top: 3rem;
+}
+
+.related-products h2 {
+  margin: 0 0 1.5rem 0;
+  color: #1a1a1a;
+  font-size: 1.6rem;
+}
+
+.related-card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.related-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 86, 179, 0.15);
+}
+
+.related-image {
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #f8f9fa;
+}
+
+.related-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.related-info {
+  padding: 0.9rem 1rem 1.1rem;
+}
+
+.related-info h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #1a1a1a;
+}
+
+.related-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
 }
 
 @media (max-width: 768px) {

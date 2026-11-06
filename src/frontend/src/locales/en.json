@@ -26,7 +26,21 @@
     "remove_error": "Removal error",
     "clear_error": "Clear error",
     "submitting": "Submitting...",
-    "addresses": "Addresses"
+    "addresses": "Addresses",
+    "sort": "Sorting",
+    "sort_newest": "Newest",
+    "sort_price_asc": "Price: low to high",
+    "sort_price_desc": "Price: high to low",
+    "sort_name_asc": "Name: A-Z",
+    "sort_name_desc": "Name: Z-A",
+    "availability": "Availability",
+    "in_stock_only": "In stock only",
+    "prev": "Previous",
+    "next": "Next",
+    "page": "Page",
+    "found": "Found",
+    "no_results": "No products found",
+    "view_all": "View all"
   },
   "nav": {
     "home": "Home",
@@ -37,11 +51,20 @@
     "logout": "Logout",
     "admin": "Admin Panel"
   },
+  "header": {
+    "search_placeholder": "Search products..."
+  },
   "home": {
     "title": "Welcome to KSU Souvenir Shop",
     "subtitle": "The best souvenirs of Kherson State University",
     "categories": "Categories",
-    "all_products": "All Products"
+    "all_products": "All Products",
+    "featured": "Featured Products",
+    "new_arrivals": "New Arrivals",
+    "shop_now": "Shop now",
+    "hero_feature_1": "Official KSU products",
+    "hero_feature_2": "Delivery across Ukraine",
+    "hero_feature_3": "Student discounts"
   },
   "product": {
     "add_to_cart": "Add to Cart",
@@ -59,7 +82,10 @@
     "pcs": "pcs",
     "specs": "Specifications",
     "kg": "kg",
-    "date_added": "Date Added"
+    "date_added": "Date Added",
+    "quantity": "Quantity",
+    "related": "Related Products",
+    "gallery": "Gallery"
   },
   "cart": {
     "title": "Your Cart",
