@@ -110,13 +110,15 @@ export const cartAPI = {
   // GET отримати кошик
   getCart: () => api.get('/Cart'),
   // POST додати товар до кошика
-  addToCart: (productId, quantity = 1) => api.post('/Cart/add', { productId, quantity }),
-  // PUT оновити кількість товару
-  updateQuantity: (cartItemId, quantity) => api.put(`/Cart/update/${cartItemId}`, { quantity }),
+  addToCart: (productId, quantity = 1) => api.post('/Cart/items', { productId, quantity }),
+  // POST масове додавання товарів до кошика
+  addBulk: (items) => api.post('/Cart/items/bulk', { items }),
+  // PUT оновити кількість товару (quantity = 0 видаляє позицію)
+  updateQuantity: (cartItemId, quantity) => api.put(`/Cart/items/${cartItemId}`, { quantity }),
   // DELETE видалити товар з кошика
-  removeFromCart: (cartItemId) => api.delete(`/Cart/remove/${cartItemId}`),
+  removeFromCart: (cartItemId) => api.delete(`/Cart/items/${cartItemId}`),
   // DELETE очистити кошик
-  clearCart: () => api.delete('/Cart/clear'),
+  clearCart: () => api.delete('/Cart'),
 };
 // API функції для замовлень
 export const ordersAPI = {

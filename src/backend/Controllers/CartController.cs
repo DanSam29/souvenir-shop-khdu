@@ -87,8 +87,8 @@ namespace KhduSouvenirShop.API.Controllers
             };
             return Ok(ApiResponse<object>.SuccessResult(result));
         }
-        // Додавання товару до кошика (POST: api/Cart/add)
-        [HttpPost("add")]
+        // Додавання товару до кошика (POST: api/Cart/items)
+        [HttpPost("items")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -145,8 +145,8 @@ namespace KhduSouvenirShop.API.Controllers
             _logger.LogInformation("Товар {ProductId} додано до кошика користувача {UserId}", dto.ProductId, userId);
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Товар додано до кошика"));
         }
-        // Оновлення кількості товару (PUT: api/Cart/update/{cartItemId})
-        [HttpPut("update/{cartItemId}")]
+        // Оновлення кількості товару (PUT: api/Cart/items/{cartItemId})
+        [HttpPut("items/{cartItemId}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> UpdateQuantity(int cartItemId, [FromBody] UpdateQuantityDto dto)
@@ -164,9 +164,17 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено у кошику", "NotFound"));
             }
-            if (dto.Quantity <= 0)
+            if (dto.Quantity < 0)
             {
-                return BadRequest(ApiResponse<object>.FailureResult("Кількість має бути більше 0", "BadRequest"));
+                return BadRequest(ApiResponse<object>.FailureResult("Кількість не може бути від'ємною", "BadRequest"));
+            }
+            // Автоматичне видалення позиції при quantity = 0
+            if (dto.Quantity == 0)
+            {
+                _cartItemRepository.Remove(cartItem);
+                await _cartItemRepository.SaveChangesAsync();
+                _logger.LogInformation("Позицію {CartItemId} видалено з кошика (кількість = 0)", cartItemId);
+                return Ok(ApiResponse<object>.SuccessResult(new { }, "Товар видалено з кошика"));
             }
             if (cartItem.Product.Stock < dto.Quantity)
             {
@@ -176,8 +184,8 @@ namespace KhduSouvenirShop.API.Controllers
             await _cartItemRepository.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Кількість оновлено"));
         }
-        // Видалення товару з кошика (DELETE: api/Cart/remove/{cartItemId})
-        [HttpDelete("remove/{cartItemId}")]
+        // Видалення товару з кошика (DELETE: api/Cart/items/{cartItemId})
+        [HttpDelete("items/{cartItemId}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> RemoveFromCart(int cartItemId)
@@ -199,8 +207,8 @@ namespace KhduSouvenirShop.API.Controllers
             await _cartItemRepository.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Товар видалено з кошика"));
         }
-        // Очищення кошика (DELETE: api/Cart/clear)
-        [HttpDelete("clear")]
+        // Очищення кошика (DELETE: api/Cart)
+        [HttpDelete]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> ClearCart()
@@ -221,6 +229,75 @@ namespace KhduSouvenirShop.API.Controllers
             await _cartItemRepository.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Кошик очищено"));
         }
+        // Масове додавання товарів до кошика (POST: api/Cart/items/bulk)
+        [HttpPost("items/bulk")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> AddToCartBulk([FromBody] BulkAddToCartDto dto)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            }
+            if (dto?.Items == null || dto.Items.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResult("Список товарів порожній", "BadRequest"));
+            }
+            var cart = await _cartRepository.Query()
+                .Include(c => c.CartItems)
+                .FirstOrDefaultAsync(c => c.UserId == userId);
+            if (cart == null)
+            {
+                cart = new Cart { UserId = userId, CreatedAt = DateTime.UtcNow };
+                await _cartRepository.AddAsync(cart);
+                await _cartRepository.SaveChangesAsync();
+            }
+            var added = 0;
+            var errors = new List<object>();
+            foreach (var item in dto.Items)
+            {
+                if (item.Quantity <= 0)
+                {
+                    errors.Add(new { item.ProductId, reason = "Кількість має бути більше 0" });
+                    continue;
+                }
+                var product = await _productRepository.GetByIdAsync(item.ProductId);
+                if (product == null)
+                {
+                    errors.Add(new { item.ProductId, reason = "Товар не знайдено" });
+                    continue;
+                }
+                var existingItem = cart.CartItems.FirstOrDefault(ci => ci.ProductId == item.ProductId);
+                var currentQuantity = existingItem?.Quantity ?? 0;
+                var newQuantity = currentQuantity + item.Quantity;
+                if (newQuantity > product.Stock)
+                {
+                    errors.Add(new { item.ProductId, reason = $"Недостатньо товару на складі. Доступно: {product.Stock}" });
+                    continue;
+                }
+                if (existingItem != null)
+                {
+                    existingItem.Quantity = newQuantity;
+                }
+                else
+                {
+                    var cartItem = new CartItem
+                    {
+                        CartId = cart.CartId,
+                        ProductId = item.ProductId,
+                        Quantity = item.Quantity,
+                        AddedAt = DateTime.UtcNow
+                    };
+                    await _cartItemRepository.AddAsync(cartItem);
+                    cart.CartItems.Add(cartItem);
+                }
+                added++;
+            }
+            await _cartItemRepository.SaveChangesAsync();
+            _logger.LogInformation("Масове додавання до кошика користувача {UserId}: додано {Added}, помилок {Errors}", userId, added, errors.Count);
+            return Ok(ApiResponse<object>.SuccessResult(new { added, failed = errors.Count, errors }, "Масове додавання завершено"));
+        }
     }
     public class AddToCartDto
     {
@@ -230,5 +307,9 @@ namespace KhduSouvenirShop.API.Controllers
     public class UpdateQuantityDto
     {
         public int Quantity { get; set; }
+    }
+    public class BulkAddToCartDto
+    {
+        public List<AddToCartDto> Items { get; set; } = new();
     }
 }
