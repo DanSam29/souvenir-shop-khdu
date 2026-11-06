@@ -156,7 +156,8 @@ namespace KhduSouvenirShop.API.DTOs.Mappings
             CreateMap<Order, AdminOrderListItemResponse>()
                 .ForMember(d => d.UserName, o => o.MapFrom(s => s.User != null
                     ? s.User.FirstName + " " + s.User.LastName
-                    : string.Empty));
+                    : string.Empty))
+                .ForMember(d => d.UserEmail, o => o.MapFrom(s => s.User != null ? s.User.Email : string.Empty));
             CreateMap<OrderItem, OrderItemResponse>()
                 .ForMember(d => d.ProductName, o => o.MapFrom(s => s.Product != null ? s.Product.Name : string.Empty))
                 .ForMember(d => d.ProductNameEn, o => o.MapFrom(s => s.Product != null ? s.Product.NameEn : null));

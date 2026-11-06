@@ -130,8 +130,9 @@ export const ordersAPI = {
   // Деталі власного замовлення з історією зміни статусів
   getMyOrder: (id) => api.get(`/Users/me/orders/${id}`),
   // Методи адміністратора
-  getAll: (params) => api.get('/Orders/all', { params }),
-  updateStatus: (id, data) => api.patch(`/Orders/${id}/status`, data),
+  getAll: (params) => api.get('/admin/orders', { params }),
+  getAdminOrder: (id) => api.get(`/admin/orders/${id}`),
+  updateStatus: (id, data) => api.put(`/admin/orders/${id}/status`, data),
   cancel: (id, reason) => api.post(`/Orders/${id}/cancel`, { reason }),
 };
 // API функції для користувачів (адмін)

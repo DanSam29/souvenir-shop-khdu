@@ -261,7 +261,7 @@
   7. Payment.Status = Refunded / Failed
   8. Відправити email про скасування
 
-4.4. Адмін: Зміна статусів замовлення
+4.4. Адмін: Зміна статусів замовлення ✅
 - PUT /api/admin/orders/{id}/status (Authorize: Manager, Administrator, SuperAdmin):
   - Processing → Shipped: обов'язкове поле trackingNumber (ТТН Nova Poshta), запис у Shipping.trackingNumber, OrderHistory.comment = ТТН
   - Shipped → Delivered: якщо Payment.Method=COD → Payment.Status=Completed, додати OrderHistory

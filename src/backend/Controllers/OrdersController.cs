@@ -491,30 +491,6 @@ namespace KhduSouvenirShop.API.Controllers
                 return BadRequest(ApiResponse<object>.FailureResult(ex.Message));
             }
         }
-        [HttpGet("admin")]
-        [Authorize(Roles = "Administrator,Manager")] // Змінено Admin → Administrator
-        public async Task<ActionResult> GetAllOrders([FromQuery] string? status)
-        {
-            var query = _orderRepository.Query()
-                .Include(o => o.User)
-                .AsQueryable();
-
-            if (!string.IsNullOrEmpty(status))
-            {
-                query = query.Where(o => o.Status == status);
-            }
-            var orders = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
-            var result = orders.Select(o => new {
-                o.OrderId,
-                o.OrderNumber,
-                o.Status,
-                o.TotalAmount,
-                o.CreatedAt,
-                userName = $"{o.User.FirstName} {o.User.LastName}",
-                userEmail = o.User.Email
-            });
-            return Ok(ApiResponse<object>.SuccessResult(result));
-        }
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -575,97 +551,6 @@ namespace KhduSouvenirShop.API.Controllers
                 })
             };
             return Ok(ApiResponse<object>.SuccessResult(result));
-        }
-        // Методи управління замовленнями для адміністраторів (доступ до всіх замовлень та зміна статусів)
-        [HttpGet("all")]
-        [Authorize(Roles = "Administrator,Manager")]
-        [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
-        public async Task<ActionResult> GetAllOrders(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10,
-            [FromQuery] string? status = null)
-        {
-            var query = _orderRepository.Query()
-                .Include(o => o.User)
-                .AsQueryable();
-            if (!string.IsNullOrEmpty(status))
-                query = query.Where(o => o.Status == status);
-            var count = await query.CountAsync();
-            var items = await query
-                .OrderByDescending(o => o.CreatedAt)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .Select(o => new
-                {
-                    o.OrderId,
-                    o.OrderNumber,
-                    o.Status,
-                    o.TotalAmount,
-                    o.CreatedAt,
-                    userName = o.User.FirstName + " " + o.User.LastName,
-                    userEmail = o.User.Email
-                })
-                .ToListAsync();
-            var response = new PagedResponse<object>(items, count, pageNumber, pageSize);
-            return Ok(ApiResponse<PagedResponse<object>>.SuccessResult(response));
-        }
-        [HttpPatch("{id}/status")]
-        [Authorize(Roles = "Administrator,Manager")]
-        public async Task<ActionResult> UpdateOrderStatus(int id, [FromBody] UpdateStatusDto dto)
-        {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var adminUserId))
-            {
-                return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
-            }
-            // Якщо смінено статус замовлення на Cancelled - використання специальної логіки з поверненням товару
-            if (dto.Status == "Cancelled")
-            {
-                var cancelResult = await _paymentService.RefundPaymentAsync(id, dto.Comment);
-                if (!cancelResult)
-                {
-                    cancelResult = await _paymentService.CancelOrderAndRestoreStock(id, dto.Comment ?? "Скасовано адміністратором");
-                }
-                if (!cancelResult)
-                {
-                    return StatusCode(500, ApiResponse<object>.FailureResult("Не вдалося скасувати замовлення", "InternalServerError"));
-                }
-                return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення скасовано"));
-            }
-            var order = await _orderRepository.Query()
-                .Include(o => o.Payment)
-                .FirstOrDefaultAsync(o => o.OrderId == id);
-            if (order == null)
-            {
-                return NotFound(ApiResponse<object>.FailureResult("Замовлення не знайдено", "NotFound"));
-            }
-            var oldStatus = order.Status;
-            order.Status = dto.Status;
-            // Логіка для COD (Накладений платіж)
-            if (order.Status == "Delivered" && order.Payment != null && order.Payment.Method == "CashOnDelivery")
-            {
-                order.Payment.Status = "Completed";
-            }
-            if (dto.Status == "Shipped" && !string.IsNullOrEmpty(dto.TrackingNumber))
-            {
-                var shipping = await _shippingRepository.Query().FirstOrDefaultAsync(s => s.OrderId == id);
-                if (shipping != null)
-                {
-                    shipping.TrackingNumber = dto.TrackingNumber;
-                }
-            }
-            await _orderHistoryRepository.AddAsync(new OrderHistory
-            {
-                OrderId = order.OrderId,
-                OldStatus = oldStatus,
-                NewStatus = dto.Status,
-                ChangedByUserId = adminUserId,
-                Comment = dto.Comment ?? $"Статус змінено адміністратором. { (dto.TrackingNumber != null ? "ТТН: " + dto.TrackingNumber : "") }",
-                Timestamp = DateTime.UtcNow
-            });
-            await _unitOfWork.SaveChangesAsync();
-            InvalidateCache();
-            return Ok(ApiResponse<object>.SuccessResult(new { orderId = order.OrderId, status = order.Status }, "Статус замовлення оновлено"));
         }
         // Скасування замовлення (POST: api/Orders/{id}/cancel)
         // Доступ: Customer - лише власне замовлення у статусі Processing;
@@ -758,12 +643,6 @@ namespace KhduSouvenirShop.API.Controllers
     {
         public string? PromoCode { get; set; }
         public string? CityRef { get; set; }
-    }
-    public class UpdateStatusDto
-    {
-        public string Status { get; set; } = string.Empty;
-        public string? TrackingNumber { get; set; }
-        public string? Comment { get; set; }
     }
     public class CancelOrderDto
     {

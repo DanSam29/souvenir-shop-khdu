@@ -1,5 +1,6 @@
 using FluentValidation;
 using KhduSouvenirShop.API.Controllers;
+using KhduSouvenirShop.API.DTOs.Requests;
 
 namespace KhduSouvenirShop.API.Validators
 {
@@ -26,13 +27,13 @@ namespace KhduSouvenirShop.API.Validators
                 .NotEmpty().WithMessage("WarehouseRef обов'язковий для Nova Poshta");
         }
     }
-    public class UpdateStatusDtoValidator : AbstractValidator<UpdateStatusDto>
+    public class UpdateOrderStatusRequestValidator : AbstractValidator<UpdateOrderStatusRequest>
     {
-        public UpdateStatusDtoValidator()
+        public UpdateOrderStatusRequestValidator()
         {
             RuleFor(x => x.Status)
                 .NotEmpty().WithMessage("Статус обов'язковий")
-                .Must(x => new[] { "Pending", "Processing", "Shipped", "Delivered", "Cancelled", "Refunded" }.Contains(x))
+                .Must(x => new[] { "Processing", "Paid", "Shipped", "Delivered", "Cancelled" }.Contains(x))
                 .WithMessage("Некоректний статус замовлення");
             RuleFor(x => x.Comment)
                 .MaximumLength(500).WithMessage("Коментар не може бути довшим за 500 символів");
