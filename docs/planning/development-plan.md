@@ -167,7 +167,7 @@
   - DELETE /api/admin/categories/{id} - видалити (тільки якщо порожня; інакше помилка Conflict)
   - POST /api/admin/categories/reorder - зміна порядку відображення
 
-3.4. Admin: Products
+3.4. Admin: Products ✅
 - AdminProductsController:
   - CRUD для товарів
   - POST /api/admin/products - створити

@@ -66,12 +66,6 @@ export const productsAPI = {
   getNew: (limit = 8) => api.get('/Products/new', { params: { limit } }),
   // GET товари за категорією
   getByCategory: (categoryId) => api.get(`/Products/category/${categoryId}`),
-  // POST завантаження зображення
-  uploadImage: (productId, formData) => api.post(`/Products/${productId}/images`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
-  // DELETE видалення зображення
-  deleteImage: (imageId) => api.delete(`/Products/images/${imageId}`),
 };
 // API функції для Categories
 export const categoriesAPI = {
@@ -180,6 +174,17 @@ export const adminProductsAPI = {
   create: (data) => api.post('/admin/products', data),
   update: (id, data) => api.put(`/admin/products/${id}`, data),
   delete: (id) => api.delete(`/admin/products/${id}`),
+  // POST завантаження зображення (multipart)
+  uploadImage: (productId, formData, isPrimary = false) => api.post(`/admin/products/${productId}/images`, formData, {
+    params: { isPrimary },
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  // DELETE видалення зображення
+  deleteImage: (productId, imageId) => api.delete(`/admin/products/${productId}/images/${imageId}`),
+  // PUT зміна порядку зображень
+  reorderImages: (productId, items) => api.put(`/admin/products/${productId}/images/reorder`, items),
+  // PUT встановлення головного зображення
+  setPrimaryImage: (productId, imageId) => api.put(`/admin/products/${productId}/images/${imageId}/primary`),
 };
 // API функції для Nova Poshta
 export const novaPoshtaAPI = {

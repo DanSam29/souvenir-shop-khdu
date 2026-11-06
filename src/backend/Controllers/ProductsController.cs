@@ -4,11 +4,14 @@ using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
 using KhduSouvenirShop.API.Repositories;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
 namespace KhduSouvenirShop.API.Controllers
 {
+    /// <summary>
+    /// Публічний контролер каталогу товарів (доступний усім користувачам).
+    /// Адміністративне керування товарами та зображеннями винесено в AdminProductsController.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class ProductsController : ControllerBase
@@ -17,20 +20,16 @@ namespace KhduSouvenirShop.API.Controllers
 
         private readonly IProductRepository _productRepository;
         private readonly IUserRepository _userRepository;
-        private readonly IRepository<ProductImage> _productImageRepository;
         private readonly ILogger<ProductsController> _logger;
         private readonly IMemoryCache _cache;
         private readonly KhduSouvenirShop.API.Services.PromotionService _promotionService;
-        private readonly KhduSouvenirShop.API.Services.IImageService _imageService;
-        public ProductsController(IProductRepository productRepository, IUserRepository userRepository, IRepository<ProductImage> productImageRepository, ILogger<ProductsController> logger, IMemoryCache cache, KhduSouvenirShop.API.Services.PromotionService promotionService, KhduSouvenirShop.API.Services.IImageService imageService)
+        public ProductsController(IProductRepository productRepository, IUserRepository userRepository, ILogger<ProductsController> logger, IMemoryCache cache, KhduSouvenirShop.API.Services.PromotionService promotionService)
         {
             _productRepository = productRepository;
             _userRepository = userRepository;
-            _productImageRepository = productImageRepository;
             _logger = logger;
             _cache = cache;
             _promotionService = promotionService;
-            _imageService = imageService;
         }
         // GET: api/Products
         [HttpGet]
@@ -271,110 +270,6 @@ namespace KhduSouvenirShop.API.Controllers
             }
             return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
         }
-        // Методи управління товарами для адміністраторів (створення, редагування, видалення та керування зображеннями)
-        [HttpPost]
-        [Authorize(Roles = "Administrator,Manager")]
-        public async Task<ActionResult> CreateProduct([FromBody] ProductCreateDto dto)
-        {
-            var product = new Product
-            {
-                Name = dto.Name!,
-                Description = dto.Description ?? string.Empty,
-                Price = dto.Price,
-                Stock = dto.Stock,
-                CategoryId = dto.CategoryId,
-                Weight = dto.Weight,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-            await _productRepository.AddAsync(product);
-            await _productRepository.SaveChangesAsync();
-            InvalidateCache();
-            return Ok(ApiResponse<object>.SuccessResult(product, "Товар створено"));
-        }
-        [HttpPut("{id}")]
-        [Authorize(Roles = "Administrator,Manager")]
-        public async Task<ActionResult> UpdateProduct(int id, [FromBody] ProductUpdateDto dto)
-        {
-            var product = await _productRepository.GetByIdAsync(id);
-            if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
-
-            product.Name = dto.Name!;
-            product.Description = dto.Description ?? string.Empty;
-            product.Price = dto.Price;
-            product.Stock = dto.Stock;
-            product.CategoryId = dto.CategoryId;
-            product.Weight = dto.Weight;
-            product.UpdatedAt = DateTime.UtcNow;
-            await _productRepository.SaveChangesAsync();
-            InvalidateCache();
-            return Ok(ApiResponse<object>.SuccessResult(product, "Товар оновлено"));
-        }
-        [HttpDelete("{id}")]
-        [Authorize(Roles = "Administrator,Manager")]
-        public async Task<ActionResult> DeleteProduct(int id)
-        {
-            var product = await _productRepository.Query()
-                .Include(p => p.Images)
-                .FirstOrDefaultAsync(p => p.ProductId == id);
-
-            if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
-            // Видалення зображень з диска
-            foreach (var img in product.Images)
-            {
-                await _imageService.DeleteImageAsync(img.ImageURL);
-            }
-            _productRepository.Remove(product);
-            await _productRepository.SaveChangesAsync();
-            InvalidateCache();
-            return Ok(ApiResponse<object?>.SuccessResult(null, "Товар видалено"));
-        }
-        [HttpPost("{id}/images")]
-        [Authorize(Roles = "Administrator,Manager")]
-        public async Task<ActionResult> UploadImage(int id, IFormFile file, [FromQuery] bool isPrimary = false)
-        {
-            var product = await _productRepository.Query().Include(p => p.Images).FirstOrDefaultAsync(p => p.ProductId == id);
-            if (product == null) return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
-            try
-            {
-                var url = await _imageService.UploadImageAsync(file);
-                // Якщо це перше зображення - автоматично стає головним
-                if (!product.Images.Any()) isPrimary = true;
-                // Якщо додано нове головне зображення - будь-яке інше зображення втрачає цей статус
-                if (isPrimary)
-                {
-                    foreach (var img in product.Images) img.IsPrimary = false;
-                }
-                var productImage = new ProductImage
-                {
-                    ProductId = id,
-                    ImageURL = url,
-                    IsPrimary = isPrimary,
-                    DisplayOrder = product.Images.Count
-                };
-                await _productImageRepository.AddAsync(productImage);
-                await _productImageRepository.SaveChangesAsync();
-                InvalidateCache();
-                return Ok(ApiResponse<object>.SuccessResult(productImage, "Зображення додано"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Помилка при завантаженні зображення");
-                return BadRequest(ApiResponse<object>.FailureResult("Помилка при завантаженні зображення", "UploadError"));
-            }
-        }
-        [HttpDelete("images/{imageId}")]
-        [Authorize(Roles = "Administrator,Manager")]
-        public async Task<ActionResult> DeleteImage(int imageId)
-        {
-            var img = await _productImageRepository.GetByIdAsync(imageId);
-            if (img == null) return NotFound(ApiResponse<object>.FailureResult("Зображення не знайдено", "NotFound"));
-            await _imageService.DeleteImageAsync(img.ImageURL);
-            _productImageRepository.Remove(img);
-            await _productImageRepository.SaveChangesAsync();
-            InvalidateCache();
-            return Ok(ApiResponse<object?>.SuccessResult(null, "Зображення видалено"));
-        }
 
         // Проєкція товару для публічних списків каталогу (єдиний формат для всіх GET-методів)
         private object BuildProductDto(Product p, List<Promotion> promos) => new
@@ -422,23 +317,5 @@ namespace KhduSouvenirShop.API.Controllers
             var user = await _userRepository.GetByIdAsync(userId);
             return user?.StudentStatus ?? "NONE";
         }
-
-        private void InvalidateCache()
-        {
-            // Інкрементація версії кешу, що фактично інвалідує всі існуючі ключі для товарів
-            var currentVersion = _cache.Get<int>(ProductsCacheVersionKey);
-            _cache.Set(ProductsCacheVersionKey, currentVersion + 1);
-            _cache.Remove("Public_Products_All");
-        }
     }
-    public class ProductCreateDto
-    {
-        public string Name { get; set; } = string.Empty;
-        public string? Description { get; set; }
-        public decimal Price { get; set; }
-        public int Stock { get; set; }
-        public int CategoryId { get; set; }
-        public decimal Weight { get; set; } = 0.5m;
-    }
-    public class ProductUpdateDto : ProductCreateDto { }
 }

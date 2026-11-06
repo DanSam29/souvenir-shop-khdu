@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
 using KhduSouvenirShop.API.Repositories;
+using KhduSouvenirShop.API.Services;
 
 using System.Globalization;
 using System.Text.Json;
@@ -13,11 +14,13 @@ namespace KhduSouvenirShop.API.Controllers
 {
     [Route("api/admin/products")]
     [ApiController]
-    [Authorize(Roles = "Manager,Administrator")]
-    public class AdminProductsController(IProductRepository productRepository, ICategoryRepository categoryRepository, ILogger<AdminProductsController> logger, IMemoryCache cache) : ControllerBase
+    [Authorize(Roles = "Manager,Administrator,SuperAdmin")]
+    public class AdminProductsController(IProductRepository productRepository, ICategoryRepository categoryRepository, IRepository<ProductImage> productImageRepository, IImageService imageService, ILogger<AdminProductsController> logger, IMemoryCache cache) : ControllerBase
     {
         private readonly IProductRepository _productRepository = productRepository;
         private readonly ICategoryRepository _categoryRepository = categoryRepository;
+        private readonly IRepository<ProductImage> _productImageRepository = productImageRepository;
+        private readonly IImageService _imageService = imageService;
         private readonly ILogger<AdminProductsController> _logger = logger;
         private readonly IMemoryCache _cache = cache;
         private void InvalidateCache()
@@ -227,26 +230,163 @@ namespace KhduSouvenirShop.API.Controllers
         }
         [HttpDelete("{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult> DeleteProduct(int id)
         {
             var product = await _productRepository.Query()
                 .Include(p => p.Images)
-                .Include(p => p.OrderItems)
+                .Include(p => p.OrderItems).ThenInclude(oi => oi.Order)
                 .FirstOrDefaultAsync(p => p.ProductId == id);
             if (product == null)
             {
                 return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
             }
-            if (product.OrderItems.Count > 0)
+            // Блокуємо soft delete лише за наявності активних замовлень (не Delivered і не Cancelled)
+            var hasActiveOrders = product.OrderItems.Any(oi =>
+                oi.Order != null && oi.Order.Status != "Delivered" && oi.Order.Status != "Cancelled");
+            if (hasActiveOrders)
             {
-                return BadRequest(ApiResponse<object>.FailureResult("Неможливо видалити товар, який фігурує у замовленнях. Він буде прихований (Soft Delete) автоматично, якщо ви просто спробуєте видалити, але ми додамо перевірку", "BadRequest"));
+                return Conflict(ApiResponse<object>.FailureResult("Неможливо видалити товар, що входить до активних замовлень", "Conflict"));
             }
             _productRepository.Remove(product);
             await _productRepository.SaveChangesAsync();
             InvalidateCache();
             return Ok(ApiResponse<object>.SuccessResult(new { }, "Товар видалено"));
+        }
+        [HttpPost("{id}/images")]
+        [Authorize(Roles = "Manager,Administrator,SuperAdmin")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> UploadImage(int id, IFormFile file, [FromQuery] bool isPrimary = false)
+        {
+            var product = await _productRepository.Query()
+                .Include(p => p.Images)
+                .FirstOrDefaultAsync(p => p.ProductId == id);
+            if (product == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
+            }
+            try
+            {
+                var url = await _imageService.UploadImageAsync(file);
+                // Якщо це перше зображення - автоматично стає головним
+                if (!product.Images.Any()) isPrimary = true;
+                // Нове головне зображення знімає цей статус з усіх інших
+                if (isPrimary)
+                {
+                    foreach (var img in product.Images) img.IsPrimary = false;
+                }
+                var productImage = new ProductImage
+                {
+                    ProductId = id,
+                    ImageURL = url,
+                    IsPrimary = isPrimary,
+                    DisplayOrder = product.Images.Count
+                };
+                await _productImageRepository.AddAsync(productImage);
+                await _productImageRepository.SaveChangesAsync();
+                InvalidateCache();
+                var result = new
+                {
+                    imageId = productImage.ImageId,
+                    imageURL = productImage.ImageURL,
+                    isPrimary = productImage.IsPrimary,
+                    displayOrder = productImage.DisplayOrder
+                };
+                return Ok(ApiResponse<object>.SuccessResult(result, "Зображення додано"));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<object>.FailureResult(ex.Message, "BadRequest"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Помилка при завантаженні зображення для товару {ProductId}", id);
+                return BadRequest(ApiResponse<object>.FailureResult("Помилка при завантаженні зображення", "UploadError"));
+            }
+        }
+        [HttpPut("{id}/images/reorder")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> ReorderImages(int id, [FromBody] List<ImageReorderDto> items)
+        {
+            if (items == null || items.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResult("Список для зміни порядку порожній", "BadRequest"));
+            }
+            var product = await _productRepository.Query()
+                .Include(p => p.Images)
+                .FirstOrDefaultAsync(p => p.ProductId == id);
+            if (product == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
+            }
+            var orderMap = items.GroupBy(i => i.ImageId).ToDictionary(g => g.Key, g => g.Last().DisplayOrder);
+            foreach (var image in product.Images)
+            {
+                if (orderMap.TryGetValue(image.ImageId, out var order))
+                {
+                    image.DisplayOrder = order;
+                }
+            }
+            await _productImageRepository.SaveChangesAsync();
+            InvalidateCache();
+            return Ok(ApiResponse<object>.SuccessResult(new { updated = product.Images.Count }, "Порядок зображень оновлено"));
+        }
+        [HttpPut("{id}/images/{imageId}/primary")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> SetPrimaryImage(int id, int imageId)
+        {
+            var product = await _productRepository.Query()
+                .Include(p => p.Images)
+                .FirstOrDefaultAsync(p => p.ProductId == id);
+            if (product == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
+            }
+            var image = product.Images.FirstOrDefault(i => i.ImageId == imageId);
+            if (image == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResult("Зображення не знайдено", "NotFound"));
+            }
+            foreach (var img in product.Images) img.IsPrimary = img.ImageId == imageId;
+            await _productImageRepository.SaveChangesAsync();
+            InvalidateCache();
+            return Ok(ApiResponse<object>.SuccessResult(new { }, "Головне зображення оновлено"));
+        }
+        [HttpDelete("{id}/images/{imageId}")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> DeleteImage(int id, int imageId)
+        {
+            var product = await _productRepository.Query()
+                .Include(p => p.Images)
+                .FirstOrDefaultAsync(p => p.ProductId == id);
+            if (product == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
+            }
+            var image = product.Images.FirstOrDefault(i => i.ImageId == imageId);
+            if (image == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResult("Зображення не знайдено", "NotFound"));
+            }
+            await _imageService.DeleteImageAsync(image.ImageURL);
+            var wasPrimary = image.IsPrimary;
+            _productImageRepository.Remove(image);
+            // Якщо видалили головне зображення - призначаємо головним наступне
+            if (wasPrimary)
+            {
+                var next = product.Images.FirstOrDefault(i => i.ImageId != imageId);
+                if (next != null) next.IsPrimary = true;
+            }
+            await _productImageRepository.SaveChangesAsync();
+            InvalidateCache();
+            return Ok(ApiResponse<object>.SuccessResult(new { }, "Зображення видалено"));
         }
     }
     public class ProductDto
@@ -259,5 +399,10 @@ namespace KhduSouvenirShop.API.Controllers
         public decimal Weight { get; set; }
         public int CategoryId { get; set; }
         public int Stock { get; set; } = 0;
+    }
+    public class ImageReorderDto
+    {
+        public int ImageId { get; set; }
+        public int DisplayOrder { get; set; }
     }
 }

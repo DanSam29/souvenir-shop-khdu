@@ -87,7 +87,7 @@ function ProductsAdmin() {
   const removeExistingImage = async (imageId) => {
     if (!window.confirm('Видалити це зображення назавжди?')) return;
     try {
-      await productsAPI.deleteImage(imageId);
+      await adminProductsAPI.deleteImage(editId, imageId);
       setExistingImages(prev => prev.filter(img => img.imageId !== imageId));
     } catch (err) {
       alert('Помилка при видаленні зображення');
@@ -126,7 +126,7 @@ function ProductsAdmin() {
         for (const file of selectedFiles) {
           const formData = new FormData();
           formData.append('file', file);
-          await productsAPI.uploadImage(productId, formData);
+          await adminProductsAPI.uploadImage(productId, formData);
         }
       }
       await loadData();
