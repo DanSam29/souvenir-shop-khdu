@@ -44,13 +44,6 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly IMapper _mapper = mapper;
         private readonly IMemoryCache _cache = cache;
         private readonly ILogger<AdminOrdersController> _logger = logger;
-        // Дозволені переходи статусів: Processing/Paid → Shipped → Delivered, будь-який → Cancelled
-        private static readonly Dictionary<string, string[]> AllowedTransitions = new()
-        {
-            ["Processing"] = new[] { "Shipped", "Cancelled" },
-            ["Paid"] = new[] { "Shipped", "Cancelled" },
-            ["Shipped"] = new[] { "Delivered", "Cancelled" }
-        };
         private void InvalidateCache()
         {
             var currentVersion = _cache.Get<int>("Products_Cache_Version");
@@ -163,9 +156,8 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return BadRequest(ApiResponse<object>.FailureResult($"Замовлення у статусі '{order.Status}' не підлягає зміні статусу", "BadRequest"));
             }
-            // Валідація дозволеного переходу
-            var allowed = AllowedTransitions.TryGetValue(order.Status, out var transitions) ? transitions : Array.Empty<string>();
-            if (!allowed.Contains(newStatus))
+            // Валідація дозволеного переходу (єдине джерело істини — OrderStateMachine)
+            if (!OrderStateMachine.CanTransition(order.Status, newStatus))
             {
                 return BadRequest(ApiResponse<object>.FailureResult($"Недопустимий перехід статусу: {order.Status} → {newStatus}", "BadRequest"));
             }

@@ -270,7 +270,7 @@
 - GET /api/admin/orders - список (пагінація, фільтр status/date/paymentMethod/search по orderNumber/email)
 - GET /api/admin/orders/{id} - деталі з історією
 
-4.5. Order State Machine (валідатор переходів)
+4.5. Order State Machine (валідатор переходів) ✅
 - Створити enum OrderStatus: Pending, Processing, Shipped, Delivered, Cancelled, Refunded
 - Перевірка дозволених переходів в OrderService:
   - Pending → Processing, Cancelled

@@ -1,6 +1,7 @@
 using FluentValidation;
 using KhduSouvenirShop.API.Controllers;
 using KhduSouvenirShop.API.DTOs.Requests;
+using KhduSouvenirShop.API.Services;
 
 namespace KhduSouvenirShop.API.Validators
 {
@@ -33,7 +34,7 @@ namespace KhduSouvenirShop.API.Validators
         {
             RuleFor(x => x.Status)
                 .NotEmpty().WithMessage("Статус обов'язковий")
-                .Must(x => new[] { "Processing", "Paid", "Shipped", "Delivered", "Cancelled" }.Contains(x))
+                .Must(x => OrderStateMachine.IsKnownStatus(x))
                 .WithMessage("Некоректний статус замовлення");
             RuleFor(x => x.Comment)
                 .MaximumLength(500).WithMessage("Коментар не може бути довшим за 500 символів");

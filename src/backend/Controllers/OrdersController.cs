@@ -6,6 +6,7 @@ using System.Security.Claims;
 using KhduSouvenirShop.API.Repositories;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
+using KhduSouvenirShop.API.Services;
 
 namespace KhduSouvenirShop.API.Controllers
 {
@@ -587,7 +588,8 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення вже скасоване"));
             }
-            if (order.Status == "Delivered")
+            // Скасування дозволене лише з не термінальних статусів (Processing/Paid/Shipped)
+            if (!OrderStateMachine.CanTransition(order.Status, OrderStatus.Cancelled.ToString()))
             {
                 return BadRequest(ApiResponse<object>.FailureResult("Доставлене замовлення не можна скасувати", "BadRequest"));
             }
