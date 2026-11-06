@@ -35,10 +35,10 @@ function CategoriesAdmin() {
       setPageLoading(true);
       const [catRes, prodRes] = await Promise.all([
         categoriesAPI.getAll(),
-        productsAPI.getAll()
+        productsAPI.getAll({ pageSize: 100 })
       ]);
       setCategoriesTree(catRes.data);
-      setProducts(prodRes.data);
+      setProducts(prodRes.data.items || []);
       setError(null);
     } catch (e) {
       setError('Помилка завантаження даних');

@@ -5,6 +5,7 @@ using KhduSouvenirShop.API.Models.Common;
 using KhduSouvenirShop.API.Repositories;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace KhduSouvenirShop.API.Controllers
 {
@@ -12,6 +13,8 @@ namespace KhduSouvenirShop.API.Controllers
     [ApiController]
     public class ProductsController : ControllerBase
     {
+        private const string ProductsCacheVersionKey = "Products_Cache_Version";
+
         private readonly IProductRepository _productRepository;
         private readonly IUserRepository _userRepository;
         private readonly IRepository<ProductImage> _productImageRepository;
@@ -31,80 +34,66 @@ namespace KhduSouvenirShop.API.Controllers
         }
         // GET: api/Products
         [HttpGet]
-        [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
         public async Task<ActionResult> GetProducts(
-            [FromQuery] int? categoryId, 
-            [FromQuery] string? search, 
+            [FromQuery] int? categoryId,
+            [FromQuery] string? search,
             [FromQuery] string? sortBy = "newest",
             [FromQuery] decimal? minPrice = null,
-            [FromQuery] decimal? maxPrice = null)
+            [FromQuery] decimal? maxPrice = null,
+            [FromQuery] bool? inStock = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
         {
             _logger.LogInformation("Запит на отримання товарів з фільтрами");
-            // Визначення studentStatus
-            string studentStatus = "NONE";
-            if (User?.Identity?.IsAuthenticated == true)
-            {
-                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (int.TryParse(userIdClaim, out var uid))
-                {
-                    var user = await _userRepository.GetByIdAsync(uid);
-                    if (user != null) studentStatus = user.StudentStatus ?? "NONE";
-                }
-            }
-            // Отримання поточної версії кешу
-            var cacheVersion = _cache.Get<int>("Products_Cache_Version");
-            // Ключ кешу залежить від версії, фільтрів та studentStatus
-            string cacheKey = $"v{cacheVersion}_Products_{categoryId}_{search}_{sortBy}_{minPrice}_{maxPrice}_{studentStatus}";
-            if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 20;
+            if (pageSize > 100) pageSize = 100;
+
+            var studentStatus = await GetCurrentStudentStatusAsync();
+            var cacheVersion = _cache.Get<int>(ProductsCacheVersionKey);
+            var cacheKey = $"v{cacheVersion}_Products_{categoryId}_{search}_{sortBy}_{minPrice}_{maxPrice}_{inStock}_{page}_{pageSize}_{studentStatus}";
+
+            if (!_cache.TryGetValue(cacheKey, out PagedResponse<object>? paged))
             {
                 var query = _productRepository.Query()
                     .Include(p => p.Category)
                     .Include(p => p.Images)
                     .AsQueryable();
+
                 // Фільтрація
                 if (categoryId.HasValue)
                     query = query.Where(p => p.CategoryId == categoryId.Value);
-                if (!string.IsNullOrEmpty(search))
-                    query = query.Where(p => p.Name.Contains(search) || p.Description.Contains(search) || 
-                                            (p.NameEn != null && p.NameEn.Contains(search)) || 
-                                            (p.DescriptionEn != null && p.DescriptionEn.Contains(search)));
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var term = search.Trim();
+                    query = query.Where(p => p.Name.Contains(term) || p.Description.Contains(term) ||
+                                            (p.NameEn != null && p.NameEn.Contains(term)) ||
+                                            (p.DescriptionEn != null && p.DescriptionEn.Contains(term)));
+                }
                 if (minPrice.HasValue)
                     query = query.Where(p => p.Price >= minPrice.Value);
                 if (maxPrice.HasValue)
                     query = query.Where(p => p.Price <= maxPrice.Value);
-                // Сортування
-                query = sortBy switch
-                {
-                    "price_asc" => query.OrderBy(p => p.Price),
-                    "price_desc" => query.OrderByDescending(p => p.Price),
-                    "name_asc" => query.OrderBy(p => p.Name),
-                    _ => query.OrderByDescending(p => p.CreatedAt)
-                };
-                var products = await query.ToListAsync();
+                if (inStock == true)
+                    query = query.Where(p => p.Stock > 0);
+
+                var totalItems = await query.CountAsync();
+
+                query = ApplySorting(query, sortBy);
+
+                var products = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
                 var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
-                dtoList = products.Select(p => new
-                {
-                    productId = p.ProductId,
-                    name = p.Name,
-                    nameEn = p.NameEn,
-                    description = p.Description,
-                    descriptionEn = p.DescriptionEn,
-                    category = p.Category != null ? new { 
-                        categoryId = p.Category.CategoryId, 
-                        name = p.Category.Name,
-                        nameEn = p.Category.NameEn
-                    } : null,
-                    categoryId = p.CategoryId,
-                    images = p.Images.Select(i => new { imageId = i.ImageId, imageURL = i.ImageURL, isPrimary = i.IsPrimary }).ToList(),
-                    price = _promotionService.GetPriceAfterPromotions(p, promos),
-                    originalPrice = p.Price,
-                    weight = p.Weight,
-                    createdAt = p.CreatedAt,
-                    stock = p.Stock
-                }).ToList<object>();
-                _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(5));
+                var items = products.Select(p => BuildProductDto(p, promos)).ToList();
+
+                paged = new PagedResponse<object>(items, totalItems, page, pageSize);
+                _cache.Set(cacheKey, paged, TimeSpan.FromMinutes(5));
             }
-            return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
+            return Ok(ApiResponse<PagedResponse<object>>.SuccessResult(paged!));
         }
         // GET: api/Products/5
         [HttpGet("{id}")]
@@ -113,17 +102,8 @@ namespace KhduSouvenirShop.API.Controllers
         public async Task<ActionResult> GetProduct(int id)
         {
             _logger.LogInformation("Запит на отримання товару з ID: {ProductId}", id);
-            string studentStatus = "NONE";
-            if (User?.Identity?.IsAuthenticated == true)
-            {
-                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (int.TryParse(userIdClaim, out var uid))
-                {
-                    var user = await _userRepository.GetByIdAsync(uid);
-                    if (user != null) studentStatus = user.StudentStatus ?? "NONE";
-                }
-            }
-            var cacheVersion = _cache.Get<int>("Products_Cache_Version");
+            var studentStatus = await GetCurrentStudentStatusAsync();
+            var cacheVersion = _cache.Get<int>(ProductsCacheVersionKey);
             var cacheKey = $"v{cacheVersion}_product:{id}:{studentStatus}";
             if (!_cache.TryGetValue(cacheKey, out object? dto))
             {
@@ -137,6 +117,13 @@ namespace KhduSouvenirShop.API.Controllers
                     return NotFound(ApiResponse<object>.FailureResult("Товар не знайдено", "NotFound"));
                 }
                 var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
+                // Пов'язані товари: інші товари тієї ж категорії
+                var related = await _productRepository.Query()
+                    .Include(p => p.Images)
+                    .Where(p => p.CategoryId == product.CategoryId && p.ProductId != id)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Take(4)
+                    .ToListAsync();
                 dto = new
                 {
                     productId = product.ProductId,
@@ -155,7 +142,18 @@ namespace KhduSouvenirShop.API.Controllers
                     originalPrice = product.Price,
                     weight = product.Weight,
                     createdAt = product.CreatedAt,
-                    stock = product.Stock
+                    stock = product.Stock,
+                    relatedProducts = related.Select(r => new
+                    {
+                        productId = r.ProductId,
+                        name = r.Name,
+                        nameEn = r.NameEn,
+                        price = _promotionService.GetPriceAfterPromotions(r, promos),
+                        originalPrice = r.Price,
+                        stock = r.Stock,
+                        primaryImage = r.Images.Where(i => i.IsPrimary).Select(i => i.ImageURL).FirstOrDefault()
+                                       ?? r.Images.Select(i => i.ImageURL).FirstOrDefault()
+                    }).ToList()
                 };
                 _cache.Set(cacheKey, dto, TimeSpan.FromMinutes(5));
             }
@@ -177,50 +175,77 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return BadRequest(ApiResponse<object>.FailureResult("Пошуковий запит не може бути порожнім", "BadRequest"));
             }
-            var norm = query.Trim().ToLowerInvariant();
-            string studentStatus = "NONE";
-            if (User?.Identity?.IsAuthenticated == true)
-            {
-                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (int.TryParse(userIdClaim, out var uid))
-                {
-                    var user = await _userRepository.GetByIdAsync(uid);
-                    if (user != null) studentStatus = user.StudentStatus ?? "NONE";
-                }
-            }
-            var cacheVersion = _cache.Get<int>("Products_Cache_Version");
+            var term = query.Trim();
+            var norm = term.ToLowerInvariant();
+            var studentStatus = await GetCurrentStudentStatusAsync();
+            var cacheVersion = _cache.Get<int>(ProductsCacheVersionKey);
             var cacheKey = $"v{cacheVersion}_products:search:{norm}:{studentStatus}";
             if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
             {
                 var products = await _productRepository.Query()
                     .Include(p => p.Category)
                     .Include(p => p.Images)
-                    .Where(p => p.Name.Contains(query) || p.Description.Contains(query) || 
-                                (p.NameEn != null && p.NameEn.Contains(query)) || 
-                                (p.DescriptionEn != null && p.DescriptionEn.Contains(query)))
+                    .Where(p => p.Name.Contains(term) || p.Description.Contains(term) || 
+                                (p.NameEn != null && p.NameEn.Contains(term)) || 
+                                (p.DescriptionEn != null && p.DescriptionEn.Contains(term)))
                     .ToListAsync();
                 var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
-                dtoList = products.Select(p => new
-                {
-                    productId = p.ProductId,
-                    name = p.Name,
-                    nameEn = p.NameEn,
-                    description = p.Description,
-                    descriptionEn = p.DescriptionEn,
-                    category = p.Category != null ? new { 
-                        categoryId = p.Category.CategoryId, 
-                        name = p.Category.Name,
-                        nameEn = p.Category.NameEn
-                    } : null,
-                    categoryId = p.CategoryId,
-                    images = p.Images.Select(i => new { imageId = i.ImageId, imageURL = i.ImageURL, isPrimary = i.IsPrimary }).ToList(),
-                    price = _promotionService.GetPriceAfterPromotions(p, promos),
-                    originalPrice = p.Price,
-                    weight = p.Weight,
-                    createdAt = p.CreatedAt,
-                    stock = p.Stock
-                }).ToList<object>();
+                dtoList = products.Select(p => BuildProductDto(p, promos)).ToList();
                 _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(2));
+            }
+            return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
+        }
+        // GET: api/Products/featured?limit=8
+        [HttpGet("featured")]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetFeaturedProducts([FromQuery] int limit = 8)
+        {
+            _logger.LogInformation("Запит на рекомендовані товари");
+            if (limit < 1) limit = 8;
+            if (limit > 50) limit = 50;
+
+            var studentStatus = await GetCurrentStudentStatusAsync();
+            var cacheVersion = _cache.Get<int>(ProductsCacheVersionKey);
+            var cacheKey = $"v{cacheVersion}_products:featured:{limit}:{studentStatus}";
+            if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
+            {
+                // Популярні: за сумарною кількістю проданих одиниць, далі - найновіші
+                var products = await _productRepository.Query()
+                    .Include(p => p.Category)
+                    .Include(p => p.Images)
+                    .OrderByDescending(p => p.OrderItems.Sum(oi => oi.Quantity))
+                    .ThenByDescending(p => p.CreatedAt)
+                    .Take(limit)
+                    .ToListAsync();
+                var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
+                dtoList = products.Select(p => BuildProductDto(p, promos)).ToList();
+                _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(5));
+            }
+            return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
+        }
+        // GET: api/Products/new?limit=8
+        [HttpGet("new")]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<object>>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetNewProducts([FromQuery] int limit = 8)
+        {
+            _logger.LogInformation("Запит на новинки каталогу");
+            if (limit < 1) limit = 8;
+            if (limit > 50) limit = 50;
+
+            var studentStatus = await GetCurrentStudentStatusAsync();
+            var cacheVersion = _cache.Get<int>(ProductsCacheVersionKey);
+            var cacheKey = $"v{cacheVersion}_products:new:{limit}:{studentStatus}";
+            if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
+            {
+                var products = await _productRepository.Query()
+                    .Include(p => p.Category)
+                    .Include(p => p.Images)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Take(limit)
+                    .ToListAsync();
+                var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
+                dtoList = products.Select(p => BuildProductDto(p, promos)).ToList();
+                _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(5));
             }
             return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
         }
@@ -230,17 +255,8 @@ namespace KhduSouvenirShop.API.Controllers
         public async Task<ActionResult> GetProductsByCategory(int categoryId)
         {
             _logger.LogInformation("Запит на товари категорії {CategoryId}", categoryId);
-            string studentStatus = "NONE";
-            if (User?.Identity?.IsAuthenticated == true)
-            {
-                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (int.TryParse(userIdClaim, out var uid))
-                {
-                    var user = await _userRepository.GetByIdAsync(uid);
-                    if (user != null) studentStatus = user.StudentStatus ?? "NONE";
-                }
-            }
-            var cacheVersion = _cache.Get<int>("Products_Cache_Version");
+            var studentStatus = await GetCurrentStudentStatusAsync();
+            var cacheVersion = _cache.Get<int>(ProductsCacheVersionKey);
             var cacheKey = $"v{cacheVersion}_products:category:{categoryId}:{studentStatus}";
             if (!_cache.TryGetValue(cacheKey, out List<object>? dtoList))
             {
@@ -250,17 +266,7 @@ namespace KhduSouvenirShop.API.Controllers
                     .Where(p => p.CategoryId == categoryId)
                     .ToListAsync();
                 var promos = await _promotionService.GetActivePromotionsForUserAsync(studentStatus);
-                dtoList = products.Select(p => new
-                {
-                    productId = p.ProductId,
-                    name = p.Name,
-                    description = p.Description,
-                    category = p.Category != null ? new { categoryId = p.Category.CategoryId, name = p.Category.Name } : null,
-                    images = p.Images.Select(i => new { imageId = i.ImageId, imageURL = i.ImageURL, isPrimary = i.IsPrimary }).ToList(),
-                    price = _promotionService.GetPriceAfterPromotions(p, promos),
-                    originalPrice = p.Price,
-                    stock = p.Stock
-                }).ToList<object>();
+                dtoList = products.Select(p => BuildProductDto(p, promos)).ToList();
                 _cache.Set(cacheKey, dtoList, TimeSpan.FromMinutes(5));
             }
             return Ok(ApiResponse<IEnumerable<object>>.SuccessResult(dtoList ?? new List<object>()));
@@ -369,11 +375,59 @@ namespace KhduSouvenirShop.API.Controllers
             InvalidateCache();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Зображення видалено"));
         }
+
+        // Проєкція товару для публічних списків каталогу (єдиний формат для всіх GET-методів)
+        private object BuildProductDto(Product p, List<Promotion> promos) => new
+        {
+            productId = p.ProductId,
+            name = p.Name,
+            nameEn = p.NameEn,
+            description = p.Description,
+            descriptionEn = p.DescriptionEn,
+            category = p.Category != null ? new { 
+                categoryId = p.Category.CategoryId, 
+                name = p.Category.Name,
+                nameEn = p.Category.NameEn
+            } : null,
+            categoryId = p.CategoryId,
+            images = p.Images.Select(i => new { imageId = i.ImageId, imageURL = i.ImageURL, isPrimary = i.IsPrimary }).ToList(),
+            price = _promotionService.GetPriceAfterPromotions(p, promos),
+            originalPrice = p.Price,
+            weight = p.Weight,
+            createdAt = p.CreatedAt,
+            stock = p.Stock
+        };
+
+        // Застосування сортування списку товарів
+        private static IQueryable<Product> ApplySorting(IQueryable<Product> query, string? sortBy) => sortBy switch
+        {
+            "price_asc" => query.OrderBy(p => p.Price),
+            "price_desc" => query.OrderByDescending(p => p.Price),
+            "name_asc" => query.OrderBy(p => p.Name),
+            "name_desc" => query.OrderByDescending(p => p.Name),
+            "popular" => query.OrderByDescending(p => p.OrderItems.Sum(oi => oi.Quantity)).ThenByDescending(p => p.CreatedAt),
+            _ => query.OrderByDescending(p => p.CreatedAt)
+        };
+
+        // Визначає студентський статус поточного користувача (для розрахунку знижок)
+        private async Task<string> GetCurrentStudentStatusAsync()
+        {
+            if (User?.Identity?.IsAuthenticated != true)
+                return "NONE";
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+                return "NONE";
+
+            var user = await _userRepository.GetByIdAsync(userId);
+            return user?.StudentStatus ?? "NONE";
+        }
+
         private void InvalidateCache()
         {
             // Інкрементація версії кешу, що фактично інвалідує всі існуючі ключі для товарів
-            var currentVersion = _cache.Get<int>("Products_Cache_Version");
-            _cache.Set("Products_Cache_Version", currentVersion + 1);
+            var currentVersion = _cache.Get<int>(ProductsCacheVersionKey);
+            _cache.Set(ProductsCacheVersionKey, currentVersion + 1);
             _cache.Remove("Public_Products_All");
         }
     }

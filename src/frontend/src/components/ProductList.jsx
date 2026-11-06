@@ -62,15 +62,16 @@ function ProductList() {
     try {
       setLoading(true);
       const [productsRes, categoriesRes] = await Promise.all([
-        productsAPI.getAll(),
+        productsAPI.getAll({ pageSize: 100 }),
         categoriesAPI.getAll()
       ]);
-      setOriginalProducts(productsRes.data); 
-      setAllProducts(productsRes.data);
-      setProducts(productsRes.data);
+      const productItems = productsRes.data.items || [];
+      setOriginalProducts(productItems);
+      setAllProducts(productItems);
+      setProducts(productItems);
       setCategories(categoriesRes.data);
       // Пошук максимальної ціни
-      const prices = productsRes.data.map(p => p.price);
+      const prices = productItems.map(p => p.price);
       const max = Math.max(...prices, 1000);
       setMaxPrice(max);
       setPriceRange([0, max]);

@@ -150,7 +150,7 @@
   - GET /api/categories/{id} - деталі категорії
   - GET /api/categories/{id}/products - товари категорії (пагінація, сортування, фільтри)
 
-3.2. Товари (публічні)
+3.2. Товари (публічні) ✅
 - ProductsController:
   - GET /api/products - список товарів (пагінація pageSize=20, сортування price/name/newest/popular, фільтри minPrice/maxPrice/categoryId/inStock)
   - GET /api/products/{id} - деталі товару (з зображеннями, характеристиками, пов'язаними)

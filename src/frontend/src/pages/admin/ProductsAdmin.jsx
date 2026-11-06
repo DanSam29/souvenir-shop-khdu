@@ -39,10 +39,10 @@ function ProductsAdmin() {
     try {
       setPageLoading(true);
       const [prodRes, catRes] = await Promise.all([
-        productsAPI.getAll(),
+        productsAPI.getAll({ pageSize: 100 }),
         categoriesAPI.getAll()
       ]);
-      setProducts(prodRes.data);
+      setProducts(prodRes.data.items || []);
       setCategoriesTree(catRes.data);
       setError(null);
     } catch (e) {

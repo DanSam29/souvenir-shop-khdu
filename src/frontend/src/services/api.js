@@ -54,12 +54,16 @@ export const buildImageUrl = (path) => {
 };
 // API функції для Products
 export const productsAPI = {
-  // GET всі товари
-  getAll: () => api.get('/Products'),
+  // GET товари (пагінація, фільтри, сортування)
+  getAll: (params) => api.get('/Products', { params }),
   // GET товар за ID
   getById: (id) => api.get(`/Products/${id}`),
   // GET пошук товарів
   search: (query) => api.get(`/Products/search?query=${query}`),
+  // GET рекомендовані/популярні товари
+  getFeatured: (limit = 8) => api.get('/Products/featured', { params: { limit } }),
+  // GET новинки каталогу
+  getNew: (limit = 8) => api.get('/Products/new', { params: { limit } }),
   // GET товари за категорією
   getByCategory: (categoryId) => api.get(`/Products/category/${categoryId}`),
   // POST завантаження зображення
