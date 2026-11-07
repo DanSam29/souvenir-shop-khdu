@@ -298,7 +298,7 @@
 ## Етап 5: Payment Module - Stripe, Webhooks, Refund, COD
 **Мета:** Інтегрувати повноцінну оплату через Stripe з підтримкою всіх сценаріїв.
 
-5.1. Налаштування Stripe
+5.1. Налаштування Stripe ✅
 - Установка Stripe.net (вже є в csproj)
 - Конфігурація в appsettings.json: SecretKey, PublishableKey, WebhookSecret, SuccessUrl, CancelUrl
 - PaymentService реалізація:

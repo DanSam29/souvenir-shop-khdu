@@ -221,6 +221,35 @@ namespace KhduSouvenirShop.API.Services
             var service = new SessionService();
             return await service.CreateAsync(options);
         }
+        public Event ConstructEventAsync(string payload, string signatureHeader)
+        {
+            return EventUtility.ConstructEvent(payload, signatureHeader, _webhookSecret);
+        }
+        public async Task<Refund?> CreateRefundAsync(string paymentIntentId, decimal? amount = null)
+        {
+            if (string.IsNullOrEmpty(paymentIntentId))
+                return null;
+            var options = new RefundCreateOptions
+            {
+                PaymentIntent = paymentIntentId,
+                Reason = RefundReasons.RequestedByCustomer
+            };
+            // Якщо сума вказана — частковий рефанд, інакше повертається вся сума
+            if (amount.HasValue && amount.Value > 0)
+            {
+                options.Amount = (long)Math.Round(amount.Value * 100m);
+            }
+            try
+            {
+                var service = new RefundService();
+                return await service.CreateAsync(options);
+            }
+            catch (StripeException e)
+            {
+                _logger.LogError(e, "Stripe Refund Error for PaymentIntent {PaymentIntentId}", paymentIntentId);
+                return null;
+            }
+        }
         public async Task<bool> HandleWebhookAsync(string? json, string? stripeSignature, string? sessionId = null)
         {
             try
@@ -229,7 +258,7 @@ namespace KhduSouvenirShop.API.Services
 
                 if (!string.IsNullOrEmpty(stripeSignature) && !string.IsNullOrEmpty(json))
                 {
-                    var stripeEvent = EventUtility.ConstructEvent(json, stripeSignature, _webhookSecret);
+                    var stripeEvent = ConstructEventAsync(json, stripeSignature);
 
                     if (stripeEvent.Type == "checkout.session.completed")
                     {
@@ -524,20 +553,11 @@ namespace KhduSouvenirShop.API.Services
                 return false;
             if (order.Payment.Status != "Completed")
                 return false;
+            var refund = await CreateRefundAsync(order.Payment.StripePaymentIntentId);
+            if (refund == null)
+                return false;
             try
             {
-                var options = new RefundCreateOptions
-                {
-                    PaymentIntent = order.Payment.StripePaymentIntentId,
-                    Reason = RefundReasons.RequestedByCustomer,
-                    Metadata = new Dictionary<string, string>
-                    {
-                        { "orderId", orderId.ToString() },
-                        { "reason", reason ?? "No reason provided" }
-                    }
-                };
-                var service = new RefundService();
-                var refund = await service.CreateAsync(options);
                 var oldStatus = order.Status;
                 // Повернення товару на склад при Refund
                 foreach (var item in order.OrderItems)
