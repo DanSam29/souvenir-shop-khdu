@@ -329,12 +329,13 @@
   - Payment.CompletedAt = DateTime.UtcNow
   - OrderHistory.comment = "Оплата при отриманні прийнята"
 
-5.5. Тестування Stripe
-- Sandbox ключі для локального розробки
-- Stripe CLI для ретрансляції webhook: `stripe listen --forward-to localhost:5000/api/webhooks/stripe`
+5.5. Тестування Stripe ✅
+- Sandbox ключі для локального розробки (`Stripe__SecretKey`, `Stripe__PublishableKey`, `Stripe__WebhookSecret` у `.env`)
+- Stripe CLI для ретрансляції webhook: `stripe listen --forward-to localhost:5225/api/webhooks/stripe`
 - Тестові сценарії: успішний платіж, відхилений платіж, відміна на сторінці Stripe, refund
+- Автоматизовані тести логіки платежів/переходів статусів: `tests/backend-tests/PaymentTests.cs`
 
-5.6. Frontend
+5.6. Frontend ✅
 - CheckoutPage: радиокнопки Card vs COD
 - Якщо Card → показати Stripe Elements або редірект на Hosted Checkout Page
 - Success/Cancel сторінки очікують колбек, потім відображають статус

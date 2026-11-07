@@ -2,14 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../components/Toast';
 import { cartAPI, ordersAPI, usersAPI, novaPoshtaAPI, featuresAPI } from '../services/api';
 
 const TOTAL_STEPS = 4;
 const PHONE_REGEX = /^\+380\d{9}$/;
+const PAYMENT_METHODS = [
+  { value: 'Card', labelKey: 'checkout.payment_card', icon: '💳' },
+  { value: 'CashOnDelivery', labelKey: 'checkout.payment_cod', icon: '📦' }
+];
 
 function CheckoutPage() {
   const { t, i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [cart, setCart] = useState(null);
@@ -57,6 +63,14 @@ function CheckoutPage() {
       console.error('Не вдалося завантажити статуси фічефлагів', err);
     }
   };
+  // Якщо Stripe вимкнено фічефлагом — картка недоступна, перемикаємось на накладений платіж
+  useEffect(() => {
+    if (features && !features.stripeEnabled) {
+      setForm((prev) => (prev.paymentMethod === 'Card'
+        ? { ...prev, paymentMethod: 'CashOnDelivery' }
+        : prev));
+    }
+  }, [features]);
   const loadCart = async () => {
     try {
       setLoading(true);
@@ -211,11 +225,11 @@ function CheckoutPage() {
   const validateStep = (current) => {
     if (current === 1) {
       if ((form.recipientName || '').trim().length < 2) {
-        alert(t('checkout.name_required'));
+        showToast(t('checkout.name_required'), 'error');
         return false;
       }
       if (!PHONE_REGEX.test((form.recipientPhone || '').trim())) {
-        alert(t('checkout.phone_invalid'));
+        showToast(t('checkout.phone_invalid'), 'error');
         return false;
       }
       return true;
@@ -223,11 +237,11 @@ function CheckoutPage() {
     if (current === 2) {
       if (isNpEnabled) {
         if (!form.cityRef || !form.warehouseRef) {
-          alert(t('checkout.select_city_warehouse'));
+          showToast(t('checkout.select_city_warehouse'), 'error');
           return false;
         }
       } else if (!form.city || !form.warehouseNumber) {
-        alert(t('checkout.select_city_warehouse'));
+        showToast(t('checkout.select_city_warehouse'), 'error');
         return false;
       }
       return true;
@@ -259,13 +273,15 @@ function CheckoutPage() {
       };
       const res = await ordersAPI.checkout(payload);
       if (res.data && res.data.paymentUrl) {
+        showToast(t('checkout.redirecting_to_payment'), 'info');
         window.location.href = res.data.paymentUrl;
         return;
       }
       setOrderResult(res.data);
+      showToast(t('checkout.success'), 'success');
       await loadCart();
     } catch (err) {
-      alert(err.response?.data?.error || 'Не вдалося оформити замовлення');
+      showToast(err.response?.data?.error || t('checkout.failed'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -512,15 +528,41 @@ function CheckoutPage() {
               <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>{t('checkout.payment_promo')}</h2>
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.payment_method')}</label>
-                <select
-                  name="paymentMethod"
-                  value={form.paymentMethod}
-                  onChange={handleChange}
-                  style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', cursor: 'pointer' }}
-                >
-                  {features?.stripeEnabled && <option value="Card">💳 {t('checkout.payment_card')}</option>}
-                  <option value="CashOnDelivery">📦 {t('checkout.payment_cod')}</option>
-                </select>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {PAYMENT_METHODS
+                    .filter((method) => method.value !== 'Card' || features?.stripeEnabled)
+                    .map((method) => {
+                      const checked = form.paymentMethod === method.value;
+                      return (
+                        <label
+                          key={method.value}
+                          htmlFor={`payment-${method.value}`}
+                          style={{
+                            display: 'flex', alignItems: 'flex-start', gap: 10,
+                            padding: '12px 14px', borderRadius: 8, cursor: 'pointer',
+                            border: checked ? '2px solid #007bff' : '1px solid #ddd',
+                            background: checked ? '#f0f7ff' : '#fff'
+                          }}
+                        >
+                          <input
+                            id={`payment-${method.value}`}
+                            type="radio"
+                            name="paymentMethod"
+                            value={method.value}
+                            checked={checked}
+                            onChange={handleChange}
+                            style={{ marginTop: 3 }}
+                          />
+                          <span>
+                            <span style={{ display: 'block', fontWeight: 500 }}>{method.icon} {t(method.labelKey)}</span>
+                            <span style={{ display: 'block', color: '#888', fontSize: '0.85rem' }}>
+                              {t(method.value === 'Card' ? 'checkout.payment_card_hint' : 'checkout.payment_cod_hint')}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                </div>
               </div>
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.promo_code')}</label>

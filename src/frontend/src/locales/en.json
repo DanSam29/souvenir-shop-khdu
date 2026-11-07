@@ -113,6 +113,9 @@
     "payment_method": "Payment Method",
     "payment_card": "Card Payment (Stripe)",
     "payment_cod": "Cash on Delivery",
+    "payment_card_hint": "You will be redirected to the secure Stripe payment page",
+    "payment_cod_hint": "Pay in cash or by card upon delivery at the post office",
+    "redirecting_to_payment": "Redirecting to the payment page...",
     "promo_code": "Promo Code",
     "promo_placeholder": "Enter promo code (if any)",
     "your_order": "Your Order",
@@ -139,7 +142,11 @@
     "verifying_title": "Verifying payment status...",
     "verifying_message": "Please wait a few seconds.",
     "view_order_details": "Order details",
-    "back_home": "Back to home"
+    "back_home": "Back to home",
+    "cancel_title": "Payment cancelled",
+    "cancel_message": "You cancelled the payment. The order was created but remains unpaid.",
+    "cancel_hint": "You can go back to the cart and try again, or view the order in your profile.",
+    "back_to_cart": "Back to cart"
   },
   "footer": {
     "app_name_full": "KSU Souvenirs",

@@ -52,7 +52,12 @@ namespace KhduSouvenirShop.API.Repositories
 
         public void Remove(IncomingDocument document) => _context.IncomingDocuments.Remove(document);
 
-        public void Remove(OutgoingDocument document) => _context.OutgoingDocuments.Remove(document);
+        public void Remove(OutgoingDocument document)
+        {
+            // Позначаємо лише сам документ як видалений, не прикріплюючи граф навігацій:
+            // пов'язані Order/Product можуть уже відслідковуватися в цьому ж контексті (конфлікт ключів).
+            _context.Entry(document).State = EntityState.Deleted;
+        }
 
         public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
             await _context.SaveChangesAsync(cancellationToken);

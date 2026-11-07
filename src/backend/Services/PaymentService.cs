@@ -370,23 +370,39 @@ namespace KhduSouvenirShop.API.Services
             if (string.IsNullOrEmpty(charge.PaymentIntentId)) return true;
             var payment = await _paymentRepository.Query()
                 .Include(p => p.Order)
+                    .ThenInclude(o => o.OrderItems)
+                        .ThenInclude(oi => oi.Product)
                 .FirstOrDefaultAsync(p => p.StripePaymentIntentId == charge.PaymentIntentId);
             if (payment == null) return true;
             // Ідемпотентність: статус уже Refunded (напр. повернення оформлено в адмінці)
             if (payment.Status == "Refunded") return true;
             var order = payment.Order;
             if (order == null) return false;
+            var oldStatus = order.Status;
+            // Повернення товару на склад
+            foreach (var item in order.OrderItems)
+            {
+                item.Product.Stock += item.Quantity;
+            }
+            // Видалення видаткових накладних, пов'язаних із замовленням
+            var docs = (await _warehouseRepository.GetOutgoingListAsync()).Where(d => d.OrderId == order.OrderId && d.Reason == "Order").ToList();
+            foreach (var doc in docs)
+            {
+                _warehouseRepository.Remove(doc);
+            }
             payment.Status = "Refunded";
+            order.Status = "Cancelled";
             await _orderHistoryRepository.AddAsync(new OrderHistory
             {
                 OrderId = order.OrderId,
-                OldStatus = order.Status,
-                NewStatus = order.Status,
+                OldStatus = oldStatus,
+                NewStatus = "Cancelled",
                 Comment = "Повернення коштів через Stripe (charge.refunded)",
                 Timestamp = DateTime.UtcNow
             });
             await _orderRepository.SaveChangesAsync();
-            _logger.LogInformation("Charge refunded for Order {OrderId}", order.OrderId);
+            InvalidateCache();
+            _logger.LogInformation("Charge refunded for Order {OrderId}, stock restored", order.OrderId);
             return true;
         }
         private async Task<bool> ProcessSuccessfulPayment(Session session)
@@ -400,6 +416,7 @@ namespace KhduSouvenirShop.API.Services
             if (!int.TryParse(orderIdStr, out var orderId)) return false;
             var order = await _orderRepository.Query()
                 .Include(o => o.Payment)
+                .Include(o => o.User)
                 .FirstOrDefaultAsync(o => o.OrderId == orderId);
             if (order == null || order.Payment == null) return false;
             // Якщо вже завершено - нічого не виконується (ідемпотентність)
@@ -586,6 +603,24 @@ namespace KhduSouvenirShop.API.Services
                 .Include(p => p.Order)
                     .ThenInclude(o => o.User)
                 .FirstOrDefaultAsync(p => p.StripePaymentIntentId == paymentIntent.Id);
+            // На момент створення сесії PaymentIntentId ще невідомий, тож у БД він може бути порожнім.
+            // Тоді знаходимо замовлення через Checkout Session, прив'язану до цього PaymentIntent.
+            if (payment == null)
+            {
+                var sessionService = new SessionService();
+                var sessions = await sessionService.ListAsync(new SessionListOptions
+                {
+                    PaymentIntent = paymentIntent.Id,
+                    Limit = 1
+                });
+                var session = sessions.Data.FirstOrDefault();
+                if (session == null || !int.TryParse(session.ClientReferenceId, out var orderId))
+                    return true;
+                payment = await _paymentRepository.Query()
+                    .Include(p => p.Order)
+                        .ThenInclude(o => o.User)
+                    .FirstOrDefaultAsync(p => p.OrderId == orderId);
+            }
             if (payment == null) return true;
             var cancelled = await CancelOrderAndRestoreStock(payment.OrderId, "Помилка оплати через Stripe (PaymentIntent Failed)");
             if (cancelled && payment.Order != null)
@@ -700,6 +735,11 @@ namespace KhduSouvenirShop.API.Services
             catch (StripeException e)
             {
                 _logger.LogError(e, "Stripe Refund Error for Order {OrderId}", orderId);
+                return false;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error updating Order {OrderId} after Stripe refund", orderId);
                 return false;
             }
         }
