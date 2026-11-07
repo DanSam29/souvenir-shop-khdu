@@ -560,6 +560,25 @@ namespace KhduSouvenirShop.API.Migrations
                     b.ToTable("payments");
                 });
 
+            modelBuilder.Entity("KhduSouvenirShop.API.Models.ProcessedStripeEvent", b =>
+                {
+                    b.Property<string>("EventId")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("ProcessedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("EventId");
+
+                    b.ToTable("processed_stripe_events");
+                });
+
             modelBuilder.Entity("KhduSouvenirShop.API.Models.Product", b =>
                 {
                     b.Property<int>("ProductId")

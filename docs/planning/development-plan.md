@@ -306,7 +306,7 @@
   - CreateRefundAsync(paymentIntentId, amount) - частковий/повний рефанд
   - ConstructEventAsync(payload, signatureHeader) - перевірка підпису webhook
 
-5.2. Webhook (WebhooksController)
+5.2. Webhook (WebhooksController) ✅
 - POST /api/webhooks/stripe:
   1. Перевірити підпис через StripeEventUtility.ConstructEvent (WebhookSecret)
   2. Ідемпотентність: перевірити, чи вже оброблено цей EventId

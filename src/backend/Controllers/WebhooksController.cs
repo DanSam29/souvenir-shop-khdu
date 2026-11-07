@@ -22,13 +22,21 @@ namespace KhduSouvenirShop.API.Controllers
             if (string.IsNullOrEmpty(stripeSignature))
             {
                 _logger.LogWarning("Missing Stripe-Signature header");
-                return BadRequest();
+                // Повертаємо 200, щоб Stripe не робив повторних спроб
+                return Ok();
             }
-            var result = await _paymentService.HandleWebhookAsync(json, stripeSignature!, null);
-            if (!result)
+            try
             {
-                _logger.LogError("Failed to handle Stripe webhook");
-                return BadRequest();
+                var result = await _paymentService.HandleWebhookAsync(json, stripeSignature!, null);
+                if (!result)
+                {
+                    _logger.LogError("Stripe webhook processed with errors");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Помилки логуються, але відповідь завжди 200 OK, щоб Stripe не робив ретраїв
+                _logger.LogError(ex, "Unexpected error while handling Stripe webhook");
             }
             return Ok();
         }

@@ -9,6 +9,7 @@ namespace KhduSouvenirShop.API.Services
         Task SendOrderConfirmationAsync(string email, string orderNumber, string lang = "ua");
         Task SendOrderCancellationAsync(string email, string orderNumber, string? reason = null, string lang = "ua");
         Task SendPaymentConfirmationAsync(string email, string orderNumber, decimal amount, string lang = "ua");
+        Task SendPaymentFailedAsync(string email, string orderNumber, string lang = "ua");
         Task SendStudentVerificationEmailAsync(string email, string status, string lang = "ua");
         Task SendPasswordResetEmailAsync(string email, string resetToken, string lang = "ua");
     }
@@ -46,6 +47,14 @@ namespace KhduSouvenirShop.API.Services
             string body = lang == "en"
                 ? $"<h1>Payment successful!</h1><p>We received your payment of {amount} UAH for order {orderNumber}.</p>"
                 : $"<h1>Оплата успішна!</h1><p>Ми отримали вашу оплату в розмірі {amount} грн за замовлення {orderNumber}.</p>";
+            await SendEmailAsync(email, subject, body);
+        }
+        public async Task SendPaymentFailedAsync(string email, string orderNumber, string lang = "ua")
+        {
+            string subject = lang == "en" ? "Payment Failed" : "Оплата не вдалася";
+            string body = lang == "en"
+                ? $"<h1>Payment failed</h1><p>Unfortunately, the payment for your order {orderNumber} was not successful. The order has been cancelled. You can try again.</p>"
+                : $"<h1>Оплата не вдалася</h1><p>На жаль, оплата за замовлення {orderNumber} не пройшла. Замовлення скасовано. Ви можете спробувати ще раз.</p>";
             await SendEmailAsync(email, subject, body);
         }
         public async Task SendStudentVerificationEmailAsync(string email, string status, string lang = "ua")

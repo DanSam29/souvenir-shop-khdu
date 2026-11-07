@@ -17,6 +17,7 @@ namespace KhduSouvenirShop.API.Services
         private readonly IRepository<CartItem> _cartItemRepository;
         private readonly IRepository<OrderItem> _orderItemRepository;
         private readonly IRepository<OrderHistory> _orderHistoryRepository;
+        private readonly IRepository<ProcessedStripeEvent> _processedEventRepository;
         private readonly IShippingRepository _shippingRepository;
         private readonly IWarehouseRepository _warehouseRepository;
         private readonly IUnitOfWork _unitOfWork;
@@ -34,6 +35,7 @@ namespace KhduSouvenirShop.API.Services
             IRepository<CartItem> cartItemRepository,
             IRepository<OrderItem> orderItemRepository,
             IRepository<OrderHistory> orderHistoryRepository,
+            IRepository<ProcessedStripeEvent> processedEventRepository,
             IShippingRepository shippingRepository,
             IWarehouseRepository warehouseRepository,
             IUnitOfWork unitOfWork,
@@ -50,6 +52,7 @@ namespace KhduSouvenirShop.API.Services
             _cartItemRepository = cartItemRepository;
             _orderItemRepository = orderItemRepository;
             _orderHistoryRepository = orderHistoryRepository;
+            _processedEventRepository = processedEventRepository;
             _shippingRepository = shippingRepository;
             _warehouseRepository = warehouseRepository;
             _unitOfWork = unitOfWork;
@@ -254,34 +257,36 @@ namespace KhduSouvenirShop.API.Services
         {
             try
             {
-                Session session;
-
                 if (!string.IsNullOrEmpty(stripeSignature) && !string.IsNullOrEmpty(json))
                 {
                     var stripeEvent = ConstructEventAsync(json, stripeSignature);
 
-                    if (stripeEvent.Type == "checkout.session.completed")
+                    // Ідемпотентність: подія з таким EventId уже оброблялася
+                    if (await _processedEventRepository.ExistsAsync(e => e.EventId == stripeEvent.Id))
                     {
-                        session = (stripeEvent.Data.Object as Session)!;
-                        return await ProcessSuccessfulPayment(session);
+                        _logger.LogInformation("Stripe event {EventId} ({EventType}) already processed, skipping", stripeEvent.Id, stripeEvent.Type);
+                        return true;
                     }
-                    else if (stripeEvent.Type == "payment_intent.payment_failed")
-                    {
-                        var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
-                        if (paymentIntent == null) return false;
 
-                        return await ProcessFailedPayment(paymentIntent);
-                    }
-                    else if (stripeEvent.Type == "checkout.session.expired")
+                    var handled = await HandleStripeEventAsync(stripeEvent);
+
+                    // Фіксуємо подію як оброблену, щоб уникнути повторної обробки при ретраях Stripe
+                    if (handled)
                     {
-                        session = (stripeEvent.Data.Object as Session)!;
-                        return await ProcessExpiredSession(session);
+                        await _processedEventRepository.AddAsync(new ProcessedStripeEvent
+                        {
+                            EventId = stripeEvent.Id,
+                            EventType = stripeEvent.Type,
+                            ProcessedAt = DateTime.UtcNow
+                        });
+                        await _processedEventRepository.SaveChangesAsync();
                     }
+                    return handled;
                 }
                 else if (!string.IsNullOrEmpty(sessionId))
                 {
                     var service = new SessionService();
-                    session = await service.GetAsync(sessionId);
+                    var session = await service.GetAsync(sessionId);
                     if (session.PaymentStatus == "paid")
                     {
                         return await ProcessSuccessfulPayment(session);
@@ -294,6 +299,94 @@ namespace KhduSouvenirShop.API.Services
                 _logger.LogError(e, "Stripe Webhook/Verify Error");
                 return false;
             }
+        }
+        // Розподіл події Stripe за типом
+        private async Task<bool> HandleStripeEventAsync(Event stripeEvent)
+        {
+            switch (stripeEvent.Type)
+            {
+                case "checkout.session.completed":
+                    if (stripeEvent.Data.Object is Session completedSession)
+                        return await ProcessSuccessfulPayment(completedSession);
+                    return false;
+                case "payment_intent.succeeded":
+                    if (stripeEvent.Data.Object is PaymentIntent succeededIntent)
+                        return await ProcessSucceededPaymentIntent(succeededIntent);
+                    return false;
+                case "payment_intent.payment_failed":
+                    if (stripeEvent.Data.Object is PaymentIntent failedIntent)
+                        return await ProcessFailedPayment(failedIntent);
+                    return false;
+                case "charge.refunded":
+                    if (stripeEvent.Data.Object is Charge refundedCharge)
+                        return await ProcessChargeRefunded(refundedCharge);
+                    return false;
+                case "checkout.session.expired":
+                    if (stripeEvent.Data.Object is Session expiredSession)
+                        return await ProcessExpiredSession(expiredSession);
+                    return false;
+                default:
+                    // Інші типи подій не змінюють стан замовлення
+                    return true;
+            }
+        }
+        // payment_intent.succeeded: оплату підтверджено
+        private async Task<bool> ProcessSucceededPaymentIntent(PaymentIntent paymentIntent)
+        {
+            var payment = await _paymentRepository.Query()
+                .Include(p => p.Order)
+                    .ThenInclude(o => o.User)
+                .FirstOrDefaultAsync(p => p.StripePaymentIntentId == paymentIntent.Id);
+            // Платіж ще не створено (напр. кошиковий флоу) — обробку виконає checkout.session.completed
+            if (payment == null) return true;
+            // Ідемпотентність: платіж уже підтверджено
+            if (payment.Status == "Completed") return true;
+            var order = payment.Order;
+            if (order == null) return false;
+            var oldStatus = order.Status;
+            payment.Status = "Completed";
+            payment.TransactionId = paymentIntent.Id;
+            if (order.Status != "Paid")
+            {
+                order.Status = "Paid";
+                await _orderHistoryRepository.AddAsync(new OrderHistory
+                {
+                    OrderId = order.OrderId,
+                    OldStatus = oldStatus,
+                    NewStatus = "Paid",
+                    Comment = "Оплата отримана через Stripe (payment_intent.succeeded)",
+                    Timestamp = DateTime.UtcNow
+                });
+            }
+            await _orderRepository.SaveChangesAsync();
+            _logger.LogInformation("PaymentIntent {PaymentIntentId} succeeded for Order {OrderId}", paymentIntent.Id, order.OrderId);
+            await _emailService.SendPaymentConfirmationAsync(order.User.Email, order.OrderNumber, payment.Amount, "ua");
+            return true;
+        }
+        // charge.refunded: кошти повернуто (напр. через панель Stripe)
+        private async Task<bool> ProcessChargeRefunded(Charge charge)
+        {
+            if (string.IsNullOrEmpty(charge.PaymentIntentId)) return true;
+            var payment = await _paymentRepository.Query()
+                .Include(p => p.Order)
+                .FirstOrDefaultAsync(p => p.StripePaymentIntentId == charge.PaymentIntentId);
+            if (payment == null) return true;
+            // Ідемпотентність: статус уже Refunded (напр. повернення оформлено в адмінці)
+            if (payment.Status == "Refunded") return true;
+            var order = payment.Order;
+            if (order == null) return false;
+            payment.Status = "Refunded";
+            await _orderHistoryRepository.AddAsync(new OrderHistory
+            {
+                OrderId = order.OrderId,
+                OldStatus = order.Status,
+                NewStatus = order.Status,
+                Comment = "Повернення коштів через Stripe (charge.refunded)",
+                Timestamp = DateTime.UtcNow
+            });
+            await _orderRepository.SaveChangesAsync();
+            _logger.LogInformation("Charge refunded for Order {OrderId}", order.OrderId);
+            return true;
         }
         private async Task<bool> ProcessSuccessfulPayment(Session session)
         {
@@ -481,9 +574,15 @@ namespace KhduSouvenirShop.API.Services
         {
             var payment = await _paymentRepository.Query()
                 .Include(p => p.Order)
+                    .ThenInclude(o => o.User)
                 .FirstOrDefaultAsync(p => p.StripePaymentIntentId == paymentIntent.Id);
-            if (payment == null) return false;
-            return await CancelOrderAndRestoreStock(payment.OrderId, "Помилка оплати через Stripe (PaymentIntent Failed)");
+            if (payment == null) return true;
+            var cancelled = await CancelOrderAndRestoreStock(payment.OrderId, "Помилка оплати через Stripe (PaymentIntent Failed)");
+            if (cancelled && payment.Order != null)
+            {
+                await _emailService.SendPaymentFailedAsync(payment.Order.User.Email, payment.Order.OrderNumber, "ua");
+            }
+            return cancelled;
         }
         private async Task<bool> ProcessExpiredSession(Session session)
         {
