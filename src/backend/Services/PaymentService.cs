@@ -345,6 +345,7 @@ namespace KhduSouvenirShop.API.Services
             if (order == null) return false;
             var oldStatus = order.Status;
             payment.Status = "Completed";
+            payment.CompletedAt = DateTime.UtcNow;
             payment.TransactionId = paymentIntent.Id;
             if (order.Status != "Paid")
             {
@@ -412,6 +413,7 @@ namespace KhduSouvenirShop.API.Services
             }
             var oldStatus = order.Status;
             order.Payment.Status = PaymentStatus.Completed.ToString();
+            order.Payment.CompletedAt = DateTime.UtcNow;
             order.Payment.TransactionId = session.PaymentIntentId;
             order.Payment.StripePaymentIntentId = session.PaymentIntentId;
             order.Status = "Paid";
@@ -483,7 +485,8 @@ namespace KhduSouvenirShop.API.Services
                     TransactionId = session.PaymentIntentId,
                     StripeSessionId = session.Id,
                     StripePaymentIntentId = session.PaymentIntentId,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    CompletedAt = DateTime.UtcNow
                 };
                 await _paymentRepository.AddAsync(payment);
                 decimal subtotal = 0;

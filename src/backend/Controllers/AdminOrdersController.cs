@@ -184,9 +184,15 @@ namespace KhduSouvenirShop.API.Controllers
             var oldStatus = order.Status;
             order.Status = newStatus;
             // Shipped → Delivered: для накладеного платежу (COD) оплата вважається завершеною
-            if (newStatus == "Delivered" && order.Payment != null && order.Payment.Method == "CashOnDelivery")
+            if (newStatus == "Delivered"
+                && order.Payment != null
+                && PaymentStates.IsCashOnDelivery(order.Payment.Method)
+                && !PaymentStates.IsPaid(order.Payment.Status))
             {
-                order.Payment.Status = "Completed";
+                order.Payment.Status = PaymentStatus.Completed.ToString();
+                order.Payment.CompletedAt = DateTime.UtcNow;
+                order.Payment.UpdatedAt = DateTime.UtcNow;
+                comment = "Оплата при отриманні прийнята";
             }
             await _orderHistoryRepository.AddAsync(new OrderHistory
             {

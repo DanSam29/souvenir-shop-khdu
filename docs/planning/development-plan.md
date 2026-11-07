@@ -322,7 +322,7 @@
 - enum PaymentMethod: Card, CashOnDelivery
 - Валідація: сума Payment.Amount == Order.TotalAmount (TotalAmount уже включає ShippingCost)
 
-5.4. Cash-on-Delivery (COD)
+5.4. Cash-on-Delivery (COD) ✅
 - При зміні Order.Status → Delivered (адміном):
   - Якщо Payment.Method == COD і Payment.Status != Completed
   - Payment.Status = Completed

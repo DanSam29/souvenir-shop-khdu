@@ -29,6 +29,8 @@ namespace KhduSouvenirShop.API.Models
         public string? IdempotencyKey { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
+        // Час фактичного завершення оплати (для COD — момент доставки)
+        public DateTime? CompletedAt { get; set; }
         // Навігаційні властивості
         [ForeignKey("OrderId")]
         public virtual Order Order { get; set; } = null!;
