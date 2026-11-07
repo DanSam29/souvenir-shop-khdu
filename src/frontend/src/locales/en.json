@@ -50,9 +50,6 @@
     "logout": "Logout",
     "admin": "Admin Panel"
   },
-  "header": {
-    "search_placeholder": "Search products..."
-  },
   "home": {
     "categories": "Categories"
   },

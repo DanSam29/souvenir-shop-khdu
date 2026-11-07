@@ -50,9 +50,6 @@
     "logout": "Вийти",
     "admin": "Адмін-панель"
   },
-  "header": {
-    "search_placeholder": "Пошук товарів..."
-  },
   "home": {
     "categories": "Категорії"
   },
