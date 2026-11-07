@@ -21,7 +21,7 @@ namespace KhduSouvenirShop.API.Validators
                 .NotEmpty().WithMessage("Номер відділення обов'язковий");
             RuleFor(x => x.PaymentMethod)
                 .NotEmpty().WithMessage("Метод оплати обов'язковий")
-                .Must(x => x == "Card" || x == "CashOnDelivery").WithMessage("Некоректний метод оплати");           
+                .Must(x => PaymentStates.IsKnownMethod(x)).WithMessage("Некоректний метод оплати");           
             RuleFor(x => x.CityRef)
                 .NotEmpty().WithMessage("CityRef обов'язковий для Nova Poshta");
             RuleFor(x => x.WarehouseRef)

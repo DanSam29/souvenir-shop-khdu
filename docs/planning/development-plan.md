@@ -317,10 +317,10 @@
   4. Повернути 200 OK якнайшвидше; обробку в фоні якщо потрібно
 - Обробка помилок webhook: логування, але повернення 200, щоб Stripe не ретрайв
 
-5.3. Payment States
-- enum PaymentStatus: Pending, RequiresAction, Succeeded, Failed, Cancelled, Refunded
+5.3. Payment States ✅
+- enum PaymentStatus: Pending, RequiresAction, Completed, Failed, Cancelled, Refunded
 - enum PaymentMethod: Card, CashOnDelivery
-- Валідація: сума Payment.Amount == Order.TotalAmount + DeliveryCost
+- Валідація: сума Payment.Amount == Order.TotalAmount (TotalAmount уже включає ShippingCost)
 
 5.4. Cash-on-Delivery (COD)
 - При зміні Order.Status → Delivered (адміном):

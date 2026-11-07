@@ -208,8 +208,8 @@ namespace KhduSouvenirShop.API.Controllers
                 {
                     OrderId = order.OrderId,
                     Amount = 0,
-                    Method = dto.PaymentMethod ?? "CashOnDelivery",
-                    Status = "Pending",
+                    Method = dto.PaymentMethod ?? PaymentMethod.CashOnDelivery.ToString(),
+                    Status = PaymentStatus.Pending.ToString(),
                     CreatedAt = DateTime.UtcNow
                 };
                 await _paymentRepository.AddAsync(payment);
@@ -301,7 +301,7 @@ namespace KhduSouvenirShop.API.Controllers
                 await _unitOfWork.SaveChangesAsync();
                 InvalidateCache();
                 // Відправка листа-підтвердження для накладеного платежу
-                if (payment.Method == "CashOnDelivery")
+                if (PaymentStates.IsCashOnDelivery(payment.Method))
                 {
                     await _emailService.SendOrderConfirmationAsync(user!.Email, order.OrderNumber, "ua");
                 }

@@ -402,9 +402,16 @@ namespace KhduSouvenirShop.API.Services
                 .FirstOrDefaultAsync(o => o.OrderId == orderId);
             if (order == null || order.Payment == null) return false;
             // Якщо вже завершено - нічого не виконується (ідемпотентність)
-            if (order.Payment.Status == "Completed") return true;
+            if (PaymentStates.IsPaid(order.Payment.Status)) return true;
+            // Валідація суми: сплачена через Stripe сума має дорівнювати сумі замовлення
+            var paidAmount = (decimal)(session.AmountTotal ?? 0) / 100m;
+            if (!PaymentStates.IsAmountConsistent(paidAmount, order.TotalAmount))
+            {
+                _logger.LogError("Сума оплати {PaidAmount} не відповідає сумі замовлення {OrderTotal} (Order {OrderId})", paidAmount, order.TotalAmount, order.OrderId);
+                return false;
+            }
             var oldStatus = order.Status;
-            order.Payment.Status = "Completed";
+            order.Payment.Status = PaymentStatus.Completed.ToString();
             order.Payment.TransactionId = session.PaymentIntentId;
             order.Payment.StripePaymentIntentId = session.PaymentIntentId;
             order.Status = "Paid";
