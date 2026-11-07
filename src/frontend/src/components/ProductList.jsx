@@ -294,7 +294,6 @@ function ProductList() {
         {/* Список товарів */}
         <div className="products-content">
           <div className="products-header">
-            <h2>{t('home.all_products')}</h2>
             <div className="products-toolbar">
               <span className="products-count">{t('common.found')}: {sortedProducts.length}</span>
               <label className="sort-control">

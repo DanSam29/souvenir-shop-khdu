@@ -39,8 +39,7 @@
     "next": "Наступна",
     "page": "Сторінка",
     "found": "Знайдено",
-    "no_results": "Товарів не знайдено",
-    "view_all": "Дивитись усі"
+    "no_results": "Товарів не знайдено"
   },
   "nav": {
     "home": "Головна",
@@ -55,11 +54,7 @@
     "search_placeholder": "Пошук товарів..."
   },
   "home": {
-    "categories": "Категорії",
-    "all_products": "Усі товари",
-    "featured": "Рекомендовані товари",
-    "new_arrivals": "Новинки",
-    "shop_now": "До каталогу"
+    "categories": "Категорії"
   },
   "product": {
     "add_to_cart": "Додати у кошик",

@@ -39,8 +39,7 @@
     "next": "Next",
     "page": "Page",
     "found": "Found",
-    "no_results": "No products found",
-    "view_all": "View all"
+    "no_results": "No products found"
   },
   "nav": {
     "home": "Home",
@@ -55,11 +54,7 @@
     "search_placeholder": "Search products..."
   },
   "home": {
-    "categories": "Categories",
-    "all_products": "All Products",
-    "featured": "Featured Products",
-    "new_arrivals": "New Arrivals",
-    "shop_now": "Shop now"
+    "categories": "Categories"
   },
   "product": {
     "add_to_cart": "Add to Cart",
