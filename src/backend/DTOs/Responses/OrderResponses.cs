@@ -79,8 +79,14 @@ namespace KhduSouvenirShop.API.DTOs.Responses
         public int ShippingId { get; set; }
         public string City { get; set; } = string.Empty;
         public string WarehouseNumber { get; set; } = string.Empty;
+        public string? CityRef { get; set; }
+        public string? WarehouseRef { get; set; }
+        public string? WarehouseAddress { get; set; }
         public string RecipientName { get; set; } = string.Empty;
         public string RecipientPhone { get; set; } = string.Empty;
         public string? TrackingNumber { get; set; }
+        public string DeliveryMethod { get; set; } = string.Empty;
+        public decimal DeliveryCost { get; set; }
+        public int? EstimatedDays { get; set; }
     }
 }

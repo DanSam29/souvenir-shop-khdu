@@ -135,6 +135,8 @@ namespace KhduSouvenirShop.API.Controllers
                 }
             }
             // Крок 1. Перевірка існування відділення Nova Poshta (м'яка деградація: за помилок API перевірку пропускаємо)
+            // Адреса відділення береться з наданого DTO, а якщо її не передано — з довідника Nova Poshta.
+            string? warehouseAddress = dto.WarehouseAddress;
             if (_configuration.GetValue<bool>("Features:NovaPoshtaEnabled")
                 && !string.IsNullOrWhiteSpace(dto.CityRef)
                 && !string.IsNullOrWhiteSpace(dto.WarehouseRef))
@@ -148,6 +150,10 @@ namespace KhduSouvenirShop.API.Controllers
                         if (warehouseList.Count > 0 && !warehouseList.Any(w => w.Ref == dto.WarehouseRef))
                         {
                             return BadRequest(ApiResponse<object>.FailureResult("Вказане відділення не знайдено для обраного міста", "BadRequest"));
+                        }
+                        if (string.IsNullOrWhiteSpace(warehouseAddress))
+                        {
+                            warehouseAddress = warehouseList.FirstOrDefault(w => w.Ref == dto.WarehouseRef)?.Description;
                         }
                     }
                 }
@@ -165,6 +171,11 @@ namespace KhduSouvenirShop.API.Controllers
                 if (!string.IsNullOrEmpty(dto.CityRef) && _configuration.GetValue<bool>("Features:NovaPoshtaEnabled"))
                 {
                     shippingCost = await _novaPoshtaService.CalculateDeliveryCostAsync(dto.CityRef, dto.WarehouseRef, totalWeight, totalAfterUserPromosForShipping);
+                }
+                // Валідація: вартість доставки не може бути від'ємною
+                if (shippingCost < 0)
+                {
+                    return BadRequest(ApiResponse<object>.FailureResult("Некоректна вартість доставки", "BadRequest"));
                 }
                 // Крок 5. Номер замовлення у форматі KSU-{yyyyMMdd}-{000000}
                 var orderNumberPrefix = $"KSU-{DateTime.UtcNow:yyyyMMdd}-";
@@ -197,11 +208,15 @@ namespace KhduSouvenirShop.API.Controllers
                     OrderId = order.OrderId,
                     City = dto.City,
                     WarehouseNumber = dto.WarehouseNumber,
+                    WarehouseAddress = warehouseAddress,
                     CityRef = dto.CityRef,
                     WarehouseRef = dto.WarehouseRef,
                     RecipientName = dto.RecipientName,
                     RecipientPhone = dto.RecipientPhone,
-                    TrackingNumber = null
+                    TrackingNumber = null,
+                    DeliveryMethod = "NovaPoshta",
+                    DeliveryCost = shippingCost,
+                    EstimatedDays = _novaPoshtaService.EstimateDeliveryDays(totalWeight)
                 };
                 await _shippingRepository.AddAsync(shipping);
                 var payment = new Payment
@@ -459,8 +474,12 @@ namespace KhduSouvenirShop.API.Controllers
                 {
                     city = o.Shipping.City,
                     warehouseNumber = o.Shipping.WarehouseNumber,
+                    warehouseAddress = o.Shipping.WarehouseAddress,
                     recipientName = o.Shipping.RecipientName,
-                    recipientPhone = o.Shipping.RecipientPhone
+                    recipientPhone = o.Shipping.RecipientPhone,
+                    deliveryMethod = o.Shipping.DeliveryMethod,
+                    deliveryCost = o.Shipping.DeliveryCost,
+                    estimatedDays = o.Shipping.EstimatedDays
                 } : null,
                 items = o.OrderItems.Select(oi => new
                 {
@@ -544,9 +563,13 @@ namespace KhduSouvenirShop.API.Controllers
                 {
                     city = order.Shipping.City,
                     warehouseNumber = order.Shipping.WarehouseNumber,
+                    warehouseAddress = order.Shipping.WarehouseAddress,
                     recipientName = order.Shipping.RecipientName,
                     recipientPhone = order.Shipping.RecipientPhone,
-                    trackingNumber = order.Shipping.TrackingNumber
+                    trackingNumber = order.Shipping.TrackingNumber,
+                    deliveryMethod = order.Shipping.DeliveryMethod,
+                    deliveryCost = order.Shipping.DeliveryCost,
+                    estimatedDays = order.Shipping.EstimatedDays
                 } : null,
                 payment = order.Payment != null ? new
                 {
@@ -649,6 +672,7 @@ namespace KhduSouvenirShop.API.Controllers
         public string RecipientPhone { get; set; } = string.Empty;
         public string City { get; set; } = string.Empty;
         public string WarehouseNumber { get; set; } = string.Empty;
+        public string? WarehouseAddress { get; set; }
         public string? CityRef { get; set; }
         public string? WarehouseRef { get; set; }
         public string? PaymentMethod { get; set; }

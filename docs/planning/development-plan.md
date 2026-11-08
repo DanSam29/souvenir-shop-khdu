@@ -367,7 +367,7 @@
 - GET /api/np/warehouses?cityRef=...&search=2 → JSON список
 - POST /api/np/calculate → {cityRef, warehouseRef, weight} → {cost, estimatedDays}
 
-6.3. Shipping Model completion
+6.3. Shipping Model completion ✅
 - Shipping entity: cityRef, cityName, warehouseRef, warehouseNumber, warehouseAddress, deliveryCost, estimatedDays, trackingNumber, deliveryMethod = NovaPoshta
 - Валідація: всі поля для NP заповнені, deliveryCost ≥ 0
 

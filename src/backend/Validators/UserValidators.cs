@@ -107,6 +107,8 @@ namespace KhduSouvenirShop.API.Validators
             RuleFor(x => x.WarehouseNumber)
                 .NotEmpty().WithMessage("Номер відділення обов'язковий")
                 .MaximumLength(500).WithMessage("Номер відділення не може бути довшим за 500 символів");
+            RuleFor(x => x.WarehouseAddress)
+                .MaximumLength(500).WithMessage("Адреса відділення не може бути довшою за 500 символів");
             RuleFor(x => x.RecipientName)
                 .NotEmpty().WithMessage("Ім'я отримувача обов'язкове")
                 .MaximumLength(100).WithMessage("Ім'я отримувача не може бути довшим за 100 символів");

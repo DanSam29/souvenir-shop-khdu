@@ -79,6 +79,9 @@ namespace KhduSouvenirShop.API.DTOs.Requests
         [MaxLength(500)]
         public string WarehouseNumber { get; set; } = string.Empty;
 
+        [MaxLength(500)]
+        public string? WarehouseAddress { get; set; }
+
         [MaxLength(100)]
         public string? CityRef { get; set; }
 

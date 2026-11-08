@@ -161,6 +161,10 @@ namespace KhduSouvenirShop.API.Data
                 .WithMany()
                 .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+            // Спосіб доставки за замовчуванням — Nova Poshta
+            modelBuilder.Entity<Shipping>()
+                .Property(s => s.DeliveryMethod)
+                .HasDefaultValue("NovaPoshta");
             modelBuilder.Entity<Order>()
                 .HasOne(o => o.Payment)
                 .WithOne(p => p.Order)

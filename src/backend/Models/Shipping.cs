@@ -25,6 +25,9 @@ namespace KhduSouvenirShop.API.Models
         public string? CityRef { get; set; }
         [MaxLength(100)]
         public string? WarehouseRef { get; set; }
+        // Повна адреса відділення Nova Poshta (для відображення користувачу)
+        [MaxLength(500)]
+        public string? WarehouseAddress { get; set; }
         [Required]
         [MaxLength(100)]
         public string RecipientName { get; set; } = string.Empty;
@@ -33,6 +36,13 @@ namespace KhduSouvenirShop.API.Models
         public string RecipientPhone { get; set; } = string.Empty;
         [MaxLength(100)]
         public string? TrackingNumber { get; set; }
+        // Спосіб доставки (у межах дипломної роботи — Nova Poshta)
+        [MaxLength(50)]
+        public string DeliveryMethod { get; set; } = "NovaPoshta";
+        // Вартість доставки за цим замовленням (завжди ≥ 0)
+        public decimal DeliveryCost { get; set; }
+        // Орієнтовний строк доставки у днях
+        public int? EstimatedDays { get; set; }
         // Адреса за замовчуванням серед збережених адрес користувача
         public bool IsDefault { get; set; }
         // Навігаційні властивості

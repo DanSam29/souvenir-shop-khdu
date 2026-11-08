@@ -489,8 +489,11 @@ namespace KhduSouvenirShop.API.Services
                     WarehouseNumber = session.Metadata["warehouseNumber"],
                     CityRef = session.Metadata["cityRef"],
                     WarehouseRef = session.Metadata["warehouseRef"],
+                    WarehouseAddress = session.Metadata.TryGetValue("warehouseAddress", out var wa) ? wa : null,
                     RecipientName = session.Metadata["recipientName"],
-                    RecipientPhone = session.Metadata["recipientPhone"]
+                    RecipientPhone = session.Metadata["recipientPhone"],
+                    DeliveryMethod = "NovaPoshta",
+                    DeliveryCost = shippingCost
                 };
                 await _shippingRepository.AddAsync(shipping);
                 var payment = new Payment

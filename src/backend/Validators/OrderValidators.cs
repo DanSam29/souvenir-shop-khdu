@@ -19,6 +19,8 @@ namespace KhduSouvenirShop.API.Validators
                 .NotEmpty().WithMessage("Місто обов'язкове");
             RuleFor(x => x.WarehouseNumber)
                 .NotEmpty().WithMessage("Номер відділення обов'язковий");
+            RuleFor(x => x.WarehouseAddress)
+                .MaximumLength(500).WithMessage("Адреса відділення не може бути довшою за 500 символів");
             RuleFor(x => x.PaymentMethod)
                 .NotEmpty().WithMessage("Метод оплати обов'язковий")
                 .Must(x => PaymentStates.IsKnownMethod(x)).WithMessage("Некоректний метод оплати");           

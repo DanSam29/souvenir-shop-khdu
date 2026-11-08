@@ -1034,6 +1034,19 @@ namespace KhduSouvenirShop.API.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<decimal>("DeliveryCost")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<string>("DeliveryMethod")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasDefaultValue("NovaPoshta");
+
+                    b.Property<int?>("EstimatedDays")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsDefault")
                         .HasColumnType("tinyint(1)");
 
@@ -1056,6 +1069,10 @@ namespace KhduSouvenirShop.API.Migrations
 
                     b.Property<int?>("UserId")
                         .HasColumnType("int");
+
+                    b.Property<string>("WarehouseAddress")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
 
                     b.Property<string>("WarehouseNumber")
                         .IsRequired()
