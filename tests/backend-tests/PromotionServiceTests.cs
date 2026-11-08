@@ -20,6 +20,12 @@ public class PromotionServiceTests
             .Options;
         return new AppDbContext(options);
     }
+    private static PromotionService CreateService(AppDbContext context) =>
+        new PromotionService(
+            new PromotionRepository(context),
+            new UserRepository(context),
+            new Repository<UserPromotion>(context),
+            new Repository<OrderItem>(context));
     [Fact]
     public async Task GetActivePromotionsForUserAsync_FiltersByAudienceAndDates()
     {
@@ -32,7 +38,7 @@ public class PromotionServiceTests
             new Promotion { PromotionId = 4, IsActive = false, StartDate = null, EndDate = null, AudienceType = "ALL", Priority = 2 }, // не активна
         });
         await context.SaveChangesAsync();
-        var service = new PromotionService(new PromotionRepository(context));
+        var service = CreateService(context);
         var forAnon = await service.GetActivePromotionsForUserAsync(null);
         Assert.Single(forAnon);
         Assert.Equal(1, forAnon[0].PromotionId);
@@ -44,7 +50,7 @@ public class PromotionServiceTests
     public void GetPriceAfterPromotions_AppliesPercentagePromotionsCorrectly()
     {
         var context = CreateInMemoryContext("promos2");
-        var service = new PromotionService(new PromotionRepository(context));
+        var service = CreateService(context);
         var product = new Product { ProductId = 100, CategoryId = 10, Price = 200m };
         var promotions = new List<Promotion>
         {

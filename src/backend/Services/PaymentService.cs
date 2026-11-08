@@ -25,12 +25,14 @@ namespace KhduSouvenirShop.API.Services
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
         private readonly IMemoryCache _cache;
+        private readonly PromotionService _promotionService;
         private readonly string _webhookSecret;
         public PaymentService(
             IOrderRepository orderRepository,
             IPaymentRepository paymentRepository,
             IPromotionRepository promotionRepository,
             IUserRepository userRepository,
+            PromotionService promotionService,
             ICartRepository cartRepository,
             IRepository<CartItem> cartItemRepository,
             IRepository<OrderItem> orderItemRepository,
@@ -48,6 +50,7 @@ namespace KhduSouvenirShop.API.Services
             _paymentRepository = paymentRepository;
             _promotionRepository = promotionRepository;
             _userRepository = userRepository;
+            _promotionService = promotionService;
             _cartRepository = cartRepository;
             _cartItemRepository = cartItemRepository;
             _orderItemRepository = orderItemRepository;
@@ -147,12 +150,11 @@ namespace KhduSouvenirShop.API.Services
         }
         public async Task<Session> CreateCheckoutSessionForCartAsync(User user, Cart cart, List<Promotion> promos, string? promoCode, string successUrl, string cancelUrl, Dictionary<string, string> metadata)
         {
-            var promotionService = new PromotionService(_promotionRepository);
             var lineItems = new List<SessionLineItemOptions>();
             decimal totalAmount = 0;
             foreach (var item in cart.CartItems)
             {
-                var priceAfterUserPromos = promotionService.GetPriceAfterPromotions(item.Product, promos);
+                var priceAfterUserPromos = _promotionService.GetPriceAfterPromotions(item.Product, promos);
                 // Якщо є промокод - він застосовується до ціни
                 if (!string.IsNullOrEmpty(promoCode))
                 {
@@ -168,7 +170,7 @@ namespace KhduSouvenirShop.API.Services
                         else if (promo.Type == "FIXED_AMOUNT")
                         {
                             // Для фіксованої суми на весь кошик - пропорційне розділення
-                            var cartTotal = cart.CartItems.Sum(ci => promotionService.GetPriceAfterPromotions(ci.Product, promos) * ci.Quantity);
+                            var cartTotal = cart.CartItems.Sum(ci => _promotionService.GetPriceAfterPromotions(ci.Product, promos) * ci.Quantity);
                             if (cartTotal > 0)
                             {
                                 var share = (priceAfterUserPromos * item.Quantity) / cartTotal;
@@ -466,8 +468,7 @@ namespace KhduSouvenirShop.API.Services
             var promoCode = session.Metadata.TryGetValue("promoCode", out var pc) ? pc : null;
             decimal shippingCost = 0;
             if (session.Metadata.TryGetValue("shippingCost", out var scStr)) decimal.TryParse(scStr, out shippingCost);
-            var promotionService = new PromotionService(_promotionRepository);
-            var userPromotions = await promotionService.GetActivePromotionsForUserAsync(user.StudentStatus);
+            var userPromotions = await _promotionService.GetActivePromotionsForUserAsync(user.StudentStatus);
             using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
@@ -514,7 +515,7 @@ namespace KhduSouvenirShop.API.Services
                 foreach (var item in cart.CartItems)
                 {
                     item.Product.Stock -= item.Quantity;
-                    var priceAfterUserPromos = promotionService.GetPriceAfterPromotions(item.Product, userPromotions);
+                    var priceAfterUserPromos = _promotionService.GetPriceAfterPromotions(item.Product, userPromotions);
                     var orderItem = new OrderItem
                     {
                         OrderId = order.OrderId,

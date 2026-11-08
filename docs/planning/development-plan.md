@@ -397,7 +397,7 @@
 7.1. Promotion Model (розширити якщо потрібно) ✅
 - Fields: PromotionId, Name, NameEn, Description, DescriptionEn, Type (Percent/FixedAmount/SpecialPrice), Value, TargetType (Product/Category/Cart/Shipping), TargetId (nullable), AudienceType (All/Students/Staff/Alumni/Custom/RegularScholarship/HighAchiever), StartDate (nullable), EndDate (nullable), PromoCode (unique, nullable), MinOrderAmount, MinQuantity, Priority (0-100, default 50), UsageLimit (nullable), CurrentUsage, IsActive, CreatedAt, CreatedBy
 
-7.2. PromotionService - Двигун застосування
+7.2. PromotionService - Двигун застосування ✅
 - Методи:
   - GetApplicablePromotionsAsync(userId, cartItems) - збирає всі можливі знижки
   - ValidatePromoCodeAsync(code, userId, cartItems) → {valid, error, promotion}
