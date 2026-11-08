@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
-import { cartAPI, ordersAPI, usersAPI, novaPoshtaAPI, featuresAPI } from '../services/api';
+import { cartAPI, ordersAPI, usersAPI, novaPoshtaAPI, featuresAPI, promotionsAPI } from '../services/api';
 
 const TOTAL_STEPS = 4;
 const NP_DEBOUNCE_MS = 300;
@@ -24,6 +24,10 @@ function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [orderResult, setOrderResult] = useState(null);
   const [calcPreview, setCalcPreview] = useState(null);
+  // Промокод: стан валідації
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [promoError, setPromoError] = useState(null);
+  const [promoValidating, setPromoValidating] = useState(false);
   const [features, setFeatures] = useState(null);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const isEn = i18n.language === 'en';
@@ -219,24 +223,46 @@ function CheckoutPage() {
       calculateShipping();
     }
   }, [form.cityRef, form.warehouseRef, cart, calcPreview]);
-  // Автоперерахунок при введенні промокоду
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      const code = form.promoCode?.trim();
-      try {
-        if (!code) {
-          setCalcPreview(null);
-          return;
+  // Зміна поля промокоду — скидання попереднього результату валідації
+  const handlePromoChange = (e) => {
+    setForm((prev) => ({ ...prev, promoCode: e.target.value }));
+    setAppliedPromo(null);
+    setPromoError(null);
+    setCalcPreview(null);
+  };
+  // Застосування промокоду: валідація (6 правил) → оновлення тоталів
+  const handleApplyPromo = async () => {
+    const code = form.promoCode?.trim();
+    setPromoError(null);
+    setAppliedPromo(null);
+    if (!code) {
+      setCalcPreview(null);
+      return;
+    }
+    try {
+      setPromoValidating(true);
+      const res = await promotionsAPI.validatePromoCode(code);
+      const validation = res.data;
+      if (validation?.valid) {
+        setAppliedPromo(validation.promotion);
+        const calcRes = await ordersAPI.calculate({ promoCode: code, cityRef: form.cityRef });
+        setCalcPreview(calcRes.data);
+        if (calcRes.data?.promoCodeError) {
+          setPromoError(calcRes.data.promoCodeError);
+        } else {
+          showToast(t('checkout.promo_applied'), 'success');
         }
-        const payload = { promoCode: code, cityRef: form.cityRef };
-        const res = await ordersAPI.calculate(payload);
-        setCalcPreview(res.data);
-      } catch (err) {
+      } else {
+        setPromoError(validation?.error || t('checkout.promo_invalid'));
         setCalcPreview(null);
       }
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [form.promoCode, form.cityRef]);
+    } catch (err) {
+      setPromoError(err.response?.data?.error || t('checkout.promo_invalid'));
+      setCalcPreview(null);
+    } finally {
+      setPromoValidating(false);
+    }
+  };
   // Селектори Нової Пошти активні лише коли інтеграція увімкнена і API не повернуло помилку
   const isNpMode = isNpEnabled && !npFallback;
   // Валідація окремого кроку
@@ -591,14 +617,38 @@ function CheckoutPage() {
               </div>
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.promo_code')}</label>
-                <input
-                  type="text"
-                  name="promoCode"
-                  value={form.promoCode}
-                  onChange={handleChange}
-                  placeholder={t('checkout.promo_placeholder')}
-                  style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
-                />
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <input
+                    type="text"
+                    name="promoCode"
+                    value={form.promoCode}
+                    onChange={handlePromoChange}
+                    placeholder={t('checkout.promo_placeholder')}
+                    style={{ flex: 1, padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyPromo}
+                    disabled={promoValidating || !form.promoCode?.trim()}
+                    style={{
+                      padding: '12px 20px', borderRadius: 8, border: 'none',
+                      background: (promoValidating || !form.promoCode?.trim()) ? '#b9d4f5' : '#007bff',
+                      color: '#fff', fontWeight: 600, cursor: (promoValidating || !form.promoCode?.trim()) ? 'default' : 'pointer'
+                    }}
+                  >
+                    {promoValidating ? t('common.loading') : t('checkout.apply_promo')}
+                  </button>
+                </div>
+                {appliedPromo && (
+                  <p style={{ margin: '8px 0 0 0', color: '#28a745', fontSize: '0.9rem' }}>
+                    ✅ {t('checkout.promo_applied')}: {isEn && appliedPromo.nameEn ? appliedPromo.nameEn : appliedPromo.name}
+                  </p>
+                )}
+                {promoError && (
+                  <p style={{ margin: '8px 0 0 0', color: '#cf1322', fontSize: '0.9rem' }}>
+                    ❌ {promoError}
+                  </p>
+                )}
               </div>
             </>
           )}

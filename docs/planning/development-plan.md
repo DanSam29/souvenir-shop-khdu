@@ -440,7 +440,7 @@
   - GET /api/admin/promotions/{id}/statistics - статистика ROI
   - Експорт статистики у CSV/PDF
 
-7.7. Frontend
+7.7. Frontend ✅
 - CheckoutPage: поле "Промокод" з кнопкою "Застосувати" → виклик validate → оновлення тоталів
 - Сторінка "Акції" - список активних промо
 - Admin Promotions page (додати в адмін меню): CRUD, статистика, призначення персональних

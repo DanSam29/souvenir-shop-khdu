@@ -46,6 +46,9 @@ function Header() {
           <Link to="/" className="nav-link">
             {t('nav.home')}
           </Link>
+          <Link to="/promotions" className="nav-link">
+            {t('nav.promotions')}
+          </Link>
           {isAdmin && (
             <Link to="/admin" className="nav-link nav-link-admin">
               {t('nav.admin')}

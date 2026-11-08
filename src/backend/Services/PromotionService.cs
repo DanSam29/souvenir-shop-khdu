@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using KhduSouvenirShop.API.Repositories;
 using KhduSouvenirShop.API.Models;
+using KhduSouvenirShop.API.DTOs.Responses;
 
 namespace KhduSouvenirShop.API.Services;
 
@@ -307,6 +308,36 @@ public class PromotionService
             TotalDiscountGiven = orderItems.Sum(oi => oi.DiscountAmount),
             TotalRevenue = orderItems.Sum(oi => oi.FinalPrice * oi.Quantity)
         };
+    }
+
+    // Перелік застосованих у замовленні знижок (агреговано за акцією) для деталей замовлення
+    public async Task<List<AppliedDiscountResponse>> GetAppliedDiscountsAsync(IEnumerable<OrderItem> orderItems)
+    {
+        var items = orderItems.Where(oi => oi.AppliedPromotionId.HasValue).ToList();
+        if (items.Count == 0)
+        {
+            return new List<AppliedDiscountResponse>();
+        }
+        var promoIds = items.Select(oi => oi.AppliedPromotionId!.Value).Distinct().ToList();
+        var promos = await _promotionRepository.Query()
+            .Where(p => promoIds.Contains(p.PromotionId))
+            .ToListAsync();
+        return items
+            .GroupBy(oi => oi.AppliedPromotionId!.Value)
+            .Select(g =>
+            {
+                var promo = promos.FirstOrDefault(p => p.PromotionId == g.Key);
+                return new AppliedDiscountResponse
+                {
+                    PromotionId = g.Key,
+                    Name = promo?.Name,
+                    NameEn = promo?.NameEn,
+                    PromoCode = promo?.PromoCode,
+                    Type = promo?.Type ?? string.Empty,
+                    TotalDiscount = g.Sum(oi => oi.DiscountAmount)
+                };
+            })
+            .ToList();
     }
 
     // Визначення рівня стакування: 1 - персональні, 2 - студентські, 3 - товар/категорія, 4 - загальні

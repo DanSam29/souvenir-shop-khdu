@@ -315,6 +315,7 @@ namespace KhduSouvenirShop.API.Controllers
             }
             var result = _mapper.Map<OrderResponse>(order);
             result.History = _mapper.Map<List<OrderHistoryResponse>>(order.OrderHistories.OrderByDescending(h => h.Timestamp).ToList());
+            result.AppliedDiscounts = await _promotionService.GetAppliedDiscountsAsync(order.OrderItems);
             return Ok(ApiResponse<OrderResponse>.SuccessResult(result));
         }
         // GET: api/Users/me/addresses - збережені адреси доставки

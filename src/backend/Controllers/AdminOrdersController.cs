@@ -30,6 +30,7 @@ namespace KhduSouvenirShop.API.Controllers
         IUnitOfWork unitOfWork,
         IPaymentService paymentService,
         IEmailService emailService,
+        PromotionService promotionService,
         IMapper mapper,
         IMemoryCache cache,
         ILogger<AdminOrdersController> logger) : ControllerBase
@@ -41,6 +42,7 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IPaymentService _paymentService = paymentService;
         private readonly IEmailService _emailService = emailService;
+        private readonly PromotionService _promotionService = promotionService;
         private readonly IMapper _mapper = mapper;
         private readonly IMemoryCache _cache = cache;
         private readonly ILogger<AdminOrdersController> _logger = logger;
@@ -121,6 +123,7 @@ namespace KhduSouvenirShop.API.Controllers
             }
             var result = _mapper.Map<OrderResponse>(order);
             result.History = _mapper.Map<List<OrderHistoryResponse>>(order.OrderHistories.OrderByDescending(h => h.Timestamp).ToList());
+            result.AppliedDiscounts = await _promotionService.GetAppliedDiscountsAsync(order.OrderItems);
             return Ok(ApiResponse<OrderResponse>.SuccessResult(result));
         }
         // PUT: api/admin/orders/{id}/status - зміна статусу замовлення

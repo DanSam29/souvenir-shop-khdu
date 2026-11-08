@@ -23,6 +23,8 @@ import PaymentCancelPage from './pages/PaymentCancelPage';
 import CategoriesAdmin from './pages/admin/CategoriesAdmin';
 import ProductsAdmin from './pages/admin/ProductsAdmin';
 import CompaniesAdmin from './pages/admin/CompaniesAdmin';
+import PromotionsAdmin from './pages/admin/PromotionsAdmin';
+import PromotionsPage from './pages/PromotionsPage';
 import AccessDenied from './pages/AccessDenied';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Returns from './pages/Returns';
@@ -49,6 +51,7 @@ function App() {
               <Route path="/order/:id" element={<OrderDetailsPage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/promotions" element={<PromotionsPage />} />
               <Route path="/access-denied" element={<AccessDenied />} />
               {/* Маршрути адміністратора з захистом */}
               <Route path="/admin" element={
@@ -89,6 +92,11 @@ function App() {
               <Route path="/admin/companies" element={
                 <ProtectedRoute allowedRoles={ADMIN_ROLES}>
                   <CompaniesAdmin />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/promotions" element={
+                <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+                  <PromotionsAdmin />
                 </ProtectedRoute>
               } />
               <Route path="/checkout/success" element={<PaymentSuccessPage />} />

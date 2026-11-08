@@ -78,6 +78,11 @@ function AdminDashboard() {
           <Link to="/admin/companies">Постачальники →</Link>
         </div>
         <div style={statCardStyle}>
+          <h3>Акції</h3>
+          <p style={{ fontSize: '2rem', fontWeight: 700 }}>🎁</p>
+          <Link to="/admin/promotions">Керувати →</Link>
+        </div>
+        <div style={statCardStyle}>
           <h3>Аналітика</h3>
           <p style={{ fontSize: '2rem', fontWeight: 700 }}>📊</p>
           <Link to="/admin/analytics">Звіти →</Link>

@@ -129,6 +129,7 @@ function OrderDetailsPage() {
   const totalDiscount = items.reduce((sum, it) => sum + it.lineDiscount, 0);
   const statusColor = STATUS_COLORS[order.status] || STATUS_COLORS.Processing;
   const history = order.history || [];
+  const appliedDiscounts = order.appliedDiscounts || [];
 
   return (
     <div className="order-details" style={{ maxWidth: 800, margin: '40px auto', padding: '0 20px' }}>
@@ -265,6 +266,33 @@ function OrderDetailsPage() {
           </tfoot>
         </table>
       </div>
+
+      {/* Застосовані знижки та промокод */}
+      {appliedDiscounts.length > 0 && (
+        <div style={{ background: '#fff', padding: 20, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', marginTop: 20 }}>
+          <h3>{t('order.applied_discounts')}</h3>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {appliedDiscounts.map((d) => {
+              const name = isEn && d.nameEn ? d.nameEn : d.name;
+              return (
+                <li key={d.promotionId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #f5f5f5' }}>
+                  <div>
+                    <strong>{name || `#${d.promotionId}`}</strong>
+                    {d.promoCode && (
+                      <span style={{ marginLeft: 10, padding: '2px 8px', borderRadius: 6, background: '#f0f7ff', color: '#0056b3', fontSize: '0.85rem', fontWeight: 600 }}>
+                        {t('order.promo_code')}: {d.promoCode}
+                      </span>
+                    )}
+                  </div>
+                  <span style={{ color: '#28a745', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                    -{Number(d.totalDiscount).toFixed(2)} {t('common.currency')}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

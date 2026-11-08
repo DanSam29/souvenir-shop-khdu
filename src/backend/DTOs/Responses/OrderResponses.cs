@@ -13,8 +13,24 @@ namespace KhduSouvenirShop.API.DTOs.Responses
         public DateTime CreatedAt { get; set; }
         public List<OrderItemResponse> Items { get; set; } = new();
         public List<OrderHistoryResponse> History { get; set; } = new();
+        public List<AppliedDiscountResponse> AppliedDiscounts { get; set; } = new();
         public ShippingResponse? Shipping { get; set; }
         public PaymentResponse? Payment { get; set; }
+    }
+
+    /// <summary>
+    /// Вихідний DTO зі знижкою, застосованою до замовлення (агреговано за акцією).
+    /// </summary>
+    public class AppliedDiscountResponse
+    {
+        public int PromotionId { get; set; }
+        public string? Name { get; set; }
+        public string? NameEn { get; set; }
+        // Промокод, якщо знижку застосовано за кодом
+        public string? PromoCode { get; set; }
+        public string Type { get; set; } = string.Empty;
+        // Сумарна знижка за цією акцією в межах замовлення
+        public decimal TotalDiscount { get; set; }
     }
 
     /// <summary>

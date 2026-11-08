@@ -204,19 +204,30 @@ export const novaPoshtaAPI = {
 };
 // API функції для акцій та промокодів
 export const promotionsAPI = {
-  // Отримання доступних акційц для користувача
+  // Публічний список активних загальних акцій
+  getActive: () => api.get('/Promotions/active'),
+  // Доступні поточному користувачу акції (персональні та за статусом)
   getMyPromotions: () => api.get('/Promotions/my'),
   // Історія призначених/використаних знижок користувача
   getMyPromotionsHistory: () => api.get('/Users/me/promotions/history'),
-  // Перевірка промокоду
-  validatePromoCode: (code, totalAmount) => api.get(`/Promotions/validate?code=${code}&totalAmount=${totalAmount}`),
+  // Валідація промокоду під час оформлення замовлення (POST { code })
+  validatePromoCode: (code) => api.post('/Promotions/validate', { code }),
   // Методи адміністратора
-  getAll: (params) => api.get('/Promotions', { params }),
-  getById: (id) => api.get(`/Promotions/${id}`),
-  create: (data) => api.post('/Promotions', data),
-  update: (id, data) => api.put(`/Promotions/${id}`, data),
-  delete: (id) => api.delete(`/Promotions/${id}`),
-  toggleActive: (id) => api.patch(`/Promotions/${id}/toggle`),
+  getAll: (params) => api.get('/admin/promotions', { params }),
+  getById: (id) => api.get(`/admin/promotions/${id}`),
+  create: (data) => api.post('/admin/promotions', data),
+  update: (id, data) => api.put(`/admin/promotions/${id}`, data),
+  patch: (id, data) => api.patch(`/admin/promotions/${id}`, data),
+  delete: (id) => api.delete(`/admin/promotions/${id}`),
+  bulkDelete: (ids) => api.post('/admin/promotions/bulk-delete', ids),
+  toggleActive: (id) => api.patch(`/admin/promotions/${id}/toggle`),
+  // Персональне призначення акції користувачу
+  assign: (id, userId) => api.post(`/admin/promotions/${id}/assign/${userId}`),
+  // Статистика ROI акції
+  getStatistics: (id) => api.get(`/admin/promotions/${id}/statistics`),
+  // Експорт статистики акції у CSV/PDF
+  exportStatisticsCsv: (id) => api.get(`/admin/promotions/${id}/statistics/export/csv`, { responseType: 'blob' }),
+  exportStatisticsPdf: (id) => api.get(`/admin/promotions/${id}/statistics/export/pdf`, { responseType: 'blob' }),
 };
 
 export default api;
