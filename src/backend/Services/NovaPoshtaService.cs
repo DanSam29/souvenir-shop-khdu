@@ -11,6 +11,7 @@ namespace KhduSouvenirShop.API.Services
         Task<IEnumerable<NpWarehouse>> GetWarehousesAsync(string cityRef, string? findString = null);
         Task<decimal> CalculateDeliveryCostAsync(string cityRef, string? warehouseRef, decimal weight, decimal totalAmount);
         Task<NpTrackingStatus> GetTrackingStatusAsync(string trackingNumber);
+        int EstimateDeliveryDays(decimal weight);
     }
     public class NovaPoshtaService : INovaPoshtaService
     {
@@ -139,6 +140,12 @@ namespace KhduSouvenirShop.API.Services
             decimal baseCost = 70;
             decimal weightCost = weight * 10;
             return Math.Round(baseCost + weightCost, 2);
+        }
+        public int EstimateDeliveryDays(decimal weight)
+        {
+            // API getDocumentPrice не повертає гарантованого строку доставки, тому використовуємо оцінку:
+            // базова доставка по Україні — 2 дні, для великовагових відправлень (> 30 кг) — 3 дні.
+            return weight > 30 ? 3 : 2;
         }
         public async Task<NpTrackingStatus> GetTrackingStatusAsync(string trackingNumber)
         {

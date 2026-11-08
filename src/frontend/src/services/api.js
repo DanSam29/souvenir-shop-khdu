@@ -197,9 +197,9 @@ export const adminProductsAPI = {
 };
 // API функції для Nova Poshta
 export const novaPoshtaAPI = {
-  getCities: (q) => api.get(`/NovaPoshta/cities?q=${q || ''}`),
-  getWarehouses: (cityRef, q) => api.get(`/NovaPoshta/warehouses?cityRef=${cityRef}&q=${q || ''}`),
-  calculate: (cityRef, weight, totalAmount) => api.get(`/NovaPoshta/calculate?cityRef=${cityRef}&weight=${weight}&totalAmount=${totalAmount}`),
+  getCities: (search) => api.get(`/np/cities?search=${search || ''}`),
+  getWarehouses: (cityRef, search) => api.get(`/np/warehouses?cityRef=${cityRef}&search=${search || ''}`),
+  calculate: (payload) => api.post('/np/calculate', payload),
 };
 // API функції для акцій та промокодів
 export const promotionsAPI = {

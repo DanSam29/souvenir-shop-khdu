@@ -362,7 +362,7 @@
 - Retry + Polly policy (3 рази з експоненційним відкатом)
 - Graceful fallback: якщо API недоступний → дозволити ручний ввод міста та відділення
 
-6.2. NovaPoshtaController (public)
+6.2. NovaPoshtaController (public) ✅
 - GET /api/np/cities?search=Херсон → JSON список
 - GET /api/np/warehouses?cityRef=...&search=2 → JSON список
 - POST /api/np/calculate → {cityRef, warehouseRef, weight} → {cost, estimatedDays}

@@ -194,7 +194,12 @@ function CheckoutPage() {
             return acc + w * item.quantity;
           }, 0);
           const currentTotal = calcPreview?.totalAmount ?? cart.totalAmount;
-          const res = await novaPoshtaAPI.calculate(form.cityRef, totalWeight, currentTotal);
+          const res = await novaPoshtaAPI.calculate({
+            cityRef: form.cityRef,
+            warehouseRef: form.warehouseRef,
+            weight: totalWeight,
+            totalAmount: currentTotal
+          });
           setShippingCost(res.data.cost);
         } catch (err) {
           console.error('Error calculating shipping', err);
@@ -202,7 +207,7 @@ function CheckoutPage() {
       };
       calculateShipping();
     }
-  }, [form.cityRef, cart, calcPreview]);
+  }, [form.cityRef, form.warehouseRef, cart, calcPreview]);
   // Автоперерахунок при введенні промокоду
   useEffect(() => {
     const timer = setTimeout(async () => {

@@ -1,3 +1,4 @@
+using KhduSouvenirShop.API.DTOs.Requests;
 using KhduSouvenirShop.API.Models.Common;
 using KhduSouvenirShop.API.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -5,7 +6,8 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace KhduSouvenirShop.API.Controllers
 {
-    [Route("api/[controller]")]
+    // Публічний контролер Nova Poshta: доступний без авторизації (використовується на кроці оформлення замовлення).
+    [Route("api/np")]
     [ApiController]
     [EnableRateLimiting("NovaPoshtaPolicy")]
     public class NovaPoshtaController : ControllerBase
@@ -18,11 +20,11 @@ namespace KhduSouvenirShop.API.Controllers
             _logger = logger;
         }
         [HttpGet("cities")]
-        public async Task<ActionResult> GetCities([FromQuery] string? q)
+        public async Task<ActionResult> GetCities([FromQuery] string? search)
         {
             try
             {
-                var cities = await _novaPoshtaService.GetCitiesAsync(q);
+                var cities = await _novaPoshtaService.GetCitiesAsync(search);
                 return Ok(ApiResponse<object>.SuccessResult(cities));
             }
             catch (Exception ex)
@@ -32,11 +34,11 @@ namespace KhduSouvenirShop.API.Controllers
             }
         }
         [HttpGet("warehouses")]
-        public async Task<ActionResult> GetWarehouses([FromQuery] string cityRef, [FromQuery] string? q)
+        public async Task<ActionResult> GetWarehouses([FromQuery] string cityRef, [FromQuery] string? search)
         {
             try
             {
-                var warehouses = await _novaPoshtaService.GetWarehousesAsync(cityRef, q);
+                var warehouses = await _novaPoshtaService.GetWarehousesAsync(cityRef, search);
                 return Ok(ApiResponse<object>.SuccessResult(warehouses));
             }
             catch (Exception ex)
@@ -45,13 +47,14 @@ namespace KhduSouvenirShop.API.Controllers
                 return StatusCode(500, ApiResponse<object>.FailureResult("Не вдалося отримати список відділень", "IntegrationError"));
             }
         }
-        [HttpGet("calculate")]
-        public async Task<ActionResult> Calculate([FromQuery] string cityRef, [FromQuery] string? warehouseRef, [FromQuery] decimal weight, [FromQuery] decimal totalAmount = 0)
+        [HttpPost("calculate")]
+        public async Task<ActionResult> Calculate([FromBody] CalculateDeliveryRequest request)
         {
             try
             {
-                var cost = await _novaPoshtaService.CalculateDeliveryCostAsync(cityRef, warehouseRef, weight, totalAmount);
-                return Ok(ApiResponse<object>.SuccessResult(new { cost }));
+                var cost = await _novaPoshtaService.CalculateDeliveryCostAsync(request.CityRef, request.WarehouseRef, request.Weight, request.TotalAmount);
+                var estimatedDays = _novaPoshtaService.EstimateDeliveryDays(request.Weight);
+                return Ok(ApiResponse<object>.SuccessResult(new { cost, estimatedDays }));
             }
             catch (Exception ex)
             {
