@@ -360,15 +360,16 @@ public class PromotionService
         return promo.AudienceType == studentStatus;
     }
 
-    // Кумулятивне застосування знижок (стакування) до ціни одиниці товару.
-    // Всередині однієї цілі (TargetType + TargetId) обирається найвигідніша знижка,
-    // різні цілі застосовуються послідовно за рівнями. Фінальна ціна не може бути меншою за 0.
+    // Кумулятивне застосування знижок (стакування) до ціни одиниці товару (п. 7.3).
+    // Рівні застосування: 1) персональні → 2) студентські → 3) товар/категорія → 4) загальні → 5) промокод (overlay).
+    // У межах однієї цілі (TargetType + TargetId) обирається одна найкраща знижка:
+    // спочатку за найвищим пріоритетом, за однакового пріоритету — найбільша вигода.
+    // Різні цілі стакуються послідовно за рівнями. Фінальна ціна не може бути меншою за 0.
     private (decimal Price, int? AppliedPromotionId) ApplyPromotionsStacked(decimal basePrice, Product product, List<Promotion> promotions)
     {
         var price = basePrice;
         int? appliedPromotionId = null;
         decimal largestDiscount = 0;
-        var appliedScopes = new HashSet<string>();
 
         var applicable = promotions.Where(p => AppliesToProduct(p, product)).ToList();
         var groups = applicable
@@ -378,35 +379,20 @@ public class PromotionService
 
         foreach (var group in groups)
         {
-            var scopeKey = $"{group.Key.TargetType}:{group.Key.TargetId}";
-            if (appliedScopes.Contains(scopeKey))
+            // Найкраща знижка в межах цілі (7.3): спочатку найвищий пріоритет,
+            // за однакового пріоритету — найбільша вигода
+            var best = group
+                .OrderByDescending(p => p.Priority)
+                .ThenByDescending(p => price - CalculateDiscountedPrice(price, p))
+                .First();
+            var bestPrice = CalculateDiscountedPrice(price, best);
+            var discount = price - bestPrice;
+            if (discount > largestDiscount)
             {
-                continue;
+                largestDiscount = discount;
+                appliedPromotionId = best.PromotionId;
             }
-            appliedScopes.Add(scopeKey);
-
-            // Найвигідніша знижка в межах цілі: найвищий пріоритет, за рівних — найбільша вигода
-            Promotion? best = null;
-            var bestPrice = price;
-            foreach (var promo in group.OrderByDescending(p => p.Priority))
-            {
-                var candidate = CalculateDiscountedPrice(price, promo);
-                if (best == null || candidate < bestPrice)
-                {
-                    best = promo;
-                    bestPrice = candidate;
-                }
-            }
-            if (best != null)
-            {
-                var discount = price - bestPrice;
-                if (discount > largestDiscount)
-                {
-                    largestDiscount = discount;
-                    appliedPromotionId = best.PromotionId;
-                }
-                price = Math.Max(0, bestPrice);
-            }
+            price = Math.Max(0, bestPrice);
         }
         return (Math.Round(price, 2), appliedPromotionId);
     }

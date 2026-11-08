@@ -406,7 +406,7 @@
   - AssignStudentPromotionsAsync(userId, studentStatus) - REGULAR/SCHOLARSHIP/HIGH_ACHIEVER
   - GetPromotionStatisticsAsync(promotionId) - статистика використання
 
-7.3. Логіка приоритету при стакуванні:
+7.3. Логіка приоритету при стакуванні: ✅
 1. Персональні (Audience=Custom)
 2. Студентські (Audience=Students, RegularScholarship, HighAchiever)
 3. Товарні (Target=Product) та Категорійні (Target=Category)
