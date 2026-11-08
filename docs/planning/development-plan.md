@@ -371,7 +371,7 @@
 - Shipping entity: cityRef, cityName, warehouseRef, warehouseNumber, warehouseAddress, deliveryCost, estimatedDays, trackingNumber, deliveryMethod = NovaPoshta
 - Валідація: всі поля для NP заповнені, deliveryCost ≥ 0
 
-6.4. Адмін: поле ТТН
+6.4. Адмін: поле ТТН ✅
 - Під час зміни статусу на Shipped обов'язкове поле trackingNumber
 - Збереження в Shipping.trackingNumber
 - Коментар в OrderHistory: "Відправлено Новою Поштою. ТТН: {trackingNumber}"

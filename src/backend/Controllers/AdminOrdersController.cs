@@ -174,8 +174,9 @@ namespace KhduSouvenirShop.API.Controllers
                 {
                     return BadRequest(ApiResponse<object>.FailureResult("Для замовлення не знайдено запис доставки", "BadRequest"));
                 }
-                shipping.TrackingNumber = dto.TrackingNumber.Trim();
-                comment = dto.TrackingNumber.Trim();
+                var trackingNumber = dto.TrackingNumber.Trim();
+                shipping.TrackingNumber = trackingNumber;
+                comment = $"Відправлено Новою Поштою. ТТН: {trackingNumber}";
             }
             else
             {

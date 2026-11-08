@@ -8,6 +8,9 @@ function AdminOrdersPage() {
   const [pagination, setPagination] = useState({ pageNumber: 1, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [trackingModalOrderId, setTrackingModalOrderId] = useState(null);
+  const [trackingValue, setTrackingValue] = useState('');
+  const [trackingError, setTrackingError] = useState('');
   useEffect(() => {
     loadOrders(1);
   }, []);
@@ -32,19 +35,36 @@ function AdminOrdersPage() {
       setLoading(false);
     }
   };
-  const handleStatusChange = async (id, newStatus) => {
-    const trackingNumber = newStatus === 'Shipped' ? prompt('Введіть номер ТТН Нової Пошти:') : null;
-    if (newStatus === 'Shipped' && trackingNumber === null) return;
+  const submitStatusChange = async (id, newStatus, trackingNumber) => {
     try {
       setUpdating(true);
       await ordersAPI.updateStatus(id, { status: newStatus, trackingNumber });
       alert('Статус оновлено');
+      setTrackingModalOrderId(null);
       loadOrders();
     } catch (err) {
-      alert('Помилка при оновленні статусу');
+      alert(err?.message || 'Помилка при оновленні статусу');
     } finally {
       setUpdating(false);
     }
+  };
+  const handleStatusChange = (id, newStatus) => {
+    // Для переходу в Shipped ТТН Nova Poshta обов'язковий — відкриваємо модальне поле вводу
+    if (newStatus === 'Shipped') {
+      setTrackingValue('');
+      setTrackingError('');
+      setTrackingModalOrderId(id);
+      return;
+    }
+    submitStatusChange(id, newStatus, null);
+  };
+  const confirmShipped = () => {
+    const value = trackingValue.trim();
+    if (!value) {
+      setTrackingError('Вкажіть номер ТТН Nova Poshta');
+      return;
+    }
+    submitStatusChange(trackingModalOrderId, 'Shipped', value);
   };
   if (loading) return <div className="loading">Завантаження...</div>;
   return (
@@ -123,6 +143,58 @@ function AdminOrdersPage() {
           </button>
         </div>
       )}
+      {trackingModalOrderId !== null && (
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
+            <h3 style={{ marginTop: 0 }}>Відправлення Новою Поштою</h3>
+            <p style={{ color: '#666', fontSize: '0.9rem' }}>
+              Для переходу в статус «Shipped» вкажіть номер ТТН Nova Poshta.
+            </p>
+            <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
+              Номер ТТН
+            </label>
+            <input
+              type="text"
+              value={trackingValue}
+              onChange={(e) => {
+                setTrackingValue(e.target.value);
+                if (trackingError) setTrackingError('');
+              }}
+              placeholder="Наприклад, 20450000000000"
+              disabled={updating}
+              autoFocus
+              style={{
+                width: '100%',
+                padding: '8px 10px',
+                borderRadius: 6,
+                border: trackingError ? '1px solid #cf1322' : '1px solid #ddd',
+                boxSizing: 'border-box'
+              }}
+            />
+            {trackingError && (
+              <div style={{ color: '#cf1322', fontSize: '0.85rem', marginTop: 6 }}>
+                {trackingError}
+              </div>
+            )}
+            <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                onClick={() => setTrackingModalOrderId(null)}
+                disabled={updating}
+                style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
+              >
+                Скасувати
+              </button>
+              <button
+                onClick={confirmShipped}
+                disabled={updating}
+                style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#007bff', color: '#fff', cursor: updating ? 'not-allowed' : 'pointer' }}
+              >
+                {updating ? 'Збереження...' : 'Підтвердити'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -136,5 +208,22 @@ const statusBadgeStyle = (status) => ({
   color: status === 'Paid' ? '#28a745' : (status === 'Cancelled' ? '#cf1322' : '#1890ff'),
   border: `1px solid ${status === 'Paid' ? '#b7eb8f' : (status === 'Cancelled' ? '#ffa39e' : '#91d5ff')}`
 });
+const modalOverlayStyle = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0, 0, 0, 0.45)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 1000
+};
+const modalContentStyle = {
+  background: '#fff',
+  borderRadius: 8,
+  padding: 24,
+  width: '100%',
+  maxWidth: 420,
+  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)'
+};
 
 export default AdminOrdersPage;
