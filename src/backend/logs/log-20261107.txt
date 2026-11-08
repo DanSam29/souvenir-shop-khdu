@@ -2905,3 +2905,31 @@ ORDER BY `t`.`CreatedAt` DESC, `t`.`ProductId`
 2026-11-07 16:51:05.861 +02:00 [INF] Executed action KhduSouvenirShop.API.Controllers.ProductsController.GetProduct (KhduSouvenirShop.API) in 321.449ms
 2026-11-07 16:51:05.861 +02:00 [INF] Executed endpoint 'KhduSouvenirShop.API.Controllers.ProductsController.GetProduct (KhduSouvenirShop.API)'
 2026-11-07 16:51:05.861 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/products/5 - 200 null application/json; charset=utf-8 324.13ms
+2026-11-07 17:00:00.717 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Orders/my - null null
+2026-11-07 17:00:00.717 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Users/me/promotions/history - null null
+2026-11-07 17:00:00.718 +02:00 [INF] CORS policy execution failed.
+2026-11-07 17:00:00.718 +02:00 [INF] CORS policy execution failed.
+2026-11-07 17:00:00.719 +02:00 [INF] Request origin http://localhost does not have permission to access the resource.
+2026-11-07 17:00:00.719 +02:00 [INF] Request origin http://localhost does not have permission to access the resource.
+2026-11-07 17:00:00.721 +02:00 [INF] Authorization failed. These requirements were not met:
+DenyAnonymousAuthorizationRequirement: Requires an authenticated user.
+2026-11-07 17:00:00.721 +02:00 [INF] Authorization failed. These requirements were not met:
+DenyAnonymousAuthorizationRequirement: Requires an authenticated user.
+2026-11-07 17:00:00.727 +02:00 [INF] AuthenticationScheme: Bearer was challenged.
+2026-11-07 17:00:00.727 +02:00 [INF] AuthenticationScheme: Bearer was challenged.
+2026-11-07 17:00:00.728 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Users/me/promotions/history - 401 0 null 10.7161ms
+2026-11-07 17:00:00.728 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Orders/my - 401 0 null 11.1321ms
+2026-11-07 17:03:02.375 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Orders/my - null null
+2026-11-07 17:03:02.376 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5225/api/Users/me/promotions/history - null null
+2026-11-07 17:03:02.377 +02:00 [INF] CORS policy execution failed.
+2026-11-07 17:03:02.377 +02:00 [INF] Request origin http://localhost does not have permission to access the resource.
+2026-11-07 17:03:02.378 +02:00 [INF] Authorization failed. These requirements were not met:
+DenyAnonymousAuthorizationRequirement: Requires an authenticated user.
+2026-11-07 17:03:02.378 +02:00 [INF] AuthenticationScheme: Bearer was challenged.
+2026-11-07 17:03:02.378 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Orders/my - 401 0 null 2.7284ms
+2026-11-07 17:03:02.378 +02:00 [INF] CORS policy execution failed.
+2026-11-07 17:03:02.378 +02:00 [INF] Request origin http://localhost does not have permission to access the resource.
+2026-11-07 17:03:02.379 +02:00 [INF] Authorization failed. These requirements were not met:
+DenyAnonymousAuthorizationRequirement: Requires an authenticated user.
+2026-11-07 17:03:02.379 +02:00 [INF] AuthenticationScheme: Bearer was challenged.
+2026-11-07 17:03:02.379 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5225/api/Users/me/promotions/history - 401 0 null 2.4815ms

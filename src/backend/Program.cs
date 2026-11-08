@@ -11,6 +11,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 using KhduSouvenirShop.API.DTOs.Mappings;
+using Polly;
 
 var builder = WebApplication.CreateBuilder(args);
 // Захист від занадто частого звернення до сервера
@@ -37,6 +38,17 @@ builder.Services.AddRateLimiter(options =>
                 PermitLimit = 5,
                 QueueLimit = 0,
                 Window = TimeSpan.FromMinutes(5)
+            }));
+    // Обмеження для Nova Poshta: 50 запитів на хвилину (ліміт API NP)
+    options.AddPolicy("NovaPoshtaPolicy", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 50,
+                QueueLimit = 0,
+                Window = TimeSpan.FromMinutes(1)
             }));
     options.OnRejected = async (context, token) =>
     {
@@ -99,7 +111,11 @@ builder.Services.AddScoped<KhduSouvenirShop.API.Services.IPaymentService, KhduSo
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IEmailService, KhduSouvenirShop.API.Services.EmailService>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IImageService, KhduSouvenirShop.API.Services.ImageService>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IAuthService, KhduSouvenirShop.API.Services.AuthService>();
-builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.INovaPoshtaService, KhduSouvenirShop.API.Services.NovaPoshtaService>();
+builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.INovaPoshtaService, KhduSouvenirShop.API.Services.NovaPoshtaService>()
+    // Retry для тимчасових збоїв NP API: 3 спроби з експоненційним відкатом (2с, 4с, 8с)
+    .AddTransientHttpErrorPolicy(policy => policy.WaitAndRetryAsync(
+        3,
+        retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))));
 builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.IUniversityService, KhduSouvenirShop.API.Services.UniversityService>();
 // Реєстрація репозиторіїв (шар доступу до даних)
 builder.Services.AddScoped(typeof(KhduSouvenirShop.API.Repositories.IRepository<>), typeof(KhduSouvenirShop.API.Repositories.Repository<>));

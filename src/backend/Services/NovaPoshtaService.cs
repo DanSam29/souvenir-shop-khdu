@@ -9,7 +9,8 @@ namespace KhduSouvenirShop.API.Services
     {
         Task<IEnumerable<NpCity>> GetCitiesAsync(string? findString = null);
         Task<IEnumerable<NpWarehouse>> GetWarehousesAsync(string cityRef, string? findString = null);
-        Task<decimal> CalculateDeliveryCostAsync(string cityRef, decimal weight, decimal totalAmount);
+        Task<decimal> CalculateDeliveryCostAsync(string cityRef, string? warehouseRef, decimal weight, decimal totalAmount);
+        Task<NpTrackingStatus> GetTrackingStatusAsync(string trackingNumber);
     }
     public class NovaPoshtaService : INovaPoshtaService
     {
@@ -19,6 +20,8 @@ namespace KhduSouvenirShop.API.Services
         private readonly IMemoryCache _cache;
         private readonly string _apiKey;
         private readonly string _apiUrl = "https://api.novaposhta.ua/v2.0/json/";
+        private static readonly TimeSpan CitiesCacheDuration = TimeSpan.FromHours(24);
+        private static readonly TimeSpan WarehousesCacheDuration = TimeSpan.FromHours(6);
         public NovaPoshtaService(
             HttpClient httpClient, 
             IConfiguration configuration, 
@@ -38,22 +41,32 @@ namespace KhduSouvenirShop.API.Services
             {
                 return cachedCities!;
             }
-            var request = new
+            try
             {
-                apiKey = _apiKey,
-                modelName = "Address",
-                calledMethod = "getCities",
-                methodProperties = new
+                var request = new
                 {
-                    FindByString = findString,
-                    Limit = "50"
-                }
-            };
-            var result = await SendRequestAsync<NpCity>(request);
-            var options = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromHours(24));
-            _cache.Set(cacheKey, result, options);
-            return result;
+                    apiKey = _apiKey,
+                    modelName = "Address",
+                    calledMethod = "getCities",
+                    methodProperties = new
+                    {
+                        FindByString = findString,
+                        Limit = "50"
+                    }
+                };
+                var result = await SendRequestAsync<NpCity>(request);
+                var options = new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(CitiesCacheDuration);
+                _cache.Set(cacheKey, result, options);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                // Graceful fallback: якщо API недоступний, повертаємо порожній список,
+                // щоб фронтенд дозволив ручний ввід міста.
+                _logger.LogWarning(ex, "Nova Poshta getCities недоступний для пошуку '{Search}'; повертаємо порожній список", findString);
+                return Enumerable.Empty<NpCity>();
+            }
         }
         public async Task<IEnumerable<NpWarehouse>> GetWarehousesAsync(string cityRef, string? findString = null)
         {
@@ -62,27 +75,38 @@ namespace KhduSouvenirShop.API.Services
             {
                 return cachedWarehouses!;
             }
-            var request = new
+            try
             {
-                apiKey = _apiKey,
-                modelName = "Address",
-                calledMethod = "getWarehouses",
-                methodProperties = new
+                var request = new
                 {
-                    CityRef = cityRef,
-                    FindByString = findString,
-                    Limit = "100"
-                }
-            };
-            var result = await SendRequestAsync<NpWarehouse>(request);
-            var options = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromHours(12));
-            _cache.Set(cacheKey, result, options);
-            return result;
+                    apiKey = _apiKey,
+                    modelName = "Address",
+                    calledMethod = "getWarehouses",
+                    methodProperties = new
+                    {
+                        CityRef = cityRef,
+                        FindByString = findString,
+                        Limit = "100"
+                    }
+                };
+                var result = await SendRequestAsync<NpWarehouse>(request);
+                var options = new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(WarehousesCacheDuration);
+                _cache.Set(cacheKey, result, options);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                // Graceful fallback: якщо API недоступний, повертаємо порожній список,
+                // щоб фронтенд дозволив ручний ввід відділення.
+                _logger.LogWarning(ex, "Nova Poshta getWarehouses недоступний для міста {CityRef}; повертаємо порожній список", cityRef);
+                return Enumerable.Empty<NpWarehouse>();
+            }
         }
-        public async Task<decimal> CalculateDeliveryCostAsync(string cityRef, decimal weight, decimal totalAmount)
+        public async Task<decimal> CalculateDeliveryCostAsync(string cityRef, string? warehouseRef, decimal weight, decimal totalAmount)
         {
-            // Спрощена формула розрахунку вартості доставки
+            // warehouseRef передається для повноти контракту; API getDocumentPrice розраховує
+            // вартість за містом-одержувачем, тому у запиті використовується CityRecipient.
             var request = new
             {
                 apiKey = _apiKey,
@@ -90,7 +114,7 @@ namespace KhduSouvenirShop.API.Services
                 calledMethod = "getDocumentPrice",
                 methodProperties = new
                 {
-                    CitySender = "db045811-310a-11de-b0fb-001517170a1a", // Наприклад, Херсон
+                    CitySender = "db045811-310a-11de-b0fb-001517170a1a", // Херсон
                     CityRecipient = cityRef,
                     Weight = weight,
                     ServiceType = "WarehouseWarehouse",
@@ -109,12 +133,65 @@ namespace KhduSouvenirShop.API.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to calculate delivery cost via NP API, using fallback formula");
+                _logger.LogWarning(ex, "Не вдалося розрахувати вартість доставки через NP API (cityRef={CityRef}, warehouseRef={WarehouseRef}), використовуємо fallback-формулу", cityRef, warehouseRef);
             }
             // Fallback: базова вартість + вартість за вагу
             decimal baseCost = 70;
             decimal weightCost = weight * 10;
             return Math.Round(baseCost + weightCost, 2);
+        }
+        public async Task<NpTrackingStatus> GetTrackingStatusAsync(string trackingNumber)
+        {
+            var result = new NpTrackingStatus { TrackingNumber = trackingNumber };
+            if (string.IsNullOrWhiteSpace(trackingNumber))
+            {
+                result.Available = false;
+                return result;
+            }
+            try
+            {
+                var request = new
+                {
+                    apiKey = _apiKey,
+                    modelName = "TrackingDocument",
+                    calledMethod = "getStatusDocuments",
+                    methodProperties = new
+                    {
+                        Documents = new[]
+                        {
+                            new { DocumentNumber = trackingNumber, Phone = string.Empty }
+                        }
+                    }
+                };
+                var jsonResponse = await SendRawRequestAsync(request);
+                if (jsonResponse.TryGetProperty("data", out var data) && data.GetArrayLength() > 0)
+                {
+                    var document = data[0];
+                    result.Status = GetString(document, "Status");
+                    result.StatusCode = GetString(document, "StatusCode");
+                    result.WarehouseRecipient = GetString(document, "WarehouseRecipient");
+                    result.RecipientFullName = GetString(document, "RecipientFullName");
+                    var scheduledDate = GetString(document, "ScheduledDeliveryDate");
+                    if (DateTime.TryParse(scheduledDate, out var parsedDate))
+                    {
+                        result.ScheduledDeliveryDate = parsedDate;
+                    }
+                    result.Available = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Graceful fallback: трекінг недоступний, але сторінка замовлення має працювати.
+                _logger.LogWarning(ex, "Nova Poshta tracking недоступний для ТТН {TrackingNumber}", trackingNumber);
+                result.Available = false;
+            }
+            return result;
+        }
+        private static string GetString(JsonElement element, string propertyName)
+        {
+            return element.TryGetProperty(propertyName, out var value) && value.ValueKind != JsonValueKind.Null
+                ? value.GetString() ?? string.Empty
+                : string.Empty;
         }
         private async Task<IEnumerable<T>> SendRequestAsync<T>(object request)
         {
@@ -152,5 +229,15 @@ namespace KhduSouvenirShop.API.Services
         public string Description { get; set; } = string.Empty;
         public string Ref { get; set; } = string.Empty;
         public string Number { get; set; } = string.Empty;
+    }
+    public class NpTrackingStatus
+    {
+        public string TrackingNumber { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string StatusCode { get; set; } = string.Empty;
+        public string WarehouseRecipient { get; set; } = string.Empty;
+        public string RecipientFullName { get; set; } = string.Empty;
+        public DateTime? ScheduledDeliveryDate { get; set; }
+        public bool Available { get; set; } = true;
     }
 }

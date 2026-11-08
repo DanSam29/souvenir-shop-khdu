@@ -348,7 +348,7 @@
 ## Етап 6: Shipping Module - Nova Poshta API, адреси, розрахунок вартості
 **Мета:** Інтегрувати Nova Poshta для вибору відділень та розрахунку доставки.
 
-6.1. NovaPoshtaService
+6.1. NovaPoshtaService ✅
 - Методи:
   - GetCitiesAsync(string? search) - список міст (пошук по назві)
   - GetWarehousesAsync(string cityRef, string? search) - список відділень у місті

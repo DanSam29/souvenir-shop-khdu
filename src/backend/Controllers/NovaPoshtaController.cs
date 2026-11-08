@@ -1,11 +1,13 @@
 using KhduSouvenirShop.API.Models.Common;
 using KhduSouvenirShop.API.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace KhduSouvenirShop.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [EnableRateLimiting("NovaPoshtaPolicy")]
     public class NovaPoshtaController : ControllerBase
     {
         private readonly INovaPoshtaService _novaPoshtaService;
@@ -44,11 +46,11 @@ namespace KhduSouvenirShop.API.Controllers
             }
         }
         [HttpGet("calculate")]
-        public async Task<ActionResult> Calculate([FromQuery] string cityRef, [FromQuery] decimal weight, [FromQuery] decimal totalAmount)
+        public async Task<ActionResult> Calculate([FromQuery] string cityRef, [FromQuery] string? warehouseRef, [FromQuery] decimal weight, [FromQuery] decimal totalAmount = 0)
         {
             try
             {
-                var cost = await _novaPoshtaService.CalculateDeliveryCostAsync(cityRef, weight, totalAmount);
+                var cost = await _novaPoshtaService.CalculateDeliveryCostAsync(cityRef, warehouseRef, weight, totalAmount);
                 return Ok(ApiResponse<object>.SuccessResult(new { cost }));
             }
             catch (Exception ex)

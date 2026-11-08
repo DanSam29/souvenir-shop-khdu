@@ -164,7 +164,7 @@ namespace KhduSouvenirShop.API.Controllers
                 decimal shippingCost = 0;
                 if (!string.IsNullOrEmpty(dto.CityRef) && _configuration.GetValue<bool>("Features:NovaPoshtaEnabled"))
                 {
-                    shippingCost = await _novaPoshtaService.CalculateDeliveryCostAsync(dto.CityRef, totalWeight, totalAfterUserPromosForShipping);
+                    shippingCost = await _novaPoshtaService.CalculateDeliveryCostAsync(dto.CityRef, dto.WarehouseRef, totalWeight, totalAfterUserPromosForShipping);
                 }
                 // Крок 5. Номер замовлення у форматі KSU-{yyyyMMdd}-{000000}
                 var orderNumberPrefix = $"KSU-{DateTime.UtcNow:yyyyMMdd}-";
