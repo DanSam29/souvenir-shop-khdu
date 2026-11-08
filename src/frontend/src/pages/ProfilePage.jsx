@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { usersAPI, ordersAPI, promotionsAPI } from '../services/api';
+import { usersAPI, ordersAPI, promotionsAPI, novaPoshtaAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+
+// Дебаунс для автокомпліту Нової Пошти
+const NP_DEBOUNCE_MS = 300;
 
 // Лінійний життєвий цикл замовлення (без врахування скасування)
 const ORDER_STEPS = ['Processing', 'Paid', 'Shipped', 'Delivered'];
@@ -17,7 +20,9 @@ const STATUS_COLORS = {
 
 const EMPTY_ADDRESS = {
   city: '',
+  cityRef: '',
   warehouseNumber: '',
+  warehouseRef: '',
   recipientName: '',
   recipientPhone: '',
   isDefault: false
@@ -25,6 +30,15 @@ const EMPTY_ADDRESS = {
 
 // Безпечне виконання запиту: помилка одного ендпоінта не зриває загальне завантаження
 const safe = (promise) => promise.catch(() => null);
+
+// Стилі випадаючого списку підказок Нової Пошти
+const npDropdownStyle = {
+  position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff',
+  border: '1px solid #ddd', borderRadius: '0 0 8px 8px', listStyle: 'none',
+  padding: 0, margin: '-10px 0 0 0', zIndex: 10, maxHeight: 200,
+  overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+};
+const npItemStyle = { padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #eee', background: '#fff' };
 
 // Прогрес-бар статусів замовлення
 function StatusProgress({ status, t }) {
@@ -85,6 +99,53 @@ function ProfilePage() {
   const [editingAddressId, setEditingAddressId] = useState(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [studentBusy, setStudentBusy] = useState(false);
+  // Nova Poshta: підказки міста/відділення у формі адреси
+  const [npCities, setNpCities] = useState([]);
+  const [npWarehouses, setNpWarehouses] = useState([]);
+  const [showNpCityList, setShowNpCityList] = useState(false);
+  const [showNpWarehouseList, setShowNpWarehouseList] = useState(false);
+  const [cityTyping, setCityTyping] = useState(false);
+  const [warehouseTyping, setWarehouseTyping] = useState(false);
+
+  // Пошук міста Нової Пошти (лише коли користувач вводить назву вручну)
+  useEffect(() => {
+    if (!cityTyping || addressForm.cityRef || (addressForm.city || '').trim().length < 2) {
+      setNpCities([]);
+      setShowNpCityList(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await novaPoshtaAPI.getCities(addressForm.city.trim());
+        setNpCities(res.data || []);
+        setShowNpCityList(true);
+      } catch {
+        setNpCities([]);
+        setShowNpCityList(false);
+      }
+    }, NP_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [addressForm.city, addressForm.cityRef, cityTyping]);
+
+  // Пошук відділення Нової Пошти за вибраним містом
+  useEffect(() => {
+    if (!warehouseTyping || !addressForm.cityRef || addressForm.warehouseRef) {
+      setNpWarehouses([]);
+      setShowNpWarehouseList(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await novaPoshtaAPI.getWarehouses(addressForm.cityRef, addressForm.warehouseNumber || '');
+        setNpWarehouses(res.data || []);
+        setShowNpWarehouseList(true);
+      } catch {
+        setNpWarehouses([]);
+        setShowNpWarehouseList(false);
+      }
+    }, NP_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [addressForm.cityRef, addressForm.warehouseNumber, addressForm.warehouseRef, warehouseTyping]);
 
   const handleLogout = () => {
     logout();
@@ -147,11 +208,17 @@ function ProfilePage() {
 
   // ---- Адреси ----
   const openAddressForm = (address) => {
+    setCityTyping(false);
+    setWarehouseTyping(false);
+    setNpCities([]);
+    setNpWarehouses([]);
     if (address) {
       setEditingAddressId(address.shippingId);
       setAddressForm({
         city: address.city || '',
+        cityRef: address.cityRef || '',
         warehouseNumber: address.warehouseNumber || '',
+        warehouseRef: address.warehouseRef || '',
         recipientName: address.recipientName || '',
         recipientPhone: address.recipientPhone || '',
         isDefault: !!address.isDefault
@@ -161,6 +228,38 @@ function ProfilePage() {
       setAddressForm(EMPTY_ADDRESS);
     }
     setShowAddressForm(true);
+  };
+
+  const closeAddressForm = () => {
+    setShowAddressForm(false);
+    setAddressForm(EMPTY_ADDRESS);
+    setEditingAddressId(null);
+    setCityTyping(false);
+    setWarehouseTyping(false);
+    setNpCities([]);
+    setNpWarehouses([]);
+  };
+
+  const handleCityInput = (value) => {
+    setCityTyping(true);
+    setAddressForm((prev) => ({ ...prev, city: value, cityRef: '', warehouseNumber: '', warehouseRef: '' }));
+  };
+
+  const handleCitySelect = (city) => {
+    setCityTyping(false);
+    setShowNpCityList(false);
+    setAddressForm((prev) => ({ ...prev, city: city.description, cityRef: city.ref, warehouseNumber: '', warehouseRef: '' }));
+  };
+
+  const handleWarehouseInput = (value) => {
+    setWarehouseTyping(true);
+    setAddressForm((prev) => ({ ...prev, warehouseNumber: value, warehouseRef: '' }));
+  };
+
+  const handleWarehouseSelect = (wh) => {
+    setWarehouseTyping(false);
+    setShowNpWarehouseList(false);
+    setAddressForm((prev) => ({ ...prev, warehouseNumber: wh.description, warehouseRef: wh.ref }));
   };
 
   const handleSaveAddress = async (e) => {
@@ -176,9 +275,7 @@ function ProfilePage() {
         await usersAPI.createAddress(addressForm);
       }
       setMsg({ type: 'success', text: t('profile.address_saved') });
-      setShowAddressForm(false);
-      setAddressForm(EMPTY_ADDRESS);
-      setEditingAddressId(null);
+      closeAddressForm();
       const aRes = await safe(usersAPI.getAddresses());
       setAddresses(aRes?.data || []);
     } catch (err) {
@@ -370,8 +467,34 @@ function ProfilePage() {
 
           {showAddressForm && (
             <form onSubmit={handleSaveAddress} style={{ maxWidth: 520, marginBottom: 24, padding: 16, background: '#f8f9fa', borderRadius: 8 }}>
-              <input type="text" value={addressForm.city} onChange={e => setAddressForm({ ...addressForm, city: e.target.value })} placeholder={t('profile.address_city')} style={inputStyle} required />
-              <input type="text" value={addressForm.warehouseNumber} onChange={e => setAddressForm({ ...addressForm, warehouseNumber: e.target.value })} placeholder={t('profile.address_warehouse')} style={inputStyle} required />
+              <div style={{ position: 'relative' }}>
+                <input type="text" value={addressForm.city} onChange={e => handleCityInput(e.target.value)} placeholder={t('profile.address_city')} style={inputStyle} required />
+                {showNpCityList && npCities.length > 0 && (
+                  <ul style={npDropdownStyle}>
+                    {npCities.map(city => (
+                      <li key={city.ref} onClick={() => handleCitySelect(city)} style={npItemStyle}
+                        onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
+                        onMouseLeave={(e) => e.target.style.background = '#fff'}>
+                        {city.description} <small style={{ color: '#888' }}>({city.areaDescription})</small>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div style={{ position: 'relative' }}>
+                <input type="text" value={addressForm.warehouseNumber} onChange={e => handleWarehouseInput(e.target.value)} disabled={!addressForm.cityRef} placeholder={addressForm.cityRef ? t('profile.address_warehouse_search') : t('checkout.select_city_first')} style={{ ...inputStyle, background: addressForm.cityRef ? '#fff' : '#f0f0f0' }} required />
+                {showNpWarehouseList && npWarehouses.length > 0 && (
+                  <ul style={npDropdownStyle}>
+                    {npWarehouses.map(wh => (
+                      <li key={wh.ref} onClick={() => handleWarehouseSelect(wh)} style={npItemStyle}
+                        onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
+                        onMouseLeave={(e) => e.target.style.background = '#fff'}>
+                        {wh.description}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
               <input type="text" value={addressForm.recipientName} onChange={e => setAddressForm({ ...addressForm, recipientName: e.target.value })} placeholder={t('profile.address_recipient')} style={inputStyle} required />
               <input type="tel" value={addressForm.recipientPhone} onChange={e => setAddressForm({ ...addressForm, recipientPhone: e.target.value })} placeholder="+380501234567" style={inputStyle} required />
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
@@ -380,7 +503,7 @@ function ProfilePage() {
               </label>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button type="submit" style={{ flex: 1, padding: 10, borderRadius: 6, border: 'none', background: '#28a745', color: '#fff', cursor: 'pointer' }}>{t('common.save')}</button>
-                <button type="button" onClick={() => { setShowAddressForm(false); setAddressForm(EMPTY_ADDRESS); setEditingAddressId(null); }} style={{ flex: 1, padding: 10, borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}>{t('common.cancel')}</button>
+                <button type="button" onClick={closeAddressForm} style={{ flex: 1, padding: 10, borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}>{t('common.cancel')}</button>
               </div>
             </form>
           )}

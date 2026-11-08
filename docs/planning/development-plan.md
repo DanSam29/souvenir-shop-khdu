@@ -376,7 +376,7 @@
 - Збереження в Shipping.trackingNumber
 - Коментар в OrderHistory: "Відправлено Новою Поштою. ТТН: {trackingNumber}"
 
-6.5. Frontend - Checkout delivery step
+6.5. Frontend - Checkout delivery step ✅
 - Autocomplete input "Місто" (debounce 300ms, виклик GET /api/np/cities)
 - Після вибору міста → dropdown "Відділення" (GET /api/np/warehouses, пошук по номеру/адресі)
 - Відображення вартості доставки та орієнтовних днів негайно після вибору

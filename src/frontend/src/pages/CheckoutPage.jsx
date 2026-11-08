@@ -6,6 +6,7 @@ import { useToast } from '../components/Toast';
 import { cartAPI, ordersAPI, usersAPI, novaPoshtaAPI, featuresAPI } from '../services/api';
 
 const TOTAL_STEPS = 4;
+const NP_DEBOUNCE_MS = 300;
 const PHONE_REGEX = /^\+380\d{9}$/;
 const PAYMENT_METHODS = [
   { value: 'Card', labelKey: 'checkout.payment_card', icon: '💳' },
@@ -35,6 +36,9 @@ function CheckoutPage() {
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [showWarehouseDropdown, setShowWarehouseDropdown] = useState(false);
   const [shippingCost, setShippingCost] = useState(0);
+  const [estimatedDays, setEstimatedDays] = useState(null);
+  // Якщо API Нової Пошти недоступне — перемикаємось на ручний ввід адреси
+  const [npFallback, setNpFallback] = useState(false);
   const [form, setForm] = useState({
     city: '',
     cityRef: '',
@@ -124,8 +128,10 @@ function CheckoutPage() {
         setShowCityDropdown(true);
       } catch (err) {
         console.error('Error searching cities', err);
+        // API недоступне — перемикаємось на ручний ввід
+        setNpFallback(true);
       }
-    }, 500);
+    }, NP_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [citySearch, form.cityRef]);
   // Nova Poshta: пошук відділення
@@ -142,8 +148,9 @@ function CheckoutPage() {
         setShowWarehouseDropdown(true);
       } catch (err) {
         console.error('Error searching warehouses', err);
+        setNpFallback(true);
       }
-    }, 500);
+    }, NP_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [form.cityRef, form.warehouseRef, warehouseSearch]);
   const handleCitySelect = (city) => {
@@ -201,8 +208,12 @@ function CheckoutPage() {
             totalAmount: currentTotal
           });
           setShippingCost(res.data.cost);
+          setEstimatedDays(res.data.estimatedDays ?? null);
         } catch (err) {
           console.error('Error calculating shipping', err);
+          setNpFallback(true);
+          setShippingCost(0);
+          setEstimatedDays(null);
         }
       };
       calculateShipping();
@@ -226,6 +237,8 @@ function CheckoutPage() {
     }, 600);
     return () => clearTimeout(timer);
   }, [form.promoCode, form.cityRef]);
+  // Селектори Нової Пошти активні лише коли інтеграція увімкнена і API не повернуло помилку
+  const isNpMode = isNpEnabled && !npFallback;
   // Валідація окремого кроку
   const validateStep = (current) => {
     if (current === 1) {
@@ -240,7 +253,7 @@ function CheckoutPage() {
       return true;
     }
     if (current === 2) {
-      if (isNpEnabled) {
+      if (isNpMode) {
         if (!form.cityRef || !form.warehouseRef) {
           showToast(t('checkout.select_city_warehouse'), 'error');
           return false;
@@ -431,7 +444,12 @@ function CheckoutPage() {
                   </div>
                 </div>
               )}
-              {isNpEnabled ? (
+              {isNpEnabled && npFallback && (
+                <div style={{ marginBottom: 20, padding: 12, background: '#fff7e6', border: '1px solid #ffd591', borderRadius: 8, color: '#d46b08' }}>
+                  {t('checkout.np_unavailable')}
+                </div>
+              )}
+              {isNpMode ? (
                 <>
                   <div style={{ position: 'relative', marginBottom: 20 }}>
                     <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.city_np')}</label>
@@ -494,7 +512,9 @@ function CheckoutPage() {
                         {shippingCost > 0 ? `${shippingCost.toFixed(2)} ${t('common.currency')}` : t('checkout.will_be_calculated')}
                       </p>
                       <p style={{ margin: '6px 0 0 0', color: '#666', fontSize: '0.9rem' }}>
-                        {t('checkout.estimated_days')}: {t('checkout.estimated_days_value')}
+                        {t('checkout.estimated_days')}: {estimatedDays
+                          ? t('checkout.estimated_days_value_dynamic', { days: estimatedDays })
+                          : t('checkout.estimated_days_value')}
                       </p>
                     </div>
                   )}
