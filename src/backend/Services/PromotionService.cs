@@ -125,7 +125,7 @@ public class PromotionService
         if ((promo.StartDate.HasValue && promo.StartDate > now) ||
             (promo.EndDate.HasValue && promo.EndDate < now))
         {
-            result.Error = "Термін дії промокоду закінчився";
+            result.Error = "Термін дії закінчився";
             return result;
         }
         // 4. Ліміт використань
@@ -138,14 +138,14 @@ public class PromotionService
         var cartTotal = cartItems.Sum(ci => (ci.Product?.Price ?? 0) * ci.Quantity);
         if (promo.MinOrderAmount.HasValue && cartTotal < promo.MinOrderAmount.Value)
         {
-            result.Error = $"Мінімальна сума замовлення для цього промокоду: {promo.MinOrderAmount.Value:0.##} грн";
+            result.Error = $"Мінімальна сума: {promo.MinOrderAmount.Value:0.##} грн";
             return result;
         }
         // 6. Мінімальна кількість товарів
         var totalQuantity = cartItems.Sum(ci => ci.Quantity);
         if (promo.MinQuantity.HasValue && totalQuantity < promo.MinQuantity.Value)
         {
-            result.Error = $"Мінімальна кількість товарів для цього промокоду: {promo.MinQuantity.Value}";
+            result.Error = $"Мінімальна кількість: {promo.MinQuantity.Value}";
             return result;
         }
         result.Valid = true;

@@ -125,4 +125,102 @@ public class PromotionServiceTests
         var priceAfter = service.GetPriceAfterPromotions(product, promotions);
         Assert.Equal(0m, priceAfter);
     }
+    private static List<CartItem> CreateCartItems(decimal unitPrice = 100m, int quantity = 1) =>
+        new List<CartItem>
+        {
+            new CartItem
+            {
+                ProductId = 100,
+                Quantity = quantity,
+                Product = new Product { ProductId = 100, CategoryId = 10, Price = unitPrice }
+            }
+        };
+    [Fact]
+    public async Task ValidatePromoCodeAsync_ValidCode_ReturnsPromotion()
+    {
+        var context = CreateInMemoryContext("promocode1");
+        context.Promotions.Add(new Promotion
+        {
+            PromotionId = 1, Name = "Test", Type = "PERCENTAGE", Value = 10,
+            PromoCode = "SAVE10", IsActive = true,
+            StartDate = DateTime.UtcNow.AddDays(-1), EndDate = DateTime.UtcNow.AddDays(1)
+        });
+        await context.SaveChangesAsync();
+        var service = CreateService(context);
+        var result = await service.ValidatePromoCodeAsync("SAVE10", 1, CreateCartItems());
+        Assert.True(result.Valid);
+        Assert.Null(result.Error);
+        Assert.Equal(1, result.Promotion!.PromotionId);
+    }
+    [Fact]
+    public async Task ValidatePromoCodeAsync_UnknownCode_ReturnsNotFoundMessage()
+    {
+        var context = CreateInMemoryContext("promocode2");
+        await context.SaveChangesAsync();
+        var service = CreateService(context);
+        var result = await service.ValidatePromoCodeAsync("NOPE", 1, CreateCartItems());
+        Assert.False(result.Valid);
+        Assert.Equal("Промокод не знайдено", result.Error);
+    }
+    [Fact]
+    public async Task ValidatePromoCodeAsync_Expired_ReturnsExpiredMessage()
+    {
+        var context = CreateInMemoryContext("promocode3");
+        context.Promotions.Add(new Promotion
+        {
+            PromotionId = 1, Name = "Test", Type = "PERCENTAGE", Value = 10,
+            PromoCode = "OLD", IsActive = true,
+            StartDate = DateTime.UtcNow.AddDays(-5), EndDate = DateTime.UtcNow.AddDays(-1)
+        });
+        await context.SaveChangesAsync();
+        var service = CreateService(context);
+        var result = await service.ValidatePromoCodeAsync("OLD", 1, CreateCartItems());
+        Assert.False(result.Valid);
+        Assert.Equal("Термін дії закінчився", result.Error);
+    }
+    [Fact]
+    public async Task ValidatePromoCodeAsync_UsageLimitReached_ReturnsExhaustedMessage()
+    {
+        var context = CreateInMemoryContext("promocode4");
+        context.Promotions.Add(new Promotion
+        {
+            PromotionId = 1, Name = "Test", Type = "PERCENTAGE", Value = 10,
+            PromoCode = "LIMIT", IsActive = true, UsageLimit = 5, CurrentUsage = 5
+        });
+        await context.SaveChangesAsync();
+        var service = CreateService(context);
+        var result = await service.ValidatePromoCodeAsync("LIMIT", 1, CreateCartItems());
+        Assert.False(result.Valid);
+        Assert.Equal("Промокод вичерпано", result.Error);
+    }
+    [Fact]
+    public async Task ValidatePromoCodeAsync_BelowMinOrderAmount_ReturnsMinAmountMessage()
+    {
+        var context = CreateInMemoryContext("promocode5");
+        context.Promotions.Add(new Promotion
+        {
+            PromotionId = 1, Name = "Test", Type = "PERCENTAGE", Value = 10,
+            PromoCode = "MIN500", IsActive = true, MinOrderAmount = 500m
+        });
+        await context.SaveChangesAsync();
+        var service = CreateService(context);
+        var result = await service.ValidatePromoCodeAsync("MIN500", 1, CreateCartItems(unitPrice: 100m, quantity: 1));
+        Assert.False(result.Valid);
+        Assert.Equal("Мінімальна сума: 500 грн", result.Error);
+    }
+    [Fact]
+    public async Task ValidatePromoCodeAsync_BelowMinQuantity_ReturnsMinQuantityMessage()
+    {
+        var context = CreateInMemoryContext("promocode6");
+        context.Promotions.Add(new Promotion
+        {
+            PromotionId = 1, Name = "Test", Type = "PERCENTAGE", Value = 10,
+            PromoCode = "MINQTY3", IsActive = true, MinQuantity = 3
+        });
+        await context.SaveChangesAsync();
+        var service = CreateService(context);
+        var result = await service.ValidatePromoCodeAsync("MINQTY3", 1, CreateCartItems(unitPrice: 100m, quantity: 2));
+        Assert.False(result.Valid);
+        Assert.Equal("Мінімальна кількість: 3", result.Error);
+    }
 }

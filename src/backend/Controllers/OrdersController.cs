@@ -112,27 +112,17 @@ namespace KhduSouvenirShop.API.Controllers
                     return BadRequest(ApiResponse<object>.FailureResult($"Недостатньо товару '{item.Product.Name}' на складі. Доступно: {item.Product.Stock}", "BadRequest"));
                 }
             }
-            // Крок 1. Перевірка промокоду до початку транзакції
+            // Крок 1. Перевірка промокоду до початку транзакції (6 валідацій у PromotionService)
             decimal originalSubtotal = cart.CartItems.Sum(ci => ci.Product.Price * ci.Quantity);
             Promotion? promoCodePromo = null;
             if (!string.IsNullOrWhiteSpace(dto.PromoCode))
             {
-                var now = DateTime.UtcNow;
-                promoCodePromo = await _promotionRepository.Query()
-                    .FirstOrDefaultAsync(p =>
-                        p.PromoCode == dto.PromoCode &&
-                        p.IsActive &&
-                        (p.StartDate == null || p.StartDate <= now) &&
-                        (p.EndDate == null || p.EndDate >= now) &&
-                        (p.UsageLimit == null || p.CurrentUsage < p.UsageLimit));
-                if (promoCodePromo == null)
+                var validation = await _promotionService.ValidatePromoCodeAsync(dto.PromoCode, userId, cart.CartItems.ToList());
+                if (!validation.Valid)
                 {
-                    return BadRequest(ApiResponse<object>.FailureResult("Промокод недійсний або протермінований", "BadRequest"));
+                    return BadRequest(ApiResponse<object>.FailureResult(validation.Error ?? "Промокод недійсний", "BadRequest"));
                 }
-                if (promoCodePromo.MinOrderAmount.HasValue && originalSubtotal < promoCodePromo.MinOrderAmount.Value)
-                {
-                    return BadRequest(ApiResponse<object>.FailureResult($"Мінімальна сума замовлення для цього промокоду: {promoCodePromo.MinOrderAmount.Value} грн", "BadRequest"));
-                }
+                promoCodePromo = validation.Promotion;
             }
             // Крок 1. Перевірка існування відділення Nova Poshta (м'яка деградація: за помилок API перевірку пропускаємо)
             // Адреса відділення береться з наданого DTO, а якщо її не передано — з довідника Nova Poshta.
@@ -383,18 +373,17 @@ namespace KhduSouvenirShop.API.Controllers
             decimal totalAfterUserPromos = items.Sum(i => i.priceAfterUserPromos * i.quantity);
             decimal totalDiscount = subtotal - totalAfterUserPromos;
             decimal totalAmount = totalAfterUserPromos;
+            string? promoCodeError = null;
             if (!string.IsNullOrWhiteSpace(dto.PromoCode))
             {
-                var now = DateTime.UtcNow;
-                var promo = await _promotionRepository.Query()
-                    .FirstOrDefaultAsync(p =>
-                        p.PromoCode == dto.PromoCode &&
-                        p.IsActive &&
-                        (p.StartDate == null || p.StartDate <= now) &&
-                        (p.EndDate == null || p.EndDate >= now) &&
-                        (p.UsageLimit == null || p.CurrentUsage < p.UsageLimit));
-                if (promo != null)
+                var validation = await _promotionService.ValidatePromoCodeAsync(dto.PromoCode, userId, cart.CartItems.ToList());
+                if (!validation.Valid)
                 {
+                    promoCodeError = validation.Error;
+                }
+                else
+                {
+                    var promo = validation.Promotion!;
                     if (promo.Type == "PERCENTAGE")
                     {
                         var percent = Math.Clamp((double)promo.Value, 0, 100);
@@ -443,6 +432,7 @@ namespace KhduSouvenirShop.API.Controllers
                 subtotal = subtotal,
                 totalDiscount = totalDiscount,
                 totalAmount = totalAmount,
+                promoCodeError = promoCodeError,
                 items = items
             };
             return Ok(ApiResponse<object>.SuccessResult(result));
