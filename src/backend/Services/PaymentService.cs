@@ -515,13 +515,14 @@ namespace KhduSouvenirShop.API.Services
                 foreach (var item in cart.CartItems)
                 {
                     item.Product.Stock -= item.Quantity;
-                    var priceAfterUserPromos = _promotionService.GetPriceAfterPromotions(item.Product, userPromotions);
+                    var (priceAfterUserPromos, appliedPromotionId) = _promotionService.GetPriceAfterPromotionsWithPromotion(item.Product, userPromotions);
                     var orderItem = new OrderItem
                     {
                         OrderId = order.OrderId,
                         ProductId = item.ProductId,
                         Quantity = item.Quantity,
                         OriginalPrice = item.Product.Price,
+                        AppliedPromotionId = appliedPromotionId,
                         DiscountAmount = (item.Product.Price - priceAfterUserPromos) * item.Quantity,
                         FinalPrice = priceAfterUserPromos
                     };

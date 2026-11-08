@@ -426,7 +426,7 @@
 - Помилки локалізовані: "Промокод не знайдено", "Термін дії закінчився", "Промокод вичерпано", "Мінімальна сума: 500 грн"
 - Після успішного оформлення замовлення → CurrentUsage++
 
-7.5. Persistence аудиту
+7.5. Persistence аудиту ✅
 - OrderItems зберігають: OriginalPrice, AppliedPromotionId, DiscountAmount, FinalPrice
 - OutgoingDocument(reason=ORDER) копіює ці ж поля для фінансової звітності
 

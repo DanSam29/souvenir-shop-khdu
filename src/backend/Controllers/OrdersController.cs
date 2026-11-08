@@ -223,7 +223,7 @@ namespace KhduSouvenirShop.API.Controllers
                 foreach (var item in cart.CartItems)
                 {
                     item.Product.Stock -= item.Quantity;
-                    var priceAfterUserPromos = _promotionService.GetPriceAfterPromotions(item.Product, userPromotions);
+                    var (priceAfterUserPromos, appliedPromotionId) = _promotionService.GetPriceAfterPromotionsWithPromotion(item.Product, userPromotions);
                     var userDiscountPerUnit = item.Product.Price - priceAfterUserPromos;
                     var orderItem = new OrderItem
                     {
@@ -231,6 +231,7 @@ namespace KhduSouvenirShop.API.Controllers
                         ProductId = item.ProductId,
                         Quantity = item.Quantity,
                         OriginalPrice = item.Product.Price,
+                        AppliedPromotionId = appliedPromotionId,
                         DiscountAmount = userDiscountPerUnit * item.Quantity,
                         FinalPrice = priceAfterUserPromos
                     };

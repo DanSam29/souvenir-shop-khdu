@@ -53,6 +53,12 @@ public class PromotionService
         return price;
     }
 
+    // Розрахунок ціни з поверненням ідентифікатора найвпливовішої застосованої автоматичної акції (для аудиту, п. 7.5)
+    public (decimal Price, int? AppliedPromotionId) GetPriceAfterPromotionsWithPromotion(Product product, List<Promotion> promotions)
+    {
+        return ApplyPromotionsStacked(product.Price, product, promotions);
+    }
+
     // Розрахунок ціни після застосування конкретної знижки
     public decimal CalculateDiscountedPrice(decimal originalPrice, Promotion promo)
     {

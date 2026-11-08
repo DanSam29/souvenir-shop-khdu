@@ -125,6 +125,32 @@ public class PromotionServiceTests
         var priceAfter = service.GetPriceAfterPromotions(product, promotions);
         Assert.Equal(0m, priceAfter);
     }
+    [Fact]
+    public void GetPriceAfterPromotionsWithPromotion_ReturnsAppliedPromotionId()
+    {
+        var context = CreateInMemoryContext("promos7");
+        var service = CreateService(context);
+        var product = new Product { ProductId = 100, CategoryId = 10, Price = 200m };
+        var promotions = new List<Promotion>
+        {
+            new Promotion { PromotionId = 1, Type = "PERCENTAGE", TargetType = "PRODUCT", TargetId = 100, Value = 10 },
+            new Promotion { PromotionId = 2, Type = "PERCENTAGE", TargetType = "PRODUCT", TargetId = 100, Value = 30 },
+        };
+        var (price, appliedPromotionId) = service.GetPriceAfterPromotionsWithPromotion(product, promotions);
+        // Обидві акції на одну ціль — перемагає більша знижка (30%): 200.00 -> 140.00, id = 2
+        Assert.Equal(140.00m, price);
+        Assert.Equal(2, appliedPromotionId);
+    }
+    [Fact]
+    public void GetPriceAfterPromotionsWithPromotion_NoPromotions_ReturnsNullId()
+    {
+        var context = CreateInMemoryContext("promos8");
+        var service = CreateService(context);
+        var product = new Product { ProductId = 100, CategoryId = 10, Price = 200m };
+        var (price, appliedPromotionId) = service.GetPriceAfterPromotionsWithPromotion(product, new List<Promotion>());
+        Assert.Equal(200m, price);
+        Assert.Null(appliedPromotionId);
+    }
     private static List<CartItem> CreateCartItems(decimal unitPrice = 100m, int quantity = 1) =>
         new List<CartItem>
         {
