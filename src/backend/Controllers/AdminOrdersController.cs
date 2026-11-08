@@ -69,7 +69,7 @@ namespace KhduSouvenirShop.API.Controllers
         {
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 10;
-            var query = _orderRepository.Query().Include(o => o.User).AsQueryable();
+            var query = _orderRepository.Query().Include(o => o.User).Include(o => o.Shipping).AsQueryable();
             if (!string.IsNullOrWhiteSpace(status))
             {
                 query = query.Where(o => o.Status == status);

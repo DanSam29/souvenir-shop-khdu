@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ordersAPI } from '../services/api';
 
+// Публічна сторінка відстеження Нової Пошти за номером ТТН
+const npTrackingUrl = (ttn) => `https://novaposhta.ua/tracking/?cargo_number=${encodeURIComponent(ttn)}`;
+
 function AdminOrdersPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
@@ -83,6 +86,7 @@ function AdminOrdersPage() {
             <th style={thStyle}>Сума</th>
             <th style={thStyle}>Дата</th>
             <th style={thStyle}>Статус</th>
+            <th style={thStyle}>ТТН</th>
             <th style={thStyle}>Дії</th>
           </tr>
         </thead>
@@ -95,6 +99,20 @@ function AdminOrdersPage() {
               <td style={tdStyle}>{new Date(o.createdAt).toLocaleDateString()}</td>
               <td style={tdStyle}>
                 <span style={statusBadgeStyle(o.status)}>{o.status}</span>
+              </td>
+              <td style={tdStyle}>
+                {o.trackingNumber ? (
+                  <a
+                    href={npTrackingUrl(o.trackingNumber)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#1890ff', fontWeight: 600 }}
+                  >
+                    {o.trackingNumber} ↗
+                  </a>
+                ) : (
+                  <span style={{ color: '#bbb' }}>—</span>
+                )}
               </td>
               <td style={tdStyle}>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

@@ -383,7 +383,7 @@
 - Fallback: ручний ввод, якщо повертається помилка API
 - У профілі: збережені адреси містяться з cityRef + warehouseRef
 
-6.6. OrderDetails / AdminOrders - Tracking
+6.6. OrderDetails / AdminOrders - Tracking ✅
 - Посилання на відстеження Nova Poshta за ТТН
 - (Опціонально) Виклик трекінгу API та відображення статусу
 

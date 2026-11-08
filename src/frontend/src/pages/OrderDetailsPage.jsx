@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ordersAPI } from '../services/api';
+import { ordersAPI, novaPoshtaAPI } from '../services/api';
 
 // Лінійний життєвий цикл замовлення (без врахування скасування)
 const ORDER_STEPS = ['Processing', 'Paid', 'Shipped', 'Delivered'];
+// Публічна сторінка відстеження Нової Пошти за номером ТТН
+const npTrackingUrl = (ttn) => `https://novaposhta.ua/tracking/?cargo_number=${encodeURIComponent(ttn)}`;
 const STATUS_COLORS = {
   Processing: { bg: '#e6f7ff', fg: '#1890ff', border: '#91d5ff' },
   Pending: { bg: '#fff7e6', fg: '#d46b08', border: '#ffd591' },
@@ -59,6 +61,7 @@ function OrderDetailsPage() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [tracking, setTracking] = useState(null);
   const isEn = i18n.language === 'en';
   const fromAdmin = location.state?.from === 'admin';
   const backPath = fromAdmin ? '/admin/orders' : '/profile';
@@ -79,6 +82,26 @@ function OrderDetailsPage() {
     };
     loadOrder();
   }, [id, t, fromAdmin]);
+
+  // Статус відстеження з API Нової Пошти (опціонально; сторінка працює й без нього)
+  useEffect(() => {
+    const ttn = order?.shipping?.trackingNumber;
+    if (!ttn) {
+      setTracking(null);
+      return;
+    }
+    let active = true;
+    const loadTracking = async () => {
+      try {
+        const res = await novaPoshtaAPI.getTracking(ttn);
+        if (active) setTracking(res.data);
+      } catch {
+        if (active) setTracking(null);
+      }
+    };
+    loadTracking();
+    return () => { active = false; };
+  }, [order]);
 
   if (loading) return <div className="loading">{t('common.loading')}</div>;
   if (error) return <div className="error">{error}</div>;
@@ -140,7 +163,16 @@ function OrderDetailsPage() {
           {order.shipping?.trackingNumber && (
             <div style={{ marginTop: 15, padding: 10, background: '#f0f7ff', borderRadius: 8, border: '1px solid #bae7ff' }}>
               <strong>{t('order.tracking_number')}:</strong> <span style={{ color: '#0056b3', fontWeight: 700 }}>{order.shipping.trackingNumber}</span>
-              <p style={{ margin: '5px 0 0 0', fontSize: '0.85rem' }}>{t('order.track_on_np')}</p>
+              {tracking?.available && tracking?.status && (
+                <p style={{ margin: '6px 0 0 0', fontWeight: 600, color: '#0056b3' }}>
+                  {t('order.tracking_status')}: {tracking.status}
+                </p>
+              )}
+              <p style={{ margin: '5px 0 0 0', fontSize: '0.85rem' }}>
+                <a href={npTrackingUrl(order.shipping.trackingNumber)} target="_blank" rel="noopener noreferrer" style={{ color: '#1890ff' }}>
+                  {t('order.track_on_np')} ↗
+                </a>
+              </p>
             </div>
           )}
         </div>

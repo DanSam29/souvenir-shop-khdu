@@ -62,5 +62,19 @@ namespace KhduSouvenirShop.API.Controllers
                 return StatusCode(500, ApiResponse<object>.FailureResult("Не вдалося розрахувати вартість доставки", "IntegrationError"));
             }
         }
+        [HttpGet("tracking/{trackingNumber}")]
+        public async Task<ActionResult> GetTracking([FromRoute] string trackingNumber)
+        {
+            try
+            {
+                var status = await _novaPoshtaService.GetTrackingStatusAsync(trackingNumber);
+                return Ok(ApiResponse<object>.SuccessResult(status));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching tracking status from NP for {TrackingNumber}", trackingNumber);
+                return StatusCode(500, ApiResponse<object>.FailureResult("Не вдалося отримати статус відправлення", "IntegrationError"));
+            }
+        }
     }
 }

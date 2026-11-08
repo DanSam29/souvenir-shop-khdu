@@ -200,6 +200,7 @@ export const novaPoshtaAPI = {
   getCities: (search) => api.get(`/np/cities?search=${search || ''}`),
   getWarehouses: (cityRef, search) => api.get(`/np/warehouses?cityRef=${cityRef}&search=${search || ''}`),
   calculate: (payload) => api.post('/np/calculate', payload),
+  getTracking: (trackingNumber) => api.get(`/np/tracking/${encodeURIComponent(trackingNumber)}`),
 };
 // API функції для акцій та промокодів
 export const promotionsAPI = {
