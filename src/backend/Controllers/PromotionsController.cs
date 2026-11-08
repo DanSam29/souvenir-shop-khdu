@@ -1,39 +1,67 @@
-using KhduSouvenirShop.API.Repositories;
-using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
+using KhduSouvenirShop.API.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
-
-using System.Text.Json;
-using System.Globalization;
 
 namespace KhduSouvenirShop.API.Controllers
 {
+    /// <summary>
+    /// Публічний доступ до акцій: список активних загальних акцій, персональні акції користувача
+    /// та валідація промокоду під час оформлення замовлення.
+    /// Керування акціями (CRUD, призначення, статистика) — у AdminPromotionsController.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class PromotionsController : ControllerBase
     {
         private readonly IPromotionRepository _promotionRepository;
         private readonly IUserRepository _userRepository;
+        private readonly ICartRepository _cartRepository;
         private readonly Services.PromotionService _promotionService;
-        private readonly IMemoryCache _cache;
-        public PromotionsController(IPromotionRepository promotionRepository, IUserRepository userRepository, Services.PromotionService promotionService, IMemoryCache cache)
+        public PromotionsController(
+            IPromotionRepository promotionRepository,
+            IUserRepository userRepository,
+            ICartRepository cartRepository,
+            Services.PromotionService promotionService)
         {
             _promotionRepository = promotionRepository;
             _userRepository = userRepository;
+            _cartRepository = cartRepository;
             _promotionService = promotionService;
-            _cache = cache;
         }
-        private void InvalidateCache()
+        // Активні загальні акції для публічної сторінки "Акції"
+        [HttpGet("active")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetActivePromotions()
         {
-            var currentVersion = _cache.Get<int>("Products_Cache_Version");
-            _cache.Set("Products_Cache_Version", currentVersion + 1);
-            _cache.Remove("Public_Products_All");
+            var now = DateTime.UtcNow;
+            var items = await _promotionRepository.Query()
+                .Where(p => p.IsActive &&
+                            string.IsNullOrEmpty(p.PromoCode) &&
+                            p.AudienceType == "ALL" &&
+                            (p.StartDate == null || p.StartDate <= now) &&
+                            (p.EndDate == null || p.EndDate >= now))
+                .OrderByDescending(p => p.Priority)
+                .Select(p => new
+                {
+                    p.PromotionId,
+                    p.Name,
+                    p.NameEn,
+                    p.Description,
+                    p.DescriptionEn,
+                    p.Type,
+                    p.Value,
+                    p.TargetType,
+                    p.TargetId,
+                    p.EndDate
+                })
+                .ToListAsync();
+            return Ok(ApiResponse<object>.SuccessResult(items));
         }
-        // Методи для користувачів (перегляд доступних персональних акцій та знижок)
+        // Доступні поточному користувачу акції (персональні та за статусом)
         [HttpGet("my")]
         [Authorize]
         public async Task<ActionResult> GetMyPromotions()
@@ -56,138 +84,49 @@ namespace KhduSouvenirShop.API.Controllers
             });
             return Ok(ApiResponse<object>.SuccessResult(result));
         }
-        // Методи керування акціями для адміністраторів (перегляд усіх акцій та створення нових)
-        [HttpGet]
-        [Authorize(Roles = "Administrator")]
-        [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
-        public async Task<ActionResult> GetAllPromotions(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10,
-            [FromQuery] string? type = null,
-            [FromQuery] bool? isActive = null)
+        // Валідація промокоду при checkout (6 правил у PromotionService)
+        [HttpPost("validate")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> ValidatePromoCode([FromBody] ValidatePromoCodeDto dto)
         {
-            var query = _promotionRepository.Query().AsQueryable();
-            if (!string.IsNullOrEmpty(type))
-                query = query.Where(p => p.Type == type);
-            if (isActive.HasValue)
-                query = query.Where(p => p.IsActive == isActive.Value);
-            var count = await query.CountAsync();
-            var items = await query
-                .OrderByDescending(p => p.CreatedAt)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-            var response = new PagedResponse<object>(items, count, pageNumber, pageSize);
-            return Ok(ApiResponse<PagedResponse<object>>.SuccessResult(response));
-        }
-        [HttpPost]
-        [Authorize(Roles = "Administrator")]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
-        public async Task<ActionResult> CreatePromotion([FromBody] PromotionDto dto)
-        {
-            var promo = new Promotion
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdStr, out var userId))
             {
-                Name = dto.Name,
-                NameEn = dto.NameEn,
-                Description = dto.Description,
-                DescriptionEn = dto.DescriptionEn,
-                Type = dto.Type,
-                Value = dto.Value,
-                TargetType = dto.TargetType,
-                TargetId = dto.TargetId,
-                AudienceType = dto.AudienceType,
-                StartDate = dto.StartDate,
-                EndDate = dto.EndDate,
-                PromoCode = dto.PromoCode,
-                MinOrderAmount = dto.MinOrderAmount,
-                Priority = dto.Priority,
-                UsageLimit = dto.UsageLimit,
-                IsActive = true
-            };
-            await _promotionRepository.AddAsync(promo);
-            await _promotionRepository.SaveChangesAsync();
-            InvalidateCache();
-            return Ok(ApiResponse<object>.SuccessResult(promo, "Акцію створено"));
-        }
-        [HttpPatch("{id}")]
-        [Authorize(Roles = "Administrator")]
-        public async Task<ActionResult> PatchPromotion(int id, [FromBody] IDictionary<string, JsonElement> updates)
-        {
-            var promo = await _promotionRepository.GetByIdAsync(id);
-            if (promo == null) return NotFound();
-            foreach (var update in updates)
-            {
-                var value = update.Value;
-                switch (update.Key.ToLower())
-                {
-                    case "name": promo.Name = value.GetString() ?? promo.Name; break;
-                    case "isactive": 
-                        if (value.ValueKind == JsonValueKind.True || value.ValueKind == JsonValueKind.False) promo.IsActive = value.GetBoolean();
-                        else if (bool.TryParse(value.GetString(), out var a)) promo.IsActive = a; 
-                        break;
-                    case "value": 
-                        if (value.ValueKind == JsonValueKind.Number) promo.Value = value.GetDecimal();
-                        else if (decimal.TryParse(value.GetString(), CultureInfo.InvariantCulture, out var v)) promo.Value = v;
-                        break;
-                    case "enddate": 
-                        if (value.ValueKind == JsonValueKind.Null) promo.EndDate = null;
-                        else if (DateTime.TryParse(value.GetString(), out var d)) promo.EndDate = d;
-                        break;
-                }
+                return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-            await _promotionRepository.SaveChangesAsync();
-            InvalidateCache();
-            return Ok(ApiResponse<object>.SuccessResult(promo, "Акцію частково оновлено"));
-        }
-        [HttpPatch("{id}/toggle")]
-        [Authorize(Roles = "Administrator")]
-        public async Task<ActionResult> TogglePromotion(int id)
-        {
-            var promo = await _promotionRepository.GetByIdAsync(id);
-            if (promo == null) return NotFound();
-            promo.IsActive = !promo.IsActive;
-            await _promotionRepository.SaveChangesAsync();
-            InvalidateCache();
-            return Ok(ApiResponse<object>.SuccessResult(new { id = promo.PromotionId, isActive = promo.IsActive }));
-        }
-        [HttpDelete("{id}")]
-        [Authorize(Roles = "Administrator")]
-        public async Task<ActionResult> DeletePromotion(int id)
-        {
-            var promo = await _promotionRepository.GetByIdAsync(id);
-            if (promo == null) return NotFound();
-            _promotionRepository.Remove(promo);
-            await _promotionRepository.SaveChangesAsync();
-            InvalidateCache();
-            return Ok(ApiResponse<object>.SuccessResult(null, "Акцію видалено"));
-        }
-        [HttpPost("bulk-delete")]
-        [Authorize(Roles = "Administrator")]
-        public async Task<ActionResult> BulkDelete([FromBody] List<int> ids)
-        {
-            var promos = await _promotionRepository.Query().Where(p => ids.Contains(p.PromotionId)).ToListAsync();
-            _promotionRepository.RemoveRange(promos);
-            await _promotionRepository.SaveChangesAsync();
-            InvalidateCache();
-            return Ok(ApiResponse<object>.SuccessResult(null, $"Видалено {promos.Count} акцій"));
+            if (string.IsNullOrWhiteSpace(dto?.Code))
+            {
+                return BadRequest(ApiResponse<object>.FailureResult("Промокод не знайдено", "BadRequest"));
+            }
+            var cart = await _cartRepository.GetByUserIdAsync(userId);
+            if (cart == null || cart.CartItems.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResult("Кошик порожній", "BadRequest"));
+            }
+            var validation = await _promotionService.ValidatePromoCodeAsync(dto.Code, userId, cart.CartItems.ToList());
+            var payload = new
+            {
+                valid = validation.Valid,
+                error = validation.Error,
+                promotion = validation.Valid && validation.Promotion != null
+                    ? new
+                    {
+                        promotionId = validation.Promotion.PromotionId,
+                        name = validation.Promotion.Name,
+                        nameEn = validation.Promotion.NameEn,
+                        type = validation.Promotion.Type,
+                        value = validation.Promotion.Value,
+                        targetType = validation.Promotion.TargetType
+                    }
+                    : null
+            };
+            return Ok(ApiResponse<object>.SuccessResult(payload, validation.Valid ? "Промокод дійсний" : validation.Error));
         }
     }
-    public class PromotionDto
+    public class ValidatePromoCodeDto
     {
-        public string Name { get; set; } = string.Empty;
-        public string? NameEn { get; set; }
-        public string? Description { get; set; }
-        public string? DescriptionEn { get; set; }
-        public string Type { get; set; } = "PERCENTAGE";
-        public decimal Value { get; set; }
-        public string TargetType { get; set; } = "PRODUCT";
-        public int? TargetId { get; set; }
-        public string AudienceType { get; set; } = "ALL";
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
-        public string? PromoCode { get; set; }
-        public decimal? MinOrderAmount { get; set; }
-        public int Priority { get; set; } = 50;
-        public int? UsageLimit { get; set; }
+        public string? Code { get; set; }
     }
 }

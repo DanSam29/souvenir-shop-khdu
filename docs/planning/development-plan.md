@@ -430,7 +430,7 @@
 - OrderItems зберігають: OriginalPrice, AppliedPromotionId, DiscountAmount, FinalPrice
 - OutgoingDocument(reason=ORDER) копіює ці ж поля для фінансової звітності
 
-7.6. PromotionsController + Admin
+7.6. PromotionsController + Admin ✅
 - Публічні:
   - GET /api/promotions/active - активні загальні акції (для сторінки "Акції")
   - POST /api/promotions/validate - валідація промокоду при checkout

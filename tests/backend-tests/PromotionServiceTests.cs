@@ -249,4 +249,56 @@ public class PromotionServiceTests
         Assert.False(result.Valid);
         Assert.Equal("Мінімальна кількість: 3", result.Error);
     }
+    [Fact]
+    public async Task AssignPersonalPromotionAsync_AssignsOnceAndRejectsDuplicate()
+    {
+        var context = CreateInMemoryContext("assign1");
+        context.Promotions.Add(new Promotion { PromotionId = 1, Name = "Personal", IsActive = true });
+        await context.SaveChangesAsync();
+        var service = CreateService(context);
+        var first = await service.AssignPersonalPromotionAsync(5, 1);
+        var second = await service.AssignPersonalPromotionAsync(5, 1);
+        Assert.True(first);
+        Assert.False(second);
+        Assert.Equal(1, context.UserPromotions.Count(up => up.UserId == 5 && up.PromotionId == 1));
+    }
+    [Fact]
+    public async Task AssignPersonalPromotionAsync_UnknownPromotion_ReturnsFalse()
+    {
+        var context = CreateInMemoryContext("assign2");
+        var service = CreateService(context);
+        var result = await service.AssignPersonalPromotionAsync(5, 999);
+        Assert.False(result);
+    }
+    [Fact]
+    public async Task GetPromotionStatisticsAsync_CalculatesRoiMetrics()
+    {
+        var context = CreateInMemoryContext("stats1");
+        context.Promotions.Add(new Promotion { PromotionId = 1, Name = "Sale", IsActive = true, CurrentUsage = 2, UsageLimit = 10 });
+        context.UserPromotions.AddRange(
+            new UserPromotion { UserPromotionId = 1, UserId = 1, PromotionId = 1 },
+            new UserPromotion { UserPromotionId = 2, UserId = 2, PromotionId = 1 });
+        context.OrderItems.AddRange(
+            new OrderItem { OrderItemId = 1, OrderId = 100, ProductId = 1, Quantity = 2, OriginalPrice = 100, DiscountAmount = 20, FinalPrice = 80, AppliedPromotionId = 1 },
+            new OrderItem { OrderItemId = 2, OrderId = 100, ProductId = 2, Quantity = 1, OriginalPrice = 50, DiscountAmount = 5, FinalPrice = 45, AppliedPromotionId = 1 },
+            new OrderItem { OrderItemId = 3, OrderId = 101, ProductId = 3, Quantity = 3, OriginalPrice = 10, DiscountAmount = 0, FinalPrice = 10, AppliedPromotionId = null });
+        await context.SaveChangesAsync();
+        var service = CreateService(context);
+        var stats = await service.GetPromotionStatisticsAsync(1);
+        Assert.NotNull(stats);
+        Assert.Equal(1, stats!.TotalOrders); // лише замовлення з AppliedPromotionId = 1
+        Assert.Equal(3, stats.TotalQuantitySold);
+        Assert.Equal(25m, stats.TotalDiscountGiven); // 20 + 5
+        Assert.Equal(205m, stats.TotalRevenue); // 80*2 + 45*1
+        Assert.Equal(2, stats.AssignedUsers);
+        Assert.Equal(2, stats.CurrentUsage);
+    }
+    [Fact]
+    public async Task GetPromotionStatisticsAsync_UnknownPromotion_ReturnsNull()
+    {
+        var context = CreateInMemoryContext("stats2");
+        var service = CreateService(context);
+        var stats = await service.GetPromotionStatisticsAsync(42);
+        Assert.Null(stats);
+    }
 }
