@@ -942,7 +942,9 @@ namespace KhduSouvenirShop.API.Migrations
                         .HasColumnType("varchar(200)");
 
                     b.Property<int>("Priority")
-                        .HasColumnType("int");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(50);
 
                     b.Property<string>("PromoCode")
                         .HasMaxLength(50)

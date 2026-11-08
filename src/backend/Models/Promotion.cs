@@ -40,7 +40,8 @@ namespace KhduSouvenirShop.API.Models
         [Column(TypeName = "decimal(10,2)")]
         public decimal? MinOrderAmount { get; set; }
         public int? MinQuantity { get; set; }
-        public int Priority { get; set; } = 0;
+        // Пріоритет застосування знижки (0–100), типове значення 50
+        public int Priority { get; set; } = 50;
         public int? UsageLimit { get; set; }
         public int CurrentUsage { get; set; } = 0;
         public bool IsActive { get; set; } = true;

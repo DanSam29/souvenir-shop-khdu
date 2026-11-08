@@ -106,6 +106,10 @@ namespace KhduSouvenirShop.API.Data
             modelBuilder.Entity<Promotion>()
                 .Property(p => p.AudienceType)
                 .HasColumnType("enum('ALL','STUDENTS','STAFF','ALUMNI','CUSTOM','NONE','REGULAR','SCHOLARSHIP','HIGH_ACHIEVER')");
+            // Типовий пріоритет застосування знижки (0–100)
+            modelBuilder.Entity<Promotion>()
+                .Property(p => p.Priority)
+                .HasDefaultValue(50);
             modelBuilder.Entity<OutgoingDocument>()
                 .Property(o => o.Reason)
                 .HasColumnType("enum('Order','Damaged','Lost','Return','Inventory','Other')");

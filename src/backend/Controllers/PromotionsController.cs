@@ -187,7 +187,7 @@ namespace KhduSouvenirShop.API.Controllers
         public DateTime? EndDate { get; set; }
         public string? PromoCode { get; set; }
         public decimal? MinOrderAmount { get; set; }
-        public int Priority { get; set; } = 0;
+        public int Priority { get; set; } = 50;
         public int? UsageLimit { get; set; }
     }
 }
