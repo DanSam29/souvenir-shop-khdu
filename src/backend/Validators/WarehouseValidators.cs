@@ -10,7 +10,17 @@ namespace KhduSouvenirShop.API.Validators
             RuleFor(x => x.ProductId).GreaterThan(0).WithMessage("Необхідно вказати товар");
             RuleFor(x => x.Quantity).GreaterThan(0).WithMessage("Кількість має бути більше 0");
             RuleFor(x => x.PurchasePrice).GreaterThan(0).WithMessage("Ціна закупівлі має бути більше 0");
-            RuleFor(x => x.CompanyId).GreaterThan(0).WithMessage("Необхідно вказати компанію-постачальника");
+            RuleFor(x => x.Reason)
+                .NotEmpty().WithMessage("Причина обов'язкова")
+                .Must(x => x == "INCOMING" || x == "RETURN")
+                .WithMessage("Некоректна причина надходження");
+            RuleFor(x => x.CompanyId)
+                .GreaterThan(0).WithMessage("Необхідно вказати компанію-постачальника")
+                .When(x => x.CompanyId.HasValue);
+            // Для прибуткової накладної (INCOMING) компанія обов'язкова, для RETURN - ні
+            RuleFor(x => x.CompanyId)
+                .NotNull().WithMessage("Для прибуткової накладної (не RETURN) обов'язково вказати компанію-постачальника")
+                .When(x => x.Reason != "RETURN");
             RuleFor(x => x.DocumentDate)
                 .LessThanOrEqualTo(DateTime.UtcNow.AddMinutes(5))
                 .WithMessage("Дата документа не може бути в майбутньому")

@@ -458,7 +458,7 @@
 - OutgoingDocument: OutgoingId, ProductId, Quantity, OriginalPrice, AppliedPromotionId (nullable), DiscountAmount, FinalPrice, Reason (ORDER/WRITE_OFF/INVENTORY), OrderId (nullable), CompanyId (nullable), CreatedBy, CreatedAt, Notes
 - Company: CompanyId, Name, NameEn, Email, Phone, Address, ContactPerson, IsActive, CreatedAt, DeletedAt/DeletedBy/IsDeleted (soft delete)
 
-8.2. WarehouseDocumentsController (Manager+)
+8.2. WarehouseDocumentsController (Manager+) ✅
 - Incoming:
   - GET /api/admin/incoming - список (фільтри date/product/company, пагінація)
   - GET /api/admin/incoming/{id} - деталі

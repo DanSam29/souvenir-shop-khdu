@@ -145,13 +145,19 @@ export const adminUsersAPI = {
   unblock: (id) => api.put(`/admin/users/${id}/unblock`),
   resetPassword: (id, data) => api.post(`/admin/users/${id}/reset-password`, data),
 };
-// API функції для складу
+// API функції для складу (адмін, Manager+)
 export const warehouseAPI = {
-  getIncoming: () => api.get('/WarehouseDocuments/incoming'),
-  getOutgoing: () => api.get('/WarehouseDocuments/outgoing'),
-  getStock: () => api.get('/WarehouseDocuments/stock'),
-  createIncoming: (data) => api.post('/WarehouseDocuments/incoming', data),
-  createOutgoing: (data) => api.post('/WarehouseDocuments/outgoing', data),
+  getIncoming: (params) => api.get('/admin/incoming', { params }),
+  getIncomingById: (id) => api.get(`/admin/incoming/${id}`),
+  createIncoming: (data) => api.post('/admin/incoming', data),
+  updateIncoming: (id, data) => api.put(`/admin/incoming/${id}`, data),
+  deleteIncoming: (id) => api.delete(`/admin/incoming/${id}`),
+  getOutgoing: (params) => api.get('/admin/outgoing', { params }),
+  getOutgoingById: (id) => api.get(`/admin/outgoing/${id}`),
+  createOutgoing: (data) => api.post('/admin/outgoing', data),
+  updateOutgoing: (id, data) => api.put(`/admin/outgoing/${id}`, data),
+  deleteOutgoing: (id) => api.delete(`/admin/outgoing/${id}`),
+  getStock: () => api.get('/admin/stock'),
 };
 // API функції для компаній
 export const companiesAPI = {
