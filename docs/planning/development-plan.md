@@ -453,7 +453,7 @@
 ## Етап 8: Warehouse Module - Склад, накладні, компанії, залишки
 **Мета:** Автоматизувати складський облік: прибуткові/видаткові документи, компанії, залишки, low-stock алерти.
 
-8.1. Сутності
+8.1. Сутності ✅
 - IncomingDocument: IncomingId, ProductId (single, або перейти на line-items?), Quantity, PurchasePrice (decimal), Reason (INCOMING/RETURN), CompanyId (nullable, null для RETURN), CreatedBy, CreatedAt, Notes
 - OutgoingDocument: OutgoingId, ProductId, Quantity, OriginalPrice, AppliedPromotionId (nullable), DiscountAmount, FinalPrice, Reason (ORDER/WRITE_OFF/INVENTORY), OrderId (nullable), CompanyId (nullable), CreatedBy, CreatedAt, Notes
 - Company: CompanyId, Name, NameEn, Email, Phone, Address, ContactPerson, IsActive, CreatedAt, DeletedAt/DeletedBy/IsDeleted (soft delete)

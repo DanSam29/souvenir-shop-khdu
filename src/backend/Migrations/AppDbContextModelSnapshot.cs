@@ -203,6 +203,10 @@ namespace KhduSouvenirShop.API.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
+                    b.Property<string>("NameEn")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
                         .HasColumnType("varchar(1000)");
@@ -234,7 +238,7 @@ namespace KhduSouvenirShop.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<int>("CompanyId")
+                    b.Property<int?>("CompanyId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
@@ -267,6 +271,11 @@ namespace KhduSouvenirShop.API.Migrations
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("enum('INCOMING','RETURN')");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime(6)");
@@ -1247,8 +1256,7 @@ namespace KhduSouvenirShop.API.Migrations
                     b.HasOne("KhduSouvenirShop.API.Models.Company", "Company")
                         .WithMany("IncomingDocuments")
                         .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("KhduSouvenirShop.API.Models.User", "CreatedByUser")
                         .WithMany()

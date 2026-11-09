@@ -14,8 +14,13 @@ namespace KhduSouvenirShop.API.Models
         public int Quantity { get; set; }
         [Column(TypeName = "decimal(10,2)")]
         public decimal PurchasePrice { get; set; }
+        // Reason: INCOMING (надходження від постачальника), RETURN (повернення)
+        [Required]
+        [MaxLength(20)]
+        public string Reason { get; set; } = "INCOMING";
+        // Для RETURN компанія може бути не вказана
         [ForeignKey("Company")]
-        public int CompanyId { get; set; }
+        public int? CompanyId { get; set; }
         [Column(TypeName = "date")]
         public DateTime DocumentDate { get; set; }
         [MaxLength(1000)]

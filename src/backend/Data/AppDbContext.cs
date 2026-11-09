@@ -110,6 +110,9 @@ namespace KhduSouvenirShop.API.Data
             modelBuilder.Entity<Promotion>()
                 .Property(p => p.Priority)
                 .HasDefaultValue(50);
+            modelBuilder.Entity<IncomingDocument>()
+                .Property(i => i.Reason)
+                .HasColumnType("enum('INCOMING','RETURN')");
             modelBuilder.Entity<OutgoingDocument>()
                 .Property(o => o.Reason)
                 .HasColumnType("enum('Order','Damaged','Lost','Return','Inventory','Other')");
