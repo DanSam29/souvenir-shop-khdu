@@ -9,9 +9,9 @@ using System.Text.Json;
 
 namespace KhduSouvenirShop.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/admin/companies")]
     [ApiController]
-    [Authorize(Roles = "Administrator,Manager")]
+    [Authorize(Roles = "Manager,Administrator,SuperAdmin")]
     public class CompaniesController(ICompanyRepository companyRepository, ILogger<CompaniesController> logger) : ControllerBase
     {
         private readonly ICompanyRepository _companyRepository = companyRepository;
@@ -56,9 +56,13 @@ namespace KhduSouvenirShop.API.Controllers
         {
             if (await _companyRepository.NameExistsAsync(dto.Name))
                 return BadRequest(ApiResponse<object>.FailureResult("Компанія з такою назвою вже існує", "Conflict"));
+            if (!string.IsNullOrWhiteSpace(dto.Email) &&
+                await _companyRepository.ExistsAsync(c => c.Email != null && c.Email.ToLower() == dto.Email.ToLower()))
+                return BadRequest(ApiResponse<object>.FailureResult("Компанія з таким Email вже існує", "Conflict"));
             var company = new Company
             {
                 Name = dto.Name,
+                NameEn = dto.NameEn,
                 ContactPerson = dto.ContactPerson,
                 Phone = dto.Phone,
                 Email = dto.Email,
@@ -78,7 +82,11 @@ namespace KhduSouvenirShop.API.Controllers
             if (company == null) return NotFound(ApiResponse<object>.FailureResult("Компанію не знайдено", "NotFound"));
             if (await _companyRepository.ExistsAsync(c => c.Name == dto.Name && c.CompanyId != id))
                 return BadRequest(ApiResponse<object>.FailureResult("Компанія з такою назвою вже існує", "Conflict"));
+            if (!string.IsNullOrWhiteSpace(dto.Email) &&
+                await _companyRepository.ExistsAsync(c => c.Email != null && c.Email.ToLower() == dto.Email.ToLower() && c.CompanyId != id))
+                return BadRequest(ApiResponse<object>.FailureResult("Компанія з таким Email вже існує", "Conflict"));
             company.Name = dto.Name;
+            company.NameEn = dto.NameEn;
             company.ContactPerson = dto.ContactPerson;
             company.Phone = dto.Phone;
             company.Email = dto.Email;
@@ -157,10 +165,33 @@ namespace KhduSouvenirShop.API.Controllers
             await _companyRepository.SaveChangesAsync();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Компанію видалено"));
         }
+        [HttpPost("{id}/deactivate")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> DeactivateCompany(int id)
+        {
+            var company = await _companyRepository.GetByIdAsync(id);
+            if (company == null) return NotFound(ApiResponse<object>.FailureResult("Компанію не знайдено", "NotFound"));
+            if (!company.IsActive) return BadRequest(ApiResponse<object>.FailureResult("Компанія вже деактивована", "BadRequest"));
+            company.IsActive = false;
+            await _companyRepository.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResult(company, "Компанію деактивовано"));
+        }
+        [HttpPost("{id}/activate")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> ActivateCompany(int id)
+        {
+            var company = await _companyRepository.GetByIdAsync(id);
+            if (company == null) return NotFound(ApiResponse<object>.FailureResult("Компанію не знайдено", "NotFound"));
+            if (company.IsActive) return BadRequest(ApiResponse<object>.FailureResult("Компанія вже активна", "BadRequest"));
+            company.IsActive = true;
+            await _companyRepository.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResult(company, "Компанію активовано"));
+        }
     }
     public class CompanyDto
     {
         public string Name { get; set; } = string.Empty;
+        public string? NameEn { get; set; }
         public string? ContactPerson { get; set; }
         public string? Phone { get; set; }
         public string? Email { get; set; }

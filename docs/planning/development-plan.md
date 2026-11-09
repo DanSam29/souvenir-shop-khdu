@@ -472,7 +472,7 @@
   - PUT /api/admin/outgoing/{id}
   - DELETE /api/admin/outgoing/{id} - повернути stock
 
-8.3. CompaniesController (Manager+)
+8.3. CompaniesController (Manager+) ✅
 - CRUD компанії
 - Додатково:
   - POST /api/admin/companies/{id}/deactivate - м'яка деактивація

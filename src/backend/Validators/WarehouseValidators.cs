@@ -54,6 +54,8 @@ namespace KhduSouvenirShop.API.Validators
             RuleFor(x => x.Name)
                 .NotEmpty().WithMessage("Назва компанії обов'язкова")
                 .Length(3, 200).WithMessage("Назва має бути від 3 до 200 символів");
+            RuleFor(x => x.NameEn)
+                .MaximumLength(200).WithMessage("Англійська назва не може бути довшою за 200 символів");
             RuleFor(x => x.ContactPerson)
                 .MaximumLength(100).WithMessage("Контактна особа не може бути довшою за 100 символів");
             RuleFor(x => x.Phone)
