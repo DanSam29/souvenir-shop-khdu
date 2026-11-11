@@ -104,6 +104,13 @@ function AdminDashboard() {
               <h4>University API</h4>
               <p>Активних доменів: {integrations.university.domainsCount}</p>
             </div>
+            <div style={integrationCardStyle(integrations.smtp?.configured)}>
+              <h4>Email (SMTP)</h4>
+              <p>Статус: {integrations.smtp?.configured ? '✅ Налаштовано' : '❌ Потрібна конфігурація'}</p>
+              <p>Надіслано за годину: <b>{integrations.smtp?.sentLastHour ?? 0}</b></p>
+              <p>Надіслано за добу: <b>{integrations.smtp?.sentLastDay ?? 0}</b></p>
+              <p>Помилок за добу: <b>{integrations.smtp?.failedLastDay ?? 0}</b></p>
+            </div>
           </>
         )}
       </div>

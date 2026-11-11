@@ -1,6 +1,8 @@
+using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace KhduSouvenirShop.API.Controllers
 {
@@ -9,13 +11,18 @@ namespace KhduSouvenirShop.API.Controllers
     [Authorize(Roles = "Administrator,Manager")]
     public class IntegrationsController : ControllerBase
     {
+        // Статуси записів журналу листів (узгоджено з EmailService)
+        private const string EmailStatusSent = "Sent";
+        private const string EmailStatusFailed = "Failed";
         private readonly IConfiguration _configuration;
-        public IntegrationsController(IConfiguration configuration)
+        private readonly AppDbContext _dbContext;
+        public IntegrationsController(IConfiguration configuration, AppDbContext dbContext)
         {
             _configuration = configuration;
+            _dbContext = dbContext;
         }
         [HttpGet("status")]
-        public ActionResult GetStatus()
+        public async Task<ActionResult> GetStatus()
         {
             var stripeEnabled = _configuration.GetValue<bool>("Features:StripeEnabled");
             var stripeKey = !string.IsNullOrEmpty(_configuration["Stripe:SecretKey"]);
@@ -26,6 +33,16 @@ namespace KhduSouvenirShop.API.Controllers
             var smtpEnabled = !string.IsNullOrEmpty(_configuration["Smtp:Server"]);
             var smtpConfigured = !string.IsNullOrEmpty(_configuration["Smtp:Username"])
                                  && !string.IsNullOrEmpty(_configuration["Smtp:Password"]);
+            // Статистика надсилання листів із журналу SentEmails: за останню годину та добу
+            var now = DateTime.UtcNow;
+            var hourAgo = now.AddHours(-1);
+            var dayAgo = now.AddDays(-1);
+            var sentLastHour = await _dbContext.SentEmails
+                .CountAsync(e => e.Status == EmailStatusSent && e.SentAt >= hourAgo);
+            var sentLastDay = await _dbContext.SentEmails
+                .CountAsync(e => e.Status == EmailStatusSent && e.SentAt >= dayAgo);
+            var failedLastDay = await _dbContext.SentEmails
+                .CountAsync(e => e.Status == EmailStatusFailed && e.SentAt >= dayAgo);
 
             var status = new
             {
@@ -53,7 +70,10 @@ namespace KhduSouvenirShop.API.Controllers
                 {
                     status = !smtpEnabled ? "disabled" : (smtpConfigured ? "ok" : "degraded"),
                     enabled = smtpEnabled,
-                    configured = smtpConfigured
+                    configured = smtpConfigured,
+                    sentLastHour,
+                    sentLastDay,
+                    failedLastDay
                 }
             };
             return Ok(ApiResponse<object>.SuccessResult(status));
