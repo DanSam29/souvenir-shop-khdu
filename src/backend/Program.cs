@@ -106,6 +106,8 @@ builder.Services.AddHttpContextAccessor();
 // Пришвидшення роботи каталогу товарів через кешування в пам'яті
 builder.Services.AddMemoryCache();
 // Реєстрація внутрішніх сервісів (бізнес-логіку)
+// Рендерер HTML-шаблонів листів (singleton із кешем вмісту шаблонів)
+builder.Services.AddSingleton<KhduSouvenirShop.API.Services.IEmailTemplateRenderer, KhduSouvenirShop.API.Services.EmailTemplateRenderer>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.PromotionService>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.WarehouseService>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IPaymentService, KhduSouvenirShop.API.Services.PaymentService>();

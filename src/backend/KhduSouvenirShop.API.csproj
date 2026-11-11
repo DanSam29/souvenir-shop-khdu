@@ -29,4 +29,8 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.0" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- HTML-шаблони листів копіюються в output/publish (читаються EmailTemplateRenderer) -->
+    <None Update="EmailTemplates\**\*.html" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

@@ -564,7 +564,7 @@
 - SentEmailId, Recipient, Subject, TemplateType, ReferenceId, SentAt, Status, ErrorMessage
 - Унікальний індекс (TemplateType, ReferenceId) для ідемпотентності
 
-10.3. HTML Шаблони (папка EmailTemplates)
+10.3. HTML Шаблони (папка EmailTemplates) ✅
 - Base layout (header з логотипом ХДУ, footer, кольори бренду)
 - Шаблони:
   - RegisterConfirm - вітаємо в системі

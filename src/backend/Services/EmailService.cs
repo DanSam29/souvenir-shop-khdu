@@ -29,20 +29,25 @@ namespace KhduSouvenirShop.API.Services
         private static readonly Regex EmailRegex = new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.Compiled);
         private readonly IConfiguration _configuration;
         private readonly ILogger<EmailService> _logger;
+        // Рендерер HTML-шаблонів листів із папки EmailTemplates
+        private readonly IEmailTemplateRenderer _templateRenderer;
         // Окремий scope для запису в журнал SentEmails (не втручається в поточний UnitOfWork)
         private readonly IServiceScopeFactory _scopeFactory;
-        public EmailService(IConfiguration configuration, ILogger<EmailService> logger, IServiceScopeFactory scopeFactory)
+        public EmailService(IConfiguration configuration, ILogger<EmailService> logger, IEmailTemplateRenderer templateRenderer, IServiceScopeFactory scopeFactory)
         {
             _configuration = configuration;
             _logger = logger;
+            _templateRenderer = templateRenderer;
             _scopeFactory = scopeFactory;
         }
         public async Task SendOrderConfirmationAsync(string email, string orderNumber, string lang = "ua")
         {
             string subject = lang == "en" ? "Order Confirmation" : "Підтвердження замовлення";
-            string body = lang == "en" 
-                ? $"<h1>Thank you for your order!</h1><p>Your order number: <b>{orderNumber}</b></p>"
-                : $"<h1>Дякуємо за ваше замовлення!</h1><p>Номер вашого замовлення: <b>{orderNumber}</b></p>";
+            string body = _templateRenderer.Render("OrderConfirmation", new Dictionary<string, string>
+            {
+                ["Title"] = subject,
+                ["OrderNumber"] = orderNumber,
+            }, lang);
             await SendEmailAsync(email, subject, body, templateType: "OrderConfirmation", referenceId: orderNumber);
         }
         public async Task SendOrderCancellationAsync(string email, string orderNumber, string? reason = null, string lang = "ua")
@@ -51,54 +56,68 @@ namespace KhduSouvenirShop.API.Services
             string reasonText = string.IsNullOrWhiteSpace(reason)
                 ? (lang == "en" ? "not specified" : "не вказана")
                 : reason!;
-            string body = lang == "en"
-                ? $"<h1>Your order has been cancelled</h1><p>Order number: <b>{orderNumber}</b></p><p>Reason: {reasonText}</p>"
-                : $"<h1>Ваше замовлення скасовано</h1><p>Номер замовлення: <b>{orderNumber}</b></p><p>Причина: {reasonText}</p>";
+            string body = _templateRenderer.Render("OrderCancelled", new Dictionary<string, string>
+            {
+                ["Title"] = subject,
+                ["OrderNumber"] = orderNumber,
+                ["Reason"] = reasonText,
+            }, lang);
             await SendEmailAsync(email, subject, body, templateType: "OrderCancelled", referenceId: orderNumber);
         }
         public async Task SendPaymentConfirmationAsync(string email, string orderNumber, decimal amount, string lang = "ua")
         {
             string subject = lang == "en" ? "Payment Received" : "Оплата отримана";
-            string body = lang == "en"
-                ? $"<h1>Payment successful!</h1><p>We received your payment of {amount} UAH for order {orderNumber}.</p>"
-                : $"<h1>Оплата успішна!</h1><p>Ми отримали вашу оплату в розмірі {amount} грн за замовлення {orderNumber}.</p>";
+            string body = _templateRenderer.Render("OrderPaymentSuccess", new Dictionary<string, string>
+            {
+                ["Title"] = subject,
+                ["OrderNumber"] = orderNumber,
+                ["Amount"] = amount.ToString("0.00"),
+            }, lang);
             await SendEmailAsync(email, subject, body, templateType: "OrderPaymentSuccess", referenceId: orderNumber);
         }
         public async Task SendPaymentFailedAsync(string email, string orderNumber, string lang = "ua")
         {
             string subject = lang == "en" ? "Payment Failed" : "Оплата не вдалася";
-            string body = lang == "en"
-                ? $"<h1>Payment failed</h1><p>Unfortunately, the payment for your order {orderNumber} was not successful. The order has been cancelled. You can try again.</p>"
-                : $"<h1>Оплата не вдалася</h1><p>На жаль, оплата за замовлення {orderNumber} не пройшла. Замовлення скасовано. Ви можете спробувати ще раз.</p>";
+            string body = _templateRenderer.Render("OrderPaymentFailed", new Dictionary<string, string>
+            {
+                ["Title"] = subject,
+                ["OrderNumber"] = orderNumber,
+            }, lang);
             await SendEmailAsync(email, subject, body, templateType: "OrderPaymentFailed", referenceId: orderNumber);
         }
         public async Task SendStudentVerificationEmailAsync(string email, string status, string lang = "ua", int? discountPercent = null)
         {
             string subject = lang == "en" ? "Student Status Verified" : "Студентський статус підтверджено";
-            // Рядок про призначену знижку додається лише коли відсоток відомий
-            string discountUa = discountPercent.HasValue ? $"<p>Вам призначено студентську знижку <b>{discountPercent}%</b>.</p>" : string.Empty;
-            string discountEn = discountPercent.HasValue ? $"<p>You have been granted a student discount of <b>{discountPercent}%</b>.</p>" : string.Empty;
-            string body = lang == "en"
-                ? $"<h1>Congratulations!</h1><p>Your student status has been verified as: <b>{status}</b>.</p>{discountEn}"
-                : $"<h1>Вітаємо!</h1><p>Ваш статус студента підтверджено: <b>{status}</b>.</p>{discountUa}";
+            // Блок про призначену знижку додається лише коли відсоток відомий
+            string discountBlock = discountPercent.HasValue
+                ? $"<p>Вам призначено студентську знижку <b>{discountPercent}%</b>.</p>"
+                : string.Empty;
+            string body = _templateRenderer.Render("StudentVerified", new Dictionary<string, string>
+            {
+                ["Title"] = subject,
+                ["Status"] = status,
+                ["DiscountBlock"] = discountBlock,
+            }, lang);
             await SendEmailAsync(email, subject, body, templateType: "StudentVerified", referenceId: email);
         }
         public async Task SendStudentExpiryReminderEmailAsync(string email, int daysLeft, string lang = "ua")
         {
             string subject = lang == "en" ? "Student Status Expiring Soon" : "Студентський статус скоро завершиться";
-            string body = lang == "en"
-                ? $"<h1>Heads up!</h1><p>Your student status will expire in <b>{daysLeft}</b> day(s). Please refresh it in your profile to keep your student discount.</p>"
-                : $"<h1>Нагадування!</h1><p>Ваш студентський статус завершиться через <b>{daysLeft}</b> дн. Будь ласка, поновіть його у профілі, щоб зберегти студентську знижку.</p>";
+            string body = _templateRenderer.Render("StudentStatusExpiringSoon", new Dictionary<string, string>
+            {
+                ["Title"] = subject,
+                ["DaysLeft"] = daysLeft.ToString(),
+            }, lang);
             await SendEmailAsync(email, subject, body, templateType: "StudentStatusExpiringSoon", referenceId: email);
         }
         public async Task SendPasswordResetEmailAsync(string email, string resetToken, string lang = "ua")
         {
-            var clientUrl = _configuration.GetSection("AllowedOrigins").Get<string[]>()?.FirstOrDefault() ?? "http://localhost:3000";
-            var resetLink = $"{clientUrl}/reset-password?token={resetToken}";
             string subject = lang == "en" ? "Password Reset" : "Скидання паролю";
-            string body = lang == "en"
-                ? $"<h1>Password reset</h1><p>Follow the link to set a new password: <a href=\"{resetLink}\">Reset password</a></p><p>The link expires in 1 hour. If you didn't request this, ignore this email.</p>"
-                : $"<h1>Скидання паролю</h1><p>Перейдіть за посиланням, щоб встановити новий пароль: <a href=\"{resetLink}\">Скинути пароль</a></p><p>Посилання дійсне 1 годину. Якщо ви не робили цей запит, просто проігноруйте лист.</p>";
+            string body = _templateRenderer.Render("PasswordReset", new Dictionary<string, string>
+            {
+                ["Title"] = subject,
+                ["ResetToken"] = resetToken,
+            }, lang);
             await SendEmailAsync(email, subject, body, templateType: "PasswordReset", referenceId: resetToken);
         }
         public async Task SendEmailAsync(string to, string subject, string htmlBody, string? cc = null, string? bcc = null, string? templateType = null, string? referenceId = null)
