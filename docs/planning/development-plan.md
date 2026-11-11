@@ -588,8 +588,8 @@
 - Serilog: Information для успішних відправлень, Error для помилок зі stack trace (EmailService + конфіг у Program.cs)
 - Адмін панель - інтеграційний дашборд: к-сть відправлених за останню годину/добу (IntegrationsController + AdminDashboard)
 
-10.6. (Опціонально) Фонова обробка
-- Background service, що зчитує з черги повідомлень (ConcurrentQueue або MediatR) і відправляє асинхронно, щоб не блокувати API response
+10.6. (Опціонально) Фонова обробка ✅
+- Background service, що зчитує з черги повідомлень (ConcurrentQueue або MediatR) і відправляє асинхронно, щоб не блокувати API response (EmailQueue + EmailQueueBackgroundService, прапорець Features:EmailQueueEnabled)
 
 **Критерій готовності:** У всіх ключових подіях надходять листи з коректними даними; дублювання не надходять; SMTP credentials працюють; шаблони з UA/EN локалізацією.
 

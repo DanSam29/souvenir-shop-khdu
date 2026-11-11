@@ -213,3 +213,75 @@ ALTER TABLE `users` ADD `PreferredLanguage` varchar(5) CHARACTER SET utf8mb4 NOT
 2026-11-11 20:42:33.096 +02:00 [INF] Executed DbCommand (46ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
 INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
 VALUES ('20261111184202_AddPreferredLanguageToUsers', '8.0.0');
+2026-11-11 20:54:49.217 +02:00 [WRN] Entity 'User' has a global query filter defined and is the required end of a relationship with the entity 'Cart'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-11-11 20:54:49.277 +02:00 [WRN] Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'CartItem'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-11-11 20:54:49.301 +02:00 [WRN] Entity 'User' has a global query filter defined and is the required end of a relationship with the entity 'Order'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-11-11 20:54:49.301 +02:00 [WRN] Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'OrderItem'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-11-11 20:54:49.301 +02:00 [WRN] Entity 'User' has a global query filter defined and is the required end of a relationship with the entity 'PasswordResetToken'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-11-11 20:54:49.301 +02:00 [WRN] Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'ProductImage'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-11-11 20:54:49.302 +02:00 [WRN] Entity 'User' has a global query filter defined and is the required end of a relationship with the entity 'RefreshToken'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-11-11 20:54:49.302 +02:00 [WRN] Entity 'Promotion' has a global query filter defined and is the required end of a relationship with the entity 'UserPromotion'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-11-11 20:54:50.645 +02:00 [INF] Executed DbCommand (69ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `u`.`Email`
+FROM `users` AS `u`
+2026-11-11 20:54:50.841 +02:00 [INF] Executed DbCommand (46ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `c`.`Name`
+FROM `companies` AS `c`
+2026-11-11 20:54:51.043 +02:00 [INF] Executed DbCommand (46ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `u`.`UserId`
+FROM `users` AS `u`
+WHERE NOT (`u`.`IsDeleted`) AND (`u`.`Role` = 'SuperAdmin')
+LIMIT 1
+2026-11-11 20:54:51.151 +02:00 [INF] Executed DbCommand (46ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `p`.`PromoCode`
+FROM `promotions` AS `p`
+WHERE `p`.`PromoCode` IS NOT NULL
+2026-11-11 20:54:51.255 +02:00 [INF] Executed DbCommand (47ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `u`.`UserId`
+FROM `users` AS `u`
+WHERE NOT (`u`.`IsDeleted`) AND (`u`.`Role` = 'Manager')
+LIMIT 1
+2026-11-11 20:54:51.493 +02:00 [INF] Executed DbCommand (81ms) [Parameters=[@__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `p`.`ProductId`, `p`.`CategoryId`, `p`.`CreatedAt`, `p`.`CreatedBy`, `p`.`DeletedAt`, `p`.`DeletedBy`, `p`.`Description`, `p`.`DescriptionEn`, `p`.`IsDeleted`, `p`.`Name`, `p`.`NameEn`, `p`.`Price`, `p`.`Stock`, `p`.`UpdatedAt`, `p`.`UpdatedBy`, `p`.`Weight`
+FROM `products` AS `p`
+WHERE NOT (`p`.`IsDeleted`)
+ORDER BY `p`.`ProductId`
+LIMIT @__p_0
+2026-11-11 20:54:51.722 +02:00 [INF] Executed DbCommand (47ms) [Parameters=[@__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `c`.`CompanyId`, `c`.`Address`, `c`.`ContactPerson`, `c`.`CreatedAt`, `c`.`CreatedBy`, `c`.`DeletedAt`, `c`.`DeletedBy`, `c`.`Email`, `c`.`IsActive`, `c`.`IsDeleted`, `c`.`Name`, `c`.`NameEn`, `c`.`Notes`, `c`.`Phone`, `c`.`UpdatedAt`, `c`.`UpdatedBy`
+FROM `companies` AS `c`
+WHERE NOT (`c`.`IsDeleted`)
+ORDER BY `c`.`CompanyId`
+LIMIT @__p_0
+2026-11-11 20:54:51.981 +02:00 [INF] Executed DbCommand (46ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM `incomingdocuments` AS `i`
+    WHERE `i`.`Notes` IS NOT NULL AND (`i`.`Notes` LIKE '[seed]%'))
+2026-11-11 20:54:52.082 +02:00 [INF] Executed DbCommand (47ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM `outgoingdocuments` AS `o`
+    WHERE `o`.`Notes` IS NOT NULL AND (`o`.`Notes` LIKE '[seed]%'))
+2026-11-11 20:54:52.415 +02:00 [INF] Сервер запущено!
+2026-11-11 20:54:52.445 +02:00 [INF] User profile is available. Using 'C:\Users\Danchik\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2026-11-11 20:54:52.621 +02:00 [INF] Сервіс перевірки терміну дії студентських статусів запущено (інтервал 24 год)
+2026-11-11 20:54:52.711 +02:00 [INF] Executed DbCommand (50ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `v`.`QueueId`, `v`.`Attempts`, `v`.`CreatedAt`, `v`.`CreatedBy`, `v`.`DeletedAt`, `v`.`DeletedBy`, `v`.`Email`, `v`.`IsDeleted`, `v`.`LastError`, `v`.`NextAttemptAt`, `v`.`Status`, `v`.`UpdatedAt`, `v`.`UpdatedBy`, `v`.`UserId`
+FROM `verificationqueue` AS `v`
+WHERE NOT (`v`.`IsDeleted`) AND ((`v`.`Status` = 'Pending') AND (`v`.`NextAttemptAt` <= @__now_0))
+ORDER BY `v`.`NextAttemptAt`
+LIMIT @__p_1
+2026-11-11 20:54:52.741 +02:00 [INF] Фонова черга листів запущена
+2026-11-11 20:54:52.843 +02:00 [INF] Executed DbCommand (55ms) [Parameters=[@__today_0='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+SELECT `u`.`UserId`, `u`.`CreatedAt`, `u`.`CreatedBy`, `u`.`DeletedAt`, `u`.`DeletedBy`, `u`.`Email`, `u`.`FirstName`, `u`.`GPA`, `u`.`IsDeleted`, `u`.`LastName`, `u`.`Password`, `u`.`Phone`, `u`.`PreferredLanguage`, `u`.`Role`, `u`.`StudentExpiresAt`, `u`.`StudentExpiryReminderSentAt`, `u`.`StudentStatus`, `u`.`StudentVerifiedAt`, `u`.`UpdatedAt`, `u`.`UpdatedBy`
+FROM `users` AS `u`
+WHERE NOT (`u`.`IsDeleted`) AND (((`u`.`StudentStatus` <> 'NONE') AND `u`.`StudentExpiresAt` IS NOT NULL) AND (CONVERT(`u`.`StudentExpiresAt`, date) < @__today_0))
+2026-11-11 20:54:52.848 +02:00 [INF] Now listening on: http://localhost:5225
+2026-11-11 20:54:52.848 +02:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-11-11 20:54:52.848 +02:00 [INF] Hosting environment: Development
+2026-11-11 20:54:52.848 +02:00 [INF] Content root path: C:\Users\Danchik\Desktop\souvenir-shop-khdu\src\backend
+2026-11-11 20:54:52.947 +02:00 [INF] Executed DbCommand (48ms) [Parameters=[@__today_0='?' (DbType = DateTime), @__reminderWindowEnd_1='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+SELECT `u`.`UserId`, `u`.`CreatedAt`, `u`.`CreatedBy`, `u`.`DeletedAt`, `u`.`DeletedBy`, `u`.`Email`, `u`.`FirstName`, `u`.`GPA`, `u`.`IsDeleted`, `u`.`LastName`, `u`.`Password`, `u`.`Phone`, `u`.`PreferredLanguage`, `u`.`Role`, `u`.`StudentExpiresAt`, `u`.`StudentExpiryReminderSentAt`, `u`.`StudentStatus`, `u`.`StudentVerifiedAt`, `u`.`UpdatedAt`, `u`.`UpdatedBy`
+FROM `users` AS `u`
+WHERE NOT (`u`.`IsDeleted`) AND (((((`u`.`StudentStatus` <> 'NONE') AND `u`.`StudentExpiresAt` IS NOT NULL) AND (CONVERT(`u`.`StudentExpiresAt`, date) >= @__today_0)) AND (CONVERT(`u`.`StudentExpiresAt`, date) <= @__reminderWindowEnd_1)) AND `u`.`StudentExpiryReminderSentAt` IS NULL)

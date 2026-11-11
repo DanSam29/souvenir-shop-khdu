@@ -108,6 +108,8 @@ builder.Services.AddMemoryCache();
 // Реєстрація внутрішніх сервісів (бізнес-логіку)
 // Рендерер HTML-шаблонів листів (singleton із кешем вмісту шаблонів)
 builder.Services.AddSingleton<KhduSouvenirShop.API.Services.IEmailTemplateRenderer, KhduSouvenirShop.API.Services.EmailTemplateRenderer>();
+// Черга листів у пам'яті (singleton, спільна для API та фонового сервісу)
+builder.Services.AddSingleton<KhduSouvenirShop.API.Services.IEmailQueue, KhduSouvenirShop.API.Services.EmailQueue>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.PromotionService>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.WarehouseService>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IPaymentService, KhduSouvenirShop.API.Services.PaymentService>();
@@ -124,6 +126,8 @@ builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.IUniversityService,
 builder.Services.AddHostedService<KhduSouvenirShop.API.Services.VerificationQueueBackgroundService>();
 // Фоновий сервіс, що раз на добу деактивує протерміновані студентські статуси та надсилає нагадування
 builder.Services.AddHostedService<KhduSouvenirShop.API.Services.StudentStatusExpiryBackgroundService>();
+// Фоновий сервіс, що надсилає листи з черги, не блокуючи відповідь API
+builder.Services.AddHostedService<KhduSouvenirShop.API.Services.EmailQueueBackgroundService>();
 // Реєстрація репозиторіїв (шар доступу до даних)
 builder.Services.AddScoped(typeof(KhduSouvenirShop.API.Repositories.IRepository<>), typeof(KhduSouvenirShop.API.Repositories.Repository<>));
 builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IUserRepository, KhduSouvenirShop.API.Repositories.UserRepository>();

@@ -10,6 +10,8 @@ namespace KhduSouvenirShop.API.Services
     public interface IEmailService
     {
         Task SendEmailAsync(string to, string subject, string htmlBody, string? cc = null, string? bcc = null, string? templateType = null, string? referenceId = null);
+        // Фактичне надсилання листа (викликається фоновим сервісом черги)
+        Task SendNowAsync(string to, string subject, string htmlBody, string? cc = null, string? bcc = null, string? templateType = null, string? referenceId = null);
         Task SendOrderConfirmationAsync(string email, string orderNumber, string lang = "ua");
         Task SendOrderCancellationAsync(string email, string orderNumber, string? reason = null, string lang = "ua");
         Task SendPaymentConfirmationAsync(string email, string orderNumber, decimal amount, string lang = "ua");
@@ -33,12 +35,19 @@ namespace KhduSouvenirShop.API.Services
         private readonly IEmailTemplateRenderer _templateRenderer;
         // Окремий scope для запису в журнал SentEmails (не втручається в поточний UnitOfWork)
         private readonly IServiceScopeFactory _scopeFactory;
-        public EmailService(IConfiguration configuration, ILogger<EmailService> logger, IEmailTemplateRenderer templateRenderer, IServiceScopeFactory scopeFactory)
+        // Черга фонового відправлення листів
+        private readonly IEmailQueue _queue;
+        // Чи надсилати листи асинхронно через фоновий сервіс
+        private readonly bool _useQueue;
+        public EmailService(IConfiguration configuration, ILogger<EmailService> logger, IEmailTemplateRenderer templateRenderer, IServiceScopeFactory scopeFactory, IEmailQueue queue)
         {
             _configuration = configuration;
             _logger = logger;
             _templateRenderer = templateRenderer;
             _scopeFactory = scopeFactory;
+            _queue = queue;
+            // За замовчуванням листи ставляться в чергу (можна вимкнути через Features:EmailQueueEnabled=false)
+            _useQueue = configuration.GetValue<bool?>("Features:EmailQueueEnabled") ?? true;
         }
         public async Task SendOrderConfirmationAsync(string email, string orderNumber, string lang = "ua")
         {
@@ -123,6 +132,27 @@ namespace KhduSouvenirShop.API.Services
             await SendEmailAsync(email, subject, body, templateType: "PasswordReset", referenceId: resetToken);
         }
         public async Task SendEmailAsync(string to, string subject, string htmlBody, string? cc = null, string? bcc = null, string? templateType = null, string? referenceId = null)
+        {
+            // Асинхронний режим: лист ставиться в чергу, а відправляє його фоновий сервіс
+            if (_useQueue)
+            {
+                _queue.Enqueue(new EmailMessage
+                {
+                    To = to,
+                    Subject = subject,
+                    HtmlBody = htmlBody,
+                    Cc = cc,
+                    Bcc = bcc,
+                    TemplateType = templateType,
+                    ReferenceId = referenceId,
+                });
+                _logger.LogInformation("Email queued for {To} (subject: '{Subject}')", to, subject);
+                return;
+            }
+            await SendNowAsync(to, subject, htmlBody, cc, bcc, templateType, referenceId);
+        }
+        // Фактичне надсилання листа по SMTP із записом у журнал (викликається за потреби або фоновим сервісом)
+        public async Task SendNowAsync(string to, string subject, string htmlBody, string? cc = null, string? bcc = null, string? templateType = null, string? referenceId = null)
         {
             // Валідація формату адреси отримувача: некоректні листи не відправляються
             if (!IsValidEmail(to))
