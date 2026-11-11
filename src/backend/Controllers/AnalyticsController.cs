@@ -1,6 +1,8 @@
+using KhduSouvenirShop.API.DTOs.Responses;
 using KhduSouvenirShop.API.Repositories;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
+using KhduSouvenirShop.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,12 +12,107 @@ namespace KhduSouvenirShop.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Administrator")]
-    public class AnalyticsController(IOrderRepository orderRepository, IRepository<OrderItem> orderItemRepository, IWarehouseRepository warehouseRepository) : ControllerBase
+    // Доступ для менеджерів і вище (Manager+)
+    [Authorize(Roles = "Manager,Administrator,SuperAdmin")]
+    public class AnalyticsController : ControllerBase
     {
-        private readonly IOrderRepository _orderRepository = orderRepository;
-        private readonly IRepository<OrderItem> _orderItemRepository = orderItemRepository;
-        private readonly IWarehouseRepository _warehouseRepository = warehouseRepository;
+        private readonly IAnalyticsService _analyticsService;
+        private readonly IOrderRepository _orderRepository;
+        private readonly IRepository<OrderItem> _orderItemRepository;
+        private readonly IWarehouseRepository _warehouseRepository;
+
+        public AnalyticsController(
+            IAnalyticsService analyticsService,
+            IOrderRepository orderRepository,
+            IRepository<OrderItem> orderItemRepository,
+            IWarehouseRepository warehouseRepository)
+        {
+            _analyticsService = analyticsService;
+            _orderRepository = orderRepository;
+            _orderItemRepository = orderItemRepository;
+            _warehouseRepository = warehouseRepository;
+        }
+
+        // Короткий зведений звіт для головного дашборду (KPI + динаміка продажів)
+        [HttpGet("overview")]
+        public async Task<ActionResult> GetOverview([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+        {
+            var endDate = NormalizeTo(to);
+            var metrics = await _analyticsService.GetSalesMetricsAsync(from, endDate);
+            var financial = await _analyticsService.GetFinancialAsync(from, endDate);
+            var payments = await _analyticsService.GetPaymentStatsAsync(from, endDate);
+            var timeSeries = await _analyticsService.GetTimeSeriesAsync(from, endDate);
+
+            var result = new AnalyticsOverviewResponse
+            {
+                TotalRevenue = metrics.TotalRevenue,
+                TotalOrders = metrics.TotalOrders,
+                AverageOrderValue = metrics.AverageOrderValue,
+                GrossProfit = financial.GrossProfit,
+                Margin = financial.Margin,
+                Payments = payments,
+                SalesByDay = timeSeries.SalesByDay
+            };
+            return Ok(ApiResponse<AnalyticsOverviewResponse>.SuccessResult(result));
+        }
+
+        // Продажі: метрики та часовий ряд із гранулярністю day|month
+        [HttpGet("sales")]
+        public async Task<ActionResult> GetSales(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            [FromQuery] string groupBy = "day")
+        {
+            var endDate = NormalizeTo(to);
+            var metrics = await _analyticsService.GetSalesMetricsAsync(from, endDate);
+            var timeSeries = await _analyticsService.GetTimeSeriesAsync(from, endDate);
+
+            var series = string.Equals(groupBy, "month", StringComparison.OrdinalIgnoreCase)
+                ? timeSeries.SalesByMonth
+                : timeSeries.SalesByDay;
+
+            var result = new SalesReportResponse { Metrics = metrics, Series = series };
+            return Ok(ApiResponse<SalesReportResponse>.SuccessResult(result));
+        }
+
+        // Товари-лідери за продажами
+        [HttpGet("products")]
+        public async Task<ActionResult> GetProducts(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            [FromQuery] int top = 10)
+        {
+            var result = await _analyticsService.GetTopProductsAsync(top, from, NormalizeTo(to));
+            return Ok(ApiResponse<List<TopSellingProductResponse>>.SuccessResult(result));
+        }
+
+        // Категорії-лідери за виручкою
+        [HttpGet("categories")]
+        public async Task<ActionResult> GetCategories(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            [FromQuery] int top = 10)
+        {
+            var result = await _analyticsService.GetTopCategoriesAsync(top, from, NormalizeTo(to));
+            return Ok(ApiResponse<List<TopCategoryResponse>>.SuccessResult(result));
+        }
+
+        // Ефективність акцій
+        [HttpGet("promotions")]
+        public async Task<ActionResult> GetPromotions([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+        {
+            var result = await _analyticsService.GetPromotionStatsAsync(from, NormalizeTo(to));
+            return Ok(ApiResponse<List<PromotionStatsResponse>>.SuccessResult(result));
+        }
+
+        // Фінансові показники: виручка, собівартість, валовий прибуток, маржа
+        [HttpGet("financial")]
+        public async Task<ActionResult> GetFinancial([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+        {
+            var result = await _analyticsService.GetFinancialAsync(from, NormalizeTo(to));
+            return Ok(ApiResponse<FinancialResponse>.SuccessResult(result));
+        }
+
         [HttpGet("summary")]
         public async Task<ActionResult> GetSummary([FromQuery] DateTime? from, [FromQuery] DateTime? to)
         {
@@ -68,6 +165,7 @@ namespace KhduSouvenirShop.API.Controllers
                 salesByDay
             }));
         }
+
         [HttpGet("export/sales")]
         public async Task<IActionResult> ExportSalesCsv([FromQuery] DateTime? from, [FromQuery] DateTime? to)
         {
@@ -87,5 +185,11 @@ namespace KhduSouvenirShop.API.Controllers
             var bytes = Encoding.UTF8.GetBytes(csv.ToString());
             return File(bytes, "text/csv", $"sales_report_{DateTime.Now:yyyyMMdd}.csv");
         }
+
+        // Якщо в `to` передано лише дату (час 00:00), включаємо весь останній день періоду.
+        private static DateTime? NormalizeTo(DateTime? to)
+            => to.HasValue && to.Value.TimeOfDay == TimeSpan.Zero
+                ? to.Value.Date.AddDays(1).AddSeconds(-1)
+                : to;
     }
 }

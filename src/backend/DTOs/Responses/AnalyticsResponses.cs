@@ -98,4 +98,27 @@ namespace KhduSouvenirShop.API.DTOs.Responses
         public decimal GrossProfit { get; set; }
         public decimal Margin { get; set; }
     }
+
+    /// <summary>
+    /// Звіт про продажі: метрики та часовий ряд із вибраною гранулярністю (день/місяць).
+    /// </summary>
+    public class SalesReportResponse
+    {
+        public SalesMetricsResponse Metrics { get; set; } = new();
+        public List<DailySalesResponse> Series { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Короткий зведений звіт для головного дашборду.
+    /// </summary>
+    public class AnalyticsOverviewResponse
+    {
+        public decimal TotalRevenue { get; set; }
+        public int TotalOrders { get; set; }
+        public decimal AverageOrderValue { get; set; }
+        public decimal GrossProfit { get; set; }
+        public decimal Margin { get; set; }
+        public PaymentStatsResponse Payments { get; set; } = new();
+        public List<DailySalesResponse> SalesByDay { get; set; } = new();
+    }
 }

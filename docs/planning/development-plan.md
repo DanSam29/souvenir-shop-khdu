@@ -607,7 +607,7 @@
 - PromotionStats: promotionId, name, uses, totalDiscountAmount, revenue, ROI = (revenue_with - revenue_without) / totalDiscount
 - Financial: totalRevenue, totalPurchaseCost (з Incoming), grossProfit, margin = profit/revenue
 
-11.2. AnalyticsController (Manager+)
+11.2. AnalyticsController (Manager+) ✅
 - GET /api/analytics/sales?from=2026-09-01&to=2026-09-30&groupBy=day|month
 - GET /api/analytics/products?from=...
 - GET /api/analytics/categories?from=...
