@@ -294,6 +294,7 @@ namespace KhduSouvenirShop.API.Controllers
                 ? user.StudentExpiresAt.Value
                 : DateTime.UtcNow;
             user.StudentExpiresAt = basis.AddMonths(UniversityService.StudentStatusValidMonths);
+            user.StudentExpiryReminderSentAt = null; // новий термін — нагадування дозволено знову
             await _userRepository.SaveChangesAsync();
             _logger.LogInformation("Студентський статус користувача {UserId} продовжено до {ExpiresAt}", id, user.StudentExpiresAt);
             return Ok(ApiResponse<object>.SuccessResult(

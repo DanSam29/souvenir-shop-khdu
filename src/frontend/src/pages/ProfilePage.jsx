@@ -326,6 +326,10 @@ function ProfilePage() {
   const studentLabel = user.studentStatus && user.studentStatus !== 'NONE'
     ? t(`profile.student_status_${user.studentStatus}`, { defaultValue: user.studentStatus })
     : t('profile.status_none');
+  // Кількість днів до закінчення студентського статусу (для нагадування у профілі)
+  const daysUntilExpiry = (user.studentStatus && user.studentStatus !== 'NONE' && user.studentExpiresAt)
+    ? Math.ceil((new Date(user.studentExpiresAt) - new Date()) / 86400000)
+    : null;
 
   const cardStyle = { background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' };
   const inputStyle = { width: '100%', padding: 10, marginBottom: 10, borderRadius: 6, border: '1px solid #ddd' };
@@ -597,6 +601,11 @@ function ProfilePage() {
           {user.gpa != null && <p><strong>{t('profile.student_gpa')}:</strong> {user.gpa}</p>}
           {user.studentVerifiedAt && <p><strong>{t('profile.student_verified_at')}:</strong> {new Date(user.studentVerifiedAt).toLocaleDateString()}</p>}
           {user.studentExpiresAt && <p><strong>{t('profile.expires_at')}:</strong> {new Date(user.studentExpiresAt).toLocaleDateString()}</p>}
+          {daysUntilExpiry != null && daysUntilExpiry >= 0 && (
+            <p style={{ color: daysUntilExpiry <= 7 ? '#d48806' : '#666', fontWeight: daysUntilExpiry <= 7 ? 600 : 400 }}>
+              {t('profile.student_expires_in_days', { days: daysUntilExpiry })}
+            </p>
+          )}
           <p style={{ color: '#888', fontSize: '0.9rem' }}>{t('profile.student_hint')}</p>
           <button
             onClick={handleVerifyStudent}

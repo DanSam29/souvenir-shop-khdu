@@ -104,6 +104,7 @@ namespace KhduSouvenirShop.API.Controllers
             user.GPA = dto?.GPA ?? user.GPA;
             user.StudentVerifiedAt = DateTime.UtcNow;
             user.StudentExpiresAt = dto?.ExpiresAt ?? DateTime.UtcNow.AddMonths(UniversityService.StudentStatusValidMonths);
+            user.StudentExpiryReminderSentAt = null; // новий термін — нагадування дозволено знову
             entry.Status = "Completed";
             entry.LastError = null;
             await _queueRepository.SaveChangesAsync();

@@ -532,7 +532,7 @@
 - Integrations status dashboard:
   - GET /api/integrations/status → { Stripe: "ok", NovaPoshta: "ok", University: "degraded", Smtp: "ok" }
 
-9.4. Студентський статус expiry
+9.4. Студентський статус expiry ✅
 - Background service що раз на день перевіряє User.StudentExpiresAt < Today
 - Для протермінованих → StudentStatus = NONE
 - Надсилання email нагадування за тиждень до expiry

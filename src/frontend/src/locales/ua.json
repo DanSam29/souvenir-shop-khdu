@@ -265,6 +265,7 @@
     "student_verified_at": "Підтверджено",
     "student_assigned_at": "Призначено",
     "student_gpa": "GPA",
+    "student_expires_in_days": "Закінчується через {{days}} дн.",
     "status_none": "Зовнішній користувач",
     "student_status_REGULAR": "Студент",
     "student_status_SCHOLARSHIP": "Студент (стипендія)",

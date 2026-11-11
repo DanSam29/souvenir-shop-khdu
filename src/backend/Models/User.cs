@@ -33,6 +33,8 @@ namespace KhduSouvenirShop.API.Models
         public decimal? GPA { get; set; }
         public DateTime? StudentVerifiedAt { get; set; }
         public DateTime? StudentExpiresAt { get; set; }
+        // Час останнього нагадування про наближення терміну закінчення студентського статусу
+        public DateTime? StudentExpiryReminderSentAt { get; set; }
         // Навігаційні властивості (зв'язки)
         public virtual Cart? Cart { get; set; }
         public virtual ICollection<Order> Orders { get; set; } = [];

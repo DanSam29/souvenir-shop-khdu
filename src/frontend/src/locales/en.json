@@ -265,6 +265,7 @@
     "student_verified_at": "Verified at",
     "student_assigned_at": "Assigned at",
     "student_gpa": "GPA",
+    "student_expires_in_days": "Expires in {{days}} day(s)",
     "status_none": "External user",
     "student_status_REGULAR": "Student",
     "student_status_SCHOLARSHIP": "Student (scholarship)",

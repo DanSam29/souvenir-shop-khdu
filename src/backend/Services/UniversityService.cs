@@ -194,6 +194,7 @@ namespace KhduSouvenirShop.API.Services
             user.StudentStatus = MapToStudentStatus(studentInfo);
             user.StudentVerifiedAt = DateTime.UtcNow;
             user.StudentExpiresAt = DateTime.UtcNow.AddMonths(StudentStatusValidMonths); // термін дії 4 місяці
+            user.StudentExpiryReminderSentAt = null; // новий термін — нагадування дозволено знову
             await _userRepository.SaveChangesAsync();
 
             var discount = GetDiscountPercent(user.StudentStatus);

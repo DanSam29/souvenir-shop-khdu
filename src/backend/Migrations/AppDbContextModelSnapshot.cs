@@ -1161,6 +1161,9 @@ namespace KhduSouvenirShop.API.Migrations
                     b.Property<DateTime?>("StudentExpiresAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<DateTime?>("StudentExpiryReminderSentAt")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<string>("StudentStatus")
                         .IsRequired()
                         .HasMaxLength(20)

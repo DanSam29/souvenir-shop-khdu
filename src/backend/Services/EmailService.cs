@@ -11,6 +11,7 @@ namespace KhduSouvenirShop.API.Services
         Task SendPaymentConfirmationAsync(string email, string orderNumber, decimal amount, string lang = "ua");
         Task SendPaymentFailedAsync(string email, string orderNumber, string lang = "ua");
         Task SendStudentVerificationEmailAsync(string email, string status, string lang = "ua", int? discountPercent = null);
+        Task SendStudentExpiryReminderEmailAsync(string email, int daysLeft, string lang = "ua");
         Task SendPasswordResetEmailAsync(string email, string resetToken, string lang = "ua");
     }
     public class EmailService : IEmailService
@@ -66,6 +67,14 @@ namespace KhduSouvenirShop.API.Services
             string body = lang == "en"
                 ? $"<h1>Congratulations!</h1><p>Your student status has been verified as: <b>{status}</b>.</p>{discountEn}"
                 : $"<h1>Вітаємо!</h1><p>Ваш статус студента підтверджено: <b>{status}</b>.</p>{discountUa}";
+            await SendEmailAsync(email, subject, body);
+        }
+        public async Task SendStudentExpiryReminderEmailAsync(string email, int daysLeft, string lang = "ua")
+        {
+            string subject = lang == "en" ? "Student Status Expiring Soon" : "Студентський статус скоро завершиться";
+            string body = lang == "en"
+                ? $"<h1>Heads up!</h1><p>Your student status will expire in <b>{daysLeft}</b> day(s). Please refresh it in your profile to keep your student discount.</p>"
+                : $"<h1>Нагадування!</h1><p>Ваш студентський статус завершиться через <b>{daysLeft}</b> дн. Будь ласка, поновіть його у профілі, щоб зберегти студентську знижку.</p>";
             await SendEmailAsync(email, subject, body);
         }
         public async Task SendPasswordResetEmailAsync(string email, string resetToken, string lang = "ua")
