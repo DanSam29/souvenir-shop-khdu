@@ -552,7 +552,7 @@
 ## Етап 10: Notification Module (Email) - Шаблони, відправка, логування
 **Мета:** Надсилання email-сповіщень у всіх ключових точках життєвого циклу.
 
-10.1. EmailService
+10.1. EmailService ✅
 - Імплементація через SmtpClient (Gmail SMTP / SendGrid / Brevo)
 - Конфігурація: Smtp__Host, Smtp__Port, Smtp__Username, Smtp__Password, Smtp__EnableSsl, Smtp__FromAddress
 - Метод SendEmailAsync(to, subject, htmlBody, cc?, bcc?)

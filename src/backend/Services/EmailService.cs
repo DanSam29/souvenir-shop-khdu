@@ -1,11 +1,13 @@
 using System.Net;
 using System.Net.Mail;
+using System.Text.RegularExpressions;
 using KhduSouvenirShop.API.Models;
 
 namespace KhduSouvenirShop.API.Services
 {
     public interface IEmailService
     {
+        Task SendEmailAsync(string to, string subject, string htmlBody, string? cc = null, string? bcc = null);
         Task SendOrderConfirmationAsync(string email, string orderNumber, string lang = "ua");
         Task SendOrderCancellationAsync(string email, string orderNumber, string? reason = null, string lang = "ua");
         Task SendPaymentConfirmationAsync(string email, string orderNumber, decimal amount, string lang = "ua");
@@ -16,6 +18,10 @@ namespace KhduSouvenirShop.API.Services
     }
     public class EmailService : IEmailService
     {
+        // Кількість спроб відправлення листа при тимчасових збоях SMTP
+        private const int MaxAttempts = 3;
+        // Проста перевірка формату email: локальна частина @ домен . зона
+        private static readonly Regex EmailRegex = new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.Compiled);
         private readonly IConfiguration _configuration;
         private readonly ILogger<EmailService> _logger;
         public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
@@ -87,39 +93,84 @@ namespace KhduSouvenirShop.API.Services
                 : $"<h1>Скидання паролю</h1><p>Перейдіть за посиланням, щоб встановити новий пароль: <a href=\"{resetLink}\">Скинути пароль</a></p><p>Посилання дійсне 1 годину. Якщо ви не робили цей запит, просто проігноруйте лист.</p>";
             await SendEmailAsync(email, subject, body);
         }
-        private async Task SendEmailAsync(string toEmail, string subject, string body)
+        public async Task SendEmailAsync(string to, string subject, string htmlBody, string? cc = null, string? bcc = null)
         {
-            try
+            // Валідація формату адреси отримувача: некоректні листи не відправляються
+            if (!IsValidEmail(to))
             {
-                var smtpSettings = _configuration.GetSection("Smtp");
-                // Якщо налаштування порожні (за замовчуванням) - логується відправка
-                if (smtpSettings["Username"] == "your-email@gmail.com")
+                _logger.LogWarning("Email not sent: invalid recipient address '{To}'", to);
+                return;
+            }
+            var smtpSettings = _configuration.GetSection("Smtp");
+            var username = smtpSettings["Username"];
+            var password = smtpSettings["Password"];
+            // Якщо SMTP не налаштований (порожній або дефолтний логін) - лише логування (graceful fallback)
+            if (string.IsNullOrWhiteSpace(username) || username == "your-email@gmail.com")
+            {
+                _logger.LogInformation("[EMAIL STUB] To: {To}, Subject: {Subject}", to, subject);
+                return;
+            }
+            var host = smtpSettings["Server"];
+            var port = int.TryParse(smtpSettings["Port"], out var parsedPort) ? parsedPort : 587;
+            var enableSsl = !bool.TryParse(smtpSettings["EnableSsl"], out var parsedSsl) || parsedSsl;
+            for (var attempt = 1; attempt <= MaxAttempts; attempt++)
+            {
+                try
                 {
-                    _logger.LogInformation("[EMAIL STUB] To: {To}, Subject: {Subject}", toEmail, subject);
+                    using var client = new SmtpClient(host)
+                    {
+                        Port = port,
+                        Credentials = new NetworkCredential(username, password),
+                        EnableSsl = enableSsl,
+                    };
+                    using var mailMessage = new MailMessage
+                    {
+                        From = new MailAddress(smtpSettings["SenderEmail"]!, smtpSettings["SenderName"]),
+                        Subject = subject,
+                        Body = htmlBody,
+                        IsBodyHtml = true,
+                    };
+                    mailMessage.To.Add(to);
+                    AddRecipients(mailMessage.CC, cc);
+                    AddRecipients(mailMessage.Bcc, bcc);
+                    await client.SendMailAsync(mailMessage);
+                    _logger.LogInformation("Email sent to {To} (subject: '{Subject}') on attempt {Attempt}", to, subject, attempt);
                     return;
                 }
-                using var client = new SmtpClient(smtpSettings["Server"])
+                catch (Exception ex)
                 {
-                    Port = int.Parse(smtpSettings["Port"] ?? "587"),
-                    Credentials = new NetworkCredential(smtpSettings["Username"], smtpSettings["Password"]),
-                    EnableSsl = true,
-                };
-                var mailMessage = new MailMessage
-                {
-                    From = new MailAddress(smtpSettings["SenderEmail"]!, smtpSettings["SenderName"]),
-                    Subject = subject,
-                    Body = body,
-                    IsBodyHtml = true,
-                };
-                mailMessage.To.Add(toEmail);
-                await client.SendMailAsync(mailMessage);
-                _logger.LogInformation("Email sent successfully to {To}", toEmail);
+                    // Повторна спроба при тимчасовому збої SMTP (експоненційна пауза)
+                    if (attempt < MaxAttempts)
+                    {
+                        _logger.LogWarning(ex, "Attempt {Attempt}/{Max} failed to send email to {To}", attempt, MaxAttempts, to);
+                        await Task.Delay(TimeSpan.FromMilliseconds(500 * attempt));
+                    }
+                    else
+                    {
+                        // Останній збій: збереження виключення, щоб пошта не зупиняла бізнес-логіку
+                        _logger.LogError(ex, "Failed to send email to {To} after {Max} attempts", to, MaxAttempts);
+                    }
+                }
             }
-            catch (Exception ex)
+        }
+        // Додає список адрес (через кому або крапку з комою), пропускаючи некоректні
+        private static void AddRecipients(MailAddressCollection collection, string? addresses)
+        {
+            if (string.IsNullOrWhiteSpace(addresses))
             {
-                // Збереження виключень, щоб збій пошти не зупиняв бізнес-логіку (принцип graceful fallback)
-                _logger.LogError(ex, "Failed to send email to {To}", toEmail);
+                return;
             }
+            foreach (var address in addresses.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (IsValidEmail(address))
+                {
+                    collection.Add(address);
+                }
+            }
+        }
+        private static bool IsValidEmail(string? email)
+        {
+            return !string.IsNullOrWhiteSpace(email) && EmailRegex.IsMatch(email);
         }
     }
 }
