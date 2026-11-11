@@ -34,6 +34,7 @@ namespace KhduSouvenirShop.API.Data
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } = null!;
         public DbSet<ProcessedStripeEvent> ProcessedStripeEvents { get; set; } = null!;
         public DbSet<VerificationQueue> VerificationQueues { get; set; } = null!;
+        public DbSet<SentEmail> SentEmails { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -56,6 +57,10 @@ namespace KhduSouvenirShop.API.Data
                 .IsUnique();
             modelBuilder.Entity<Company>()
                 .HasIndex(c => c.Email)
+                .IsUnique();
+            // Журнал email: ідемпотентність за парою (TemplateType, ReferenceId)
+            modelBuilder.Entity<SentEmail>()
+                .HasIndex(e => new { e.TemplateType, e.ReferenceId })
                 .IsUnique();
             // Налаштування унікальної пари для CartItems
             modelBuilder.Entity<CartItem>()

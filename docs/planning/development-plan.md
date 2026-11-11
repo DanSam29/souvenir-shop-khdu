@@ -560,7 +560,7 @@
 - Захист від дублювань: лог кожного відправлення (SentEmails таблиця з recipient+templateType+referenceId)
 - Валідація email формату
 
-10.2. SentEmails таблиця (мініграція #3)
+10.2. SentEmails таблиця (мініграція #3) ✅
 - SentEmailId, Recipient, Subject, TemplateType, ReferenceId, SentAt, Status, ErrorMessage
 - Унікальний індекс (TemplateType, ReferenceId) для ідемпотентності
 

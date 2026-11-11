@@ -1030,6 +1030,52 @@ namespace KhduSouvenirShop.API.Migrations
                     b.ToTable("refreshtokens");
                 });
 
+            modelBuilder.Entity("KhduSouvenirShop.API.Models.SentEmail", b =>
+                {
+                    b.Property<int>("SentEmailId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(1024)
+                        .HasColumnType("varchar(1024)");
+
+                    b.Property<string>("Recipient")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("ReferenceId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("varchar(512)");
+
+                    b.Property<string>("TemplateType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.HasKey("SentEmailId");
+
+                    b.HasIndex("TemplateType", "ReferenceId")
+                        .IsUnique();
+
+                    b.ToTable("sentemails");
+                });
+
             modelBuilder.Entity("KhduSouvenirShop.API.Models.Shipping", b =>
                 {
                     b.Property<int>("ShippingId")

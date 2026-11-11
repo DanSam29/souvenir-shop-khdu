@@ -1,13 +1,15 @@
 using System.Net;
 using System.Net.Mail;
 using System.Text.RegularExpressions;
+using KhduSouvenirShop.API.Data;
 using KhduSouvenirShop.API.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace KhduSouvenirShop.API.Services
 {
     public interface IEmailService
     {
-        Task SendEmailAsync(string to, string subject, string htmlBody, string? cc = null, string? bcc = null);
+        Task SendEmailAsync(string to, string subject, string htmlBody, string? cc = null, string? bcc = null, string? templateType = null, string? referenceId = null);
         Task SendOrderConfirmationAsync(string email, string orderNumber, string lang = "ua");
         Task SendOrderCancellationAsync(string email, string orderNumber, string? reason = null, string lang = "ua");
         Task SendPaymentConfirmationAsync(string email, string orderNumber, decimal amount, string lang = "ua");
@@ -20,14 +22,20 @@ namespace KhduSouvenirShop.API.Services
     {
         // Кількість спроб відправлення листа при тимчасових збоях SMTP
         private const int MaxAttempts = 3;
+        // Статуси запису журналу відправлень
+        private const string StatusSent = "Sent";
+        private const string StatusFailed = "Failed";
         // Проста перевірка формату email: локальна частина @ домен . зона
         private static readonly Regex EmailRegex = new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.Compiled);
         private readonly IConfiguration _configuration;
         private readonly ILogger<EmailService> _logger;
-        public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
+        // Окремий scope для запису в журнал SentEmails (не втручається в поточний UnitOfWork)
+        private readonly IServiceScopeFactory _scopeFactory;
+        public EmailService(IConfiguration configuration, ILogger<EmailService> logger, IServiceScopeFactory scopeFactory)
         {
             _configuration = configuration;
             _logger = logger;
+            _scopeFactory = scopeFactory;
         }
         public async Task SendOrderConfirmationAsync(string email, string orderNumber, string lang = "ua")
         {
@@ -35,7 +43,7 @@ namespace KhduSouvenirShop.API.Services
             string body = lang == "en" 
                 ? $"<h1>Thank you for your order!</h1><p>Your order number: <b>{orderNumber}</b></p>"
                 : $"<h1>Дякуємо за ваше замовлення!</h1><p>Номер вашого замовлення: <b>{orderNumber}</b></p>";
-            await SendEmailAsync(email, subject, body);
+            await SendEmailAsync(email, subject, body, templateType: "OrderConfirmation", referenceId: orderNumber);
         }
         public async Task SendOrderCancellationAsync(string email, string orderNumber, string? reason = null, string lang = "ua")
         {
@@ -46,7 +54,7 @@ namespace KhduSouvenirShop.API.Services
             string body = lang == "en"
                 ? $"<h1>Your order has been cancelled</h1><p>Order number: <b>{orderNumber}</b></p><p>Reason: {reasonText}</p>"
                 : $"<h1>Ваше замовлення скасовано</h1><p>Номер замовлення: <b>{orderNumber}</b></p><p>Причина: {reasonText}</p>";
-            await SendEmailAsync(email, subject, body);
+            await SendEmailAsync(email, subject, body, templateType: "OrderCancelled", referenceId: orderNumber);
         }
         public async Task SendPaymentConfirmationAsync(string email, string orderNumber, decimal amount, string lang = "ua")
         {
@@ -54,7 +62,7 @@ namespace KhduSouvenirShop.API.Services
             string body = lang == "en"
                 ? $"<h1>Payment successful!</h1><p>We received your payment of {amount} UAH for order {orderNumber}.</p>"
                 : $"<h1>Оплата успішна!</h1><p>Ми отримали вашу оплату в розмірі {amount} грн за замовлення {orderNumber}.</p>";
-            await SendEmailAsync(email, subject, body);
+            await SendEmailAsync(email, subject, body, templateType: "OrderPaymentSuccess", referenceId: orderNumber);
         }
         public async Task SendPaymentFailedAsync(string email, string orderNumber, string lang = "ua")
         {
@@ -62,7 +70,7 @@ namespace KhduSouvenirShop.API.Services
             string body = lang == "en"
                 ? $"<h1>Payment failed</h1><p>Unfortunately, the payment for your order {orderNumber} was not successful. The order has been cancelled. You can try again.</p>"
                 : $"<h1>Оплата не вдалася</h1><p>На жаль, оплата за замовлення {orderNumber} не пройшла. Замовлення скасовано. Ви можете спробувати ще раз.</p>";
-            await SendEmailAsync(email, subject, body);
+            await SendEmailAsync(email, subject, body, templateType: "OrderPaymentFailed", referenceId: orderNumber);
         }
         public async Task SendStudentVerificationEmailAsync(string email, string status, string lang = "ua", int? discountPercent = null)
         {
@@ -73,7 +81,7 @@ namespace KhduSouvenirShop.API.Services
             string body = lang == "en"
                 ? $"<h1>Congratulations!</h1><p>Your student status has been verified as: <b>{status}</b>.</p>{discountEn}"
                 : $"<h1>Вітаємо!</h1><p>Ваш статус студента підтверджено: <b>{status}</b>.</p>{discountUa}";
-            await SendEmailAsync(email, subject, body);
+            await SendEmailAsync(email, subject, body, templateType: "StudentVerified", referenceId: email);
         }
         public async Task SendStudentExpiryReminderEmailAsync(string email, int daysLeft, string lang = "ua")
         {
@@ -81,7 +89,7 @@ namespace KhduSouvenirShop.API.Services
             string body = lang == "en"
                 ? $"<h1>Heads up!</h1><p>Your student status will expire in <b>{daysLeft}</b> day(s). Please refresh it in your profile to keep your student discount.</p>"
                 : $"<h1>Нагадування!</h1><p>Ваш студентський статус завершиться через <b>{daysLeft}</b> дн. Будь ласка, поновіть його у профілі, щоб зберегти студентську знижку.</p>";
-            await SendEmailAsync(email, subject, body);
+            await SendEmailAsync(email, subject, body, templateType: "StudentStatusExpiringSoon", referenceId: email);
         }
         public async Task SendPasswordResetEmailAsync(string email, string resetToken, string lang = "ua")
         {
@@ -91,14 +99,21 @@ namespace KhduSouvenirShop.API.Services
             string body = lang == "en"
                 ? $"<h1>Password reset</h1><p>Follow the link to set a new password: <a href=\"{resetLink}\">Reset password</a></p><p>The link expires in 1 hour. If you didn't request this, ignore this email.</p>"
                 : $"<h1>Скидання паролю</h1><p>Перейдіть за посиланням, щоб встановити новий пароль: <a href=\"{resetLink}\">Скинути пароль</a></p><p>Посилання дійсне 1 годину. Якщо ви не робили цей запит, просто проігноруйте лист.</p>";
-            await SendEmailAsync(email, subject, body);
+            await SendEmailAsync(email, subject, body, templateType: "PasswordReset", referenceId: resetToken);
         }
-        public async Task SendEmailAsync(string to, string subject, string htmlBody, string? cc = null, string? bcc = null)
+        public async Task SendEmailAsync(string to, string subject, string htmlBody, string? cc = null, string? bcc = null, string? templateType = null, string? referenceId = null)
         {
             // Валідація формату адреси отримувача: некоректні листи не відправляються
             if (!IsValidEmail(to))
             {
                 _logger.LogWarning("Email not sent: invalid recipient address '{To}'", to);
+                return;
+            }
+            // Ідемпотентність: якщо лист цього типу для цієї події вже надіслано - пропускаємо
+            var trackingEnabled = !string.IsNullOrWhiteSpace(templateType) && !string.IsNullOrWhiteSpace(referenceId);
+            if (trackingEnabled && await HasAlreadyBeenSentAsync(templateType!, referenceId!))
+            {
+                _logger.LogInformation("Duplicate email skipped (TemplateType: {TemplateType}, ReferenceId: {ReferenceId})", templateType, referenceId);
                 return;
             }
             var smtpSettings = _configuration.GetSection("Smtp");
@@ -113,6 +128,8 @@ namespace KhduSouvenirShop.API.Services
             var host = smtpSettings["Server"];
             var port = int.TryParse(smtpSettings["Port"], out var parsedPort) ? parsedPort : 587;
             var enableSsl = !bool.TryParse(smtpSettings["EnableSsl"], out var parsedSsl) || parsedSsl;
+            var sent = false;
+            string? lastError = null;
             for (var attempt = 1; attempt <= MaxAttempts; attempt++)
             {
                 try
@@ -135,10 +152,12 @@ namespace KhduSouvenirShop.API.Services
                     AddRecipients(mailMessage.Bcc, bcc);
                     await client.SendMailAsync(mailMessage);
                     _logger.LogInformation("Email sent to {To} (subject: '{Subject}') on attempt {Attempt}", to, subject, attempt);
-                    return;
+                    sent = true;
+                    break;
                 }
                 catch (Exception ex)
                 {
+                    lastError = ex.Message;
                     // Повторна спроба при тимчасовому збої SMTP (експоненційна пауза)
                     if (attempt < MaxAttempts)
                     {
@@ -151,6 +170,55 @@ namespace KhduSouvenirShop.API.Services
                         _logger.LogError(ex, "Failed to send email to {To} after {Max} attempts", to, MaxAttempts);
                     }
                 }
+            }
+            // Запис у журнал для захисту від дублювань
+            if (trackingEnabled)
+            {
+                await RecordSentEmailAsync(templateType!, referenceId!, to, subject, sent, lastError);
+            }
+        }
+        // Перевіряє, чи лист цього типу для цієї події вже успішно надіслано
+        private async Task<bool> HasAlreadyBeenSentAsync(string templateType, string referenceId)
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                return await db.SentEmails.AnyAsync(e => e.TemplateType == templateType
+                                                         && e.ReferenceId == referenceId
+                                                         && e.Status == StatusSent);
+            }
+            catch (Exception ex)
+            {
+                // Збій журналу не повинен блокувати відправлення
+                _logger.LogError(ex, "Failed to check SentEmails log ({TemplateType}/{ReferenceId})", templateType, referenceId);
+                return false;
+            }
+        }
+        // Записує результат відправлення у журнал (оновлює наявний запис, якщо попередня спроба була невдалою)
+        private async Task RecordSentEmailAsync(string templateType, string referenceId, string recipient, string subject, bool sent, string? error)
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var entry = await db.SentEmails.FirstOrDefaultAsync(e => e.TemplateType == templateType && e.ReferenceId == referenceId);
+                if (entry == null)
+                {
+                    entry = new SentEmail { TemplateType = templateType, ReferenceId = referenceId };
+                    db.SentEmails.Add(entry);
+                }
+                entry.Recipient = recipient;
+                entry.Subject = subject;
+                entry.Status = sent ? StatusSent : StatusFailed;
+                entry.ErrorMessage = error;
+                entry.SentAt = DateTime.UtcNow;
+                await db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // Збій журналу не повинен зупиняти бізнес-логіку
+                _logger.LogError(ex, "Failed to record SentEmail ({TemplateType}/{ReferenceId})", templateType, referenceId);
             }
         }
         // Додає список адрес (через кому або крапку з комою), пропускаючи некоректні
