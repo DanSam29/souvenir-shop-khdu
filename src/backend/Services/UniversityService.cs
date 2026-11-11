@@ -37,7 +37,8 @@ namespace KhduSouvenirShop.API.Services
 
         private const int DefaultTimeoutSeconds = 5;
         private const int DefaultRetryDelayMinutes = 60;
-        private const int StudentStatusValidMonths = 4;
+        // Термін дії студентського статусу (місяців) — спільний для автоматичної та ручної верифікації
+        public const int StudentStatusValidMonths = 4;
         private const decimal HighAchieverGpa = 4.5m;
 
         private readonly IUserRepository _userRepository;

@@ -520,7 +520,7 @@
 - QueueId, UserId, Email, Attempts, NextAttemptAt, LastError, Status (Pending/Processing/Completed/Failed)
 - Створити міграцію #2
 
-9.3. UniversityController
+9.3. UniversityController ✅
 - User:
   - POST /api/users/me/student-status/refresh - ручне оновлення (кнопка у профілі)
 - Admin (SuperAdmin/Administrator):

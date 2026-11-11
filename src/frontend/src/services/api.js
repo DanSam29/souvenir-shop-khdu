@@ -102,8 +102,8 @@ export const usersAPI = {
   updateAddress: (id, data) => api.put(`/Users/me/addresses/${id}`, data),
   deleteAddress: (id) => api.delete(`/Users/me/addresses/${id}`),
   setDefaultAddress: (id) => api.post(`/Users/me/addresses/${id}/default`),
-  // Повторна верифікація студентського статусу
-  verifyStudentStatus: () => api.post('/Users/me/student/verify'),
+  // Повторне оновлення студентського статусу
+  verifyStudentStatus: () => api.post('/Users/me/student-status/refresh'),
 };
 // API функції для Cart (потребують авторизації)
 export const cartAPI = {
@@ -144,6 +144,15 @@ export const adminUsersAPI = {
   block: (id) => api.put(`/admin/users/${id}/block`),
   unblock: (id) => api.put(`/admin/users/${id}/unblock`),
   resetPassword: (id, data) => api.post(`/admin/users/${id}/reset-password`, data),
+  // Продовження терміну студентського статусу на 4 місяці
+  extendStudent: (id) => api.post(`/admin/users/${id}/student-extend`),
+};
+// API функції для верифікації студентів (адмін)
+export const adminUniversityAPI = {
+  getVerifications: (params) => api.get('/admin/university/verifications', { params }),
+  approveVerification: (id, data) => api.post(`/admin/university/verifications/${id}/approve`, data || {}),
+  rejectVerification: (id) => api.post(`/admin/university/verifications/${id}/reject`),
+  retryVerification: (id) => api.post(`/admin/university/verifications/${id}/retry`),
 };
 // API функції для складу (адмін, Manager+)
 export const warehouseAPI = {

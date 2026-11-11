@@ -8,6 +8,7 @@ using KhduSouvenirShop.API.DTOs.Requests;
 using KhduSouvenirShop.API.DTOs.Responses;
 using KhduSouvenirShop.API.Models.Common;
 using KhduSouvenirShop.API.Repositories;
+using KhduSouvenirShop.API.Services;
 
 namespace KhduSouvenirShop.API.Controllers
 {
@@ -266,6 +267,38 @@ namespace KhduSouvenirShop.API.Controllers
             return Ok(ApiResponse<object>.SuccessResult(
                 new { temporaryPassword = isGenerated ? newPassword : null },
                 "Пароль користувача скинуто"));
+        }
+        // POST: api/admin/users/{id}/student-extend - подовження студентського статусу ще на 4 місяці
+        [HttpPost("{id:int}/student-extend")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> ExtendStudentStatus(int id)
+        {
+            var user = await _userRepository.Query().IgnoreQueryFilters().FirstOrDefaultAsync(u => u.UserId == id);
+            if (user == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено", "NotFound"));
+            }
+            if (IsForbiddenTarget(user.Role))
+            {
+                return ForbiddenResult();
+            }
+            if (user.StudentStatus == "NONE")
+            {
+                return BadRequest(ApiResponse<object>.FailureResult("Користувач не має студентського статусу", "NoStudentStatus"));
+            }
+            // Продовжуємо від поточної дати закінчення, якщо вона ще в майбутньому, інакше — від сьогодні
+            var basis = user.StudentExpiresAt.HasValue && user.StudentExpiresAt.Value > DateTime.UtcNow
+                ? user.StudentExpiresAt.Value
+                : DateTime.UtcNow;
+            user.StudentExpiresAt = basis.AddMonths(UniversityService.StudentStatusValidMonths);
+            await _userRepository.SaveChangesAsync();
+            _logger.LogInformation("Студентський статус користувача {UserId} продовжено до {ExpiresAt}", id, user.StudentExpiresAt);
+            return Ok(ApiResponse<object>.SuccessResult(
+                new { studentExpiresAt = user.StudentExpiresAt },
+                "Термін студентського статусу продовжено"));
         }
         // Генерація тимчасового паролю, що задовольняє вимоги складності
         private static string GenerateTemporaryPassword()

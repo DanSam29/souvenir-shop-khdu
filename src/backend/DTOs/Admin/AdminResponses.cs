@@ -35,6 +35,24 @@ namespace KhduSouvenirShop.API.DTOs.Admin
     }
 
     /// <summary>
+    /// Вихідний DTO запису черги верифікації студентів (адмін-панель).
+    /// </summary>
+    public class VerificationQueueItemResponse
+    {
+        public int QueueId { get; set; }
+        public int UserId { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string StudentStatus { get; set; } = string.Empty;
+        public int Attempts { get; set; }
+        public DateTime NextAttemptAt { get; set; }
+        public string? LastError { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+    }
+
+    /// <summary>
     /// Вихідний DTO рядка списку замовлень для адміністративної панелі.
     /// </summary>
     public class AdminOrderListItemResponse
