@@ -50,5 +50,22 @@ namespace KhduSouvenirShop.API.Services
         // Список товарів із низьким залишком (для відмітки в адмін-панелі)
         public async Task<IReadOnlyList<Product>> GetLowStockProductsAsync() =>
             await _productRepository.GetLowStockAsync(LowStockThreshold);
+
+        // Агреговані залишки по всіх товарах: прихід/розхід із документів + поточний залишок і ознака low-stock
+        public async Task<IReadOnlyList<StockSummaryItem>> GetStockSummaryAsync()
+        {
+            var threshold = LowStockThreshold;
+            return await _productRepository.Query()
+                .Select(p => new StockSummaryItem
+                {
+                    ProductId = p.ProductId,
+                    ProductName = p.Name,
+                    TotalIncoming = _incomingRepository.Query().Where(i => i.ProductId == p.ProductId).Sum(i => i.Quantity),
+                    TotalOutgoing = _outgoingRepository.Query().Where(o => o.ProductId == p.ProductId).Sum(o => o.Quantity),
+                    CurrentStock = p.Stock,
+                    LowStock = p.Stock <= threshold
+                })
+                .ToListAsync();
+        }
     }
 }

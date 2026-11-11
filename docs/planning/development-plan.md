@@ -485,7 +485,7 @@
 - При кожному документі - автоматичне оновлення Product.Stock через тригер/метод
 - Low stock alert: Products.Stock <= 5 (налаштовується) → відмітка в адмін-панелі
 
-8.5. Поточні залишки / Export
+8.5. Поточні залишки / Export ✅
 - GET /api/admin/stock/current - агреговані залишки по всіх товарах: productId, productName, totalIncoming, totalOutgoing, currentStock, lowStock(bool)
 - GET /api/admin/stock/export?format=csv|xlsx|pdf - експорт
 

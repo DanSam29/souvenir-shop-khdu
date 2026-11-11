@@ -1,3 +1,11 @@
+using System.Globalization;
+using System.Text;
+using iText.IO.Font;
+using iText.IO.Font.Constants;
+using iText.Kernel.Font;
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
 using KhduSouvenirShop.API.Repositories;
@@ -6,6 +14,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using OfficeOpenXml;
 
 namespace KhduSouvenirShop.API.Controllers
 {
@@ -395,6 +404,138 @@ namespace KhduSouvenirShop.API.Controllers
                 })
                 .ToListAsync();
             return Ok(ApiResponse<object>.SuccessResult(stock));
+        }
+
+        // Агреговані поточні залишки по всіх товарах (адмін-панель складу)
+        [HttpGet("stock/current")]
+        [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<StockSummaryItem>>), StatusCodes.Status200OK)]
+        public async Task<ActionResult> GetStockCurrent()
+        {
+            var summary = await _warehouseService.GetStockSummaryAsync();
+            return Ok(ApiResponse<IReadOnlyList<StockSummaryItem>>.SuccessResult(summary));
+        }
+
+        // Експорт поточних залишків у CSV / XLSX / PDF
+        [HttpGet("stock/export")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ExportStock([FromQuery] string format = "csv")
+        {
+            var summary = await _warehouseService.GetStockSummaryAsync();
+            var normalized = (format ?? string.Empty).Trim().ToLowerInvariant();
+            var stamp = DateTime.Now.ToString("yyyyMMdd");
+
+            switch (normalized)
+            {
+                case "csv":
+                    return File(BuildStockCsv(summary), "text/csv", $"stock_report_{stamp}.csv");
+                case "xlsx":
+                    return File(BuildStockXlsx(summary),
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        $"stock_report_{stamp}.xlsx");
+                case "pdf":
+                    return File(BuildStockPdf(summary), "application/pdf", $"stock_report_{stamp}.pdf");
+                default:
+                    return BadRequest(ApiResponse<object>.FailureResult(
+                        "Непідтримуваний формат експорту. Доступні: csv, xlsx, pdf", "BadRequest"));
+            }
+        }
+
+        // Формування CSV-звіту по залишках
+        private static byte[] BuildStockCsv(IReadOnlyList<StockSummaryItem> items)
+        {
+            var csv = new StringBuilder();
+            csv.AppendLine("ProductId,ProductName,TotalIncoming,TotalOutgoing,CurrentStock,LowStock");
+            foreach (var item in items)
+            {
+                csv.AppendLine($"{item.ProductId},\"{item.ProductName}\",{item.TotalIncoming},{item.TotalOutgoing},{item.CurrentStock},{item.LowStock}");
+            }
+            return Encoding.UTF8.GetBytes(csv.ToString());
+        }
+
+        // Формування XLSX-звіту по залишках
+        private static byte[] BuildStockXlsx(IReadOnlyList<StockSummaryItem> items)
+        {
+            ExcelPackage.License.SetNonCommercialOrganization("KhduSouvenirShop");
+            using var package = new ExcelPackage();
+            var sheet = package.Workbook.Worksheets.Add("Stock");
+            var headers = new[] { "ProductId", "ProductName", "TotalIncoming", "TotalOutgoing", "CurrentStock", "LowStock" };
+            for (var i = 0; i < headers.Length; i++)
+            {
+                sheet.Cells[1, i + 1].Value = headers[i];
+                sheet.Cells[1, i + 1].Style.Font.Bold = true;
+            }
+            var row = 2;
+            foreach (var item in items)
+            {
+                sheet.Cells[row, 1].Value = item.ProductId;
+                sheet.Cells[row, 2].Value = item.ProductName;
+                sheet.Cells[row, 3].Value = item.TotalIncoming;
+                sheet.Cells[row, 4].Value = item.TotalOutgoing;
+                sheet.Cells[row, 5].Value = item.CurrentStock;
+                sheet.Cells[row, 6].Value = item.LowStock;
+                row++;
+            }
+            sheet.Cells.AutoFitColumns();
+            return package.GetAsByteArray();
+        }
+
+        // Формування PDF-звіту по залишках
+        private static byte[] BuildStockPdf(IReadOnlyList<StockSummaryItem> items)
+        {
+            using var stream = new MemoryStream();
+            using (var writer = new PdfWriter(stream))
+            using (var pdf = new PdfDocument(writer))
+            using (var document = new Document(pdf))
+            {
+                var font = ResolveFont();
+                document.Add(new Paragraph("Поточні залишки / Current stock").SetFont(font).SetFontSize(16));
+                document.Add(new Paragraph($"Сформовано: {DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC").SetFont(font).SetFontSize(10));
+                var table = new Table(new float[] { 1, 3, 1.5f, 1.5f, 1.5f, 1.2f }).UseAllAvailableWidth();
+                foreach (var header in new[] { "ID", "Товар / Product", "Прихід", "Розхід", "Залишок", "Low stock" })
+                {
+                    table.AddHeaderCell(new Cell().Add(new Paragraph(header).SetFont(font).SetFontSize(9)));
+                }
+                foreach (var item in items)
+                {
+                    table.AddCell(new Cell().Add(new Paragraph(item.ProductId.ToString()).SetFont(font).SetFontSize(8)));
+                    table.AddCell(new Cell().Add(new Paragraph(item.ProductName).SetFont(font).SetFontSize(8)));
+                    table.AddCell(new Cell().Add(new Paragraph(item.TotalIncoming.ToString(CultureInfo.InvariantCulture)).SetFont(font).SetFontSize(8)));
+                    table.AddCell(new Cell().Add(new Paragraph(item.TotalOutgoing.ToString(CultureInfo.InvariantCulture)).SetFont(font).SetFontSize(8)));
+                    table.AddCell(new Cell().Add(new Paragraph(item.CurrentStock.ToString(CultureInfo.InvariantCulture)).SetFont(font).SetFontSize(8)));
+                    table.AddCell(new Cell().Add(new Paragraph(item.LowStock ? "так / yes" : "-").SetFont(font).SetFontSize(8)));
+                }
+                document.Add(table);
+            }
+            return stream.ToArray();
+        }
+
+        // Підбір шрифту з підтримкою кирилиці для PDF-звітів
+        private static PdfFont ResolveFont()
+        {
+            var windowsFont = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), "arial.ttf");
+            var candidates = new[]
+            {
+                windowsFont,
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+                "/System/Library/Fonts/Supplemental/Arial.ttf"
+            };
+            foreach (var path in candidates)
+            {
+                if (!string.IsNullOrEmpty(path) && System.IO.File.Exists(path))
+                {
+                    try
+                    {
+                        return PdfFontFactory.CreateFont(path, PdfEncodings.IDENTITY_H, PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
+                    }
+                    catch
+                    {
+                        // спробувати наступний шрифт
+                    }
+                }
+            }
+            return PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
         }
     }
 
