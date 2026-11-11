@@ -22,7 +22,6 @@ namespace KhduSouvenirShop.API.Controllers
         ILogger<UsersController> logger,
         IConfiguration configuration,
         IUniversityService universityService,
-        IEmailService emailService,
         IOrderRepository orderRepository,
         IShippingRepository shippingRepository,
         IRepository<UserPromotion> userPromotionRepository,
@@ -34,7 +33,6 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly ILogger<UsersController> _logger = logger;
         private readonly IConfiguration _configuration = configuration;
         private readonly IUniversityService _universityService = universityService;
-        private readonly IEmailService _emailService = emailService;
         private readonly IOrderRepository _orderRepository = orderRepository;
         private readonly IShippingRepository _shippingRepository = shippingRepository;
         private readonly IRepository<UserPromotion> _userPromotionRepository = userPromotionRepository;
@@ -69,32 +67,22 @@ namespace KhduSouvenirShop.API.Controllers
             newUser.Role = "Customer";
             // Автоматичне створення кошика для нового користувача
             newUser.Cart = new Cart { CreatedAt = DateTime.UtcNow };
-            // Встановлення студентського статусу за доменом email (запуск верифікації, Етап 9)
+            await _userRepository.AddAsync(newUser);
+            await _userRepository.SaveChangesAsync();
+            // Верифікація студента за доменом email (Етап 9): присвоєння статусу зі знижкою
+            // або додавання в чергу повторів, якщо University API недоступний
             var isUniEnabled = _configuration.GetValue<bool>("Features:UniversityEnabled");
             var allowedDomains = _configuration.GetSection("University:AllowedDomains").Get<string[]>() ??
                                  ["ksu.edu.ua", "student.ksu.edu.ua"];
             if (isUniEnabled && allowedDomains.Any(domain => email.EndsWith("@" + domain)))
             {
-                var studentInfo = await _universityService.GetStudentInfoAsync(newUser.Email!);
-                if (studentInfo != null && studentInfo.IsActive)
-                {
-                    newUser.GPA = studentInfo.GPA;
-                    if (newUser.GPA >= 4.8m) newUser.StudentStatus = "HIGH_ACHIEVER";
-                    else if (newUser.GPA >= 4.0m) newUser.StudentStatus = "SCHOLARSHIP";
-                    else newUser.StudentStatus = "REGULAR";
-                    newUser.StudentVerifiedAt = DateTime.UtcNow;
-                    newUser.StudentExpiresAt = DateTime.UtcNow.AddMonths(4);
-                    _logger.LogInformation("Користувач {Email} автоматично верифікований як студент. Статус: {Status}", newUser.Email, newUser.StudentStatus);
-                    await _emailService.SendStudentVerificationEmailAsync(newUser.Email, newUser.StudentStatus, "ua");
-                }
+                var outcome = await _universityService.VerifyStudentByEmailAsync(newUser.Email, newUser.UserId);
+                _logger.LogInformation("Верифікацію студента {Email} завершено з результатом {Outcome}", newUser.Email, outcome);
             }
             else
             {
-                newUser.StudentStatus = "NONE";
                 _logger.LogInformation("Користувач {Email} зареєстрований як зовнішній користувач", newUser.Email);
             }
-            await _userRepository.AddAsync(newUser);
-            await _userRepository.SaveChangesAsync();
             _logger.LogInformation("Користувач {Email} успішно зареєстрований", newUser.Email);
             // Видача пари токенів: короткоживучий access + довгоживучий refresh
             var response = _mapper.Map<AuthResponse>(newUser);

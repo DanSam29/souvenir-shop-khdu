@@ -118,6 +118,8 @@ builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.INovaPoshtaService,
         3,
         retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))));
 builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.IUniversityService, KhduSouvenirShop.API.Services.UniversityService>();
+// Фоновий сервіс, що раз на 5 хвилин повторює невдалі верифікації студентів з черги
+builder.Services.AddHostedService<KhduSouvenirShop.API.Services.VerificationQueueBackgroundService>();
 // Реєстрація репозиторіїв (шар доступу до даних)
 builder.Services.AddScoped(typeof(KhduSouvenirShop.API.Repositories.IRepository<>), typeof(KhduSouvenirShop.API.Repositories.Repository<>));
 builder.Services.AddScoped<KhduSouvenirShop.API.Repositories.IUserRepository, KhduSouvenirShop.API.Repositories.UserRepository>();

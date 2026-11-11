@@ -503,7 +503,7 @@
 ## Етап 9: University Module - Верифікація студентів, черга, ручні дії
 **Мета:** Автоматична верифікація студентів через University API з retry чергою та ручним керуванням.
 
-9.1. UniversityService
+9.1. UniversityService ✅
 - VerifyStudentByEmailAsync(email, userId) - виклик зовнішнього API
   - Перевіряє домен email
   - HTTP GET з Authorization Bearer UNIVERSITY_API_KEY

@@ -1211,6 +1211,65 @@ namespace KhduSouvenirShop.API.Migrations
                     b.ToTable("userpromotions");
                 });
 
+            modelBuilder.Entity("KhduSouvenirShop.API.Models.VerificationQueue", b =>
+                {
+                    b.Property<int>("QueueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<DateTime>("NextAttemptAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("enum('Pending','Processing','Completed','Failed')");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("QueueId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("Status", "NextAttemptAt");
+
+                    b.ToTable("verificationqueue");
+                });
+
             modelBuilder.Entity("KhduSouvenirShop.API.Models.Cart", b =>
                 {
                     b.HasOne("KhduSouvenirShop.API.Models.User", "User")
@@ -1460,6 +1519,17 @@ namespace KhduSouvenirShop.API.Migrations
                         .IsRequired();
 
                     b.Navigation("Promotion");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("KhduSouvenirShop.API.Models.VerificationQueue", b =>
+                {
+                    b.HasOne("KhduSouvenirShop.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

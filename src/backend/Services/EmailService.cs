@@ -10,7 +10,7 @@ namespace KhduSouvenirShop.API.Services
         Task SendOrderCancellationAsync(string email, string orderNumber, string? reason = null, string lang = "ua");
         Task SendPaymentConfirmationAsync(string email, string orderNumber, decimal amount, string lang = "ua");
         Task SendPaymentFailedAsync(string email, string orderNumber, string lang = "ua");
-        Task SendStudentVerificationEmailAsync(string email, string status, string lang = "ua");
+        Task SendStudentVerificationEmailAsync(string email, string status, string lang = "ua", int? discountPercent = null);
         Task SendPasswordResetEmailAsync(string email, string resetToken, string lang = "ua");
     }
     public class EmailService : IEmailService
@@ -57,12 +57,15 @@ namespace KhduSouvenirShop.API.Services
                 : $"<h1>Оплата не вдалася</h1><p>На жаль, оплата за замовлення {orderNumber} не пройшла. Замовлення скасовано. Ви можете спробувати ще раз.</p>";
             await SendEmailAsync(email, subject, body);
         }
-        public async Task SendStudentVerificationEmailAsync(string email, string status, string lang = "ua")
+        public async Task SendStudentVerificationEmailAsync(string email, string status, string lang = "ua", int? discountPercent = null)
         {
             string subject = lang == "en" ? "Student Status Verified" : "Студентський статус підтверджено";
+            // Рядок про призначену знижку додається лише коли відсоток відомий
+            string discountUa = discountPercent.HasValue ? $"<p>Вам призначено студентську знижку <b>{discountPercent}%</b>.</p>" : string.Empty;
+            string discountEn = discountPercent.HasValue ? $"<p>You have been granted a student discount of <b>{discountPercent}%</b>.</p>" : string.Empty;
             string body = lang == "en"
-                ? $"<h1>Congratulations!</h1><p>Your student status has been verified as: <b>{status}</b>. You can now use your discounts.</p>"
-                : $"<h1>Вітаємо!</h1><p>Ваш статус студента підтверджено: <b>{status}</b>. Тепер ви можете користуватися своїми знижками.</p>";
+                ? $"<h1>Congratulations!</h1><p>Your student status has been verified as: <b>{status}</b>.</p>{discountEn}"
+                : $"<h1>Вітаємо!</h1><p>Ваш статус студента підтверджено: <b>{status}</b>.</p>{discountUa}";
             await SendEmailAsync(email, subject, body);
         }
         public async Task SendPasswordResetEmailAsync(string email, string resetToken, string lang = "ua")

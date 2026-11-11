@@ -33,6 +33,7 @@ namespace KhduSouvenirShop.API.Data
         public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } = null!;
         public DbSet<ProcessedStripeEvent> ProcessedStripeEvents { get; set; } = null!;
+        public DbSet<VerificationQueue> VerificationQueues { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -116,6 +117,9 @@ namespace KhduSouvenirShop.API.Data
             modelBuilder.Entity<OutgoingDocument>()
                 .Property(o => o.Reason)
                 .HasColumnType("enum('Order','Damaged','Lost','Return','Inventory','Other')");
+            modelBuilder.Entity<VerificationQueue>()
+                .Property(v => v.Status)
+                .HasColumnType("enum('Pending','Processing','Completed','Failed')");
             // Налаштування каскадного видалення
             modelBuilder.Entity<Cart>()
                 .HasOne(c => c.User)
@@ -246,6 +250,14 @@ namespace KhduSouvenirShop.API.Data
                 .WithMany()
                 .HasForeignKey(od => od.CreatedBy)
                 .OnDelete(DeleteBehavior.SetNull);
+            // Черга верифікації студентів: швидкий пошук готових до обробки записів
+            modelBuilder.Entity<VerificationQueue>()
+                .HasIndex(v => new { v.Status, v.NextAttemptAt });
+            modelBuilder.Entity<VerificationQueue>()
+                .HasOne(v => v.User)
+                .WithMany()
+                .HasForeignKey(v => v.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
             // Початкові категорії
             modelBuilder.Entity<Category>().HasData(
                 new Category { CategoryId = 1, Name = "Футболки", NameEn = "T-Shirts", DisplayOrder = 1, CreatedAt = seedDate },
