@@ -107,6 +107,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
 // Реєстрація внутрішніх сервісів (бізнес-логіку)
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.PromotionService>();
+builder.Services.AddScoped<KhduSouvenirShop.API.Services.WarehouseService>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IPaymentService, KhduSouvenirShop.API.Services.PaymentService>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IEmailService, KhduSouvenirShop.API.Services.EmailService>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IImageService, KhduSouvenirShop.API.Services.ImageService>();

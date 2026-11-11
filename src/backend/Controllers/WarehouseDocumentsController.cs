@@ -1,6 +1,7 @@
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Models.Common;
 using KhduSouvenirShop.API.Repositories;
+using KhduSouvenirShop.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,7 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly IRepository<IncomingDocument> _incomingRepository;
         private readonly IRepository<OutgoingDocument> _outgoingRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly WarehouseService _warehouseService;
         private readonly ILogger<WarehouseDocumentsController> _logger;
         private readonly IMemoryCache _cache;
 
@@ -33,6 +35,7 @@ namespace KhduSouvenirShop.API.Controllers
             IRepository<IncomingDocument> incomingRepository,
             IRepository<OutgoingDocument> outgoingRepository,
             IUnitOfWork unitOfWork,
+            WarehouseService warehouseService,
             ILogger<WarehouseDocumentsController> logger,
             IMemoryCache cache)
         {
@@ -42,6 +45,7 @@ namespace KhduSouvenirShop.API.Controllers
             _incomingRepository = incomingRepository;
             _outgoingRepository = outgoingRepository;
             _unitOfWork = unitOfWork;
+            _warehouseService = warehouseService;
             _logger = logger;
             _cache = cache;
         }
@@ -135,8 +139,8 @@ namespace KhduSouvenirShop.API.Controllers
                     Notes = dto.Notes
                 };
                 await _warehouseRepository.AddAsync(doc);
-                product.Stock += dto.Quantity; // Оновлення залишку
                 await _warehouseRepository.SaveChangesAsync();
+                await _warehouseService.RecalculateStockAsync(doc.ProductId); // Залишок перераховується за документами
                 await transaction.CommitAsync();
                 InvalidateCache();
                 return Ok(ApiResponse<object>.SuccessResult(doc, "Прибуткову накладну створено"));
@@ -168,17 +172,7 @@ namespace KhduSouvenirShop.API.Controllers
             using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
-                if (doc.ProductId != dto.ProductId)
-                {
-                    // Товар змінився: повертаємо стару кількість старому товару, додаємо нову - новому
-                    var oldProduct = await _productRepository.GetByIdAsync(doc.ProductId);
-                    if (oldProduct != null) oldProduct.Stock -= doc.Quantity;
-                    newProduct.Stock += dto.Quantity;
-                }
-                else
-                {
-                    newProduct.Stock += dto.Quantity - doc.Quantity;
-                }
+                var oldProductId = doc.ProductId;
                 doc.ProductId = dto.ProductId;
                 doc.Quantity = dto.Quantity;
                 doc.PurchasePrice = dto.PurchasePrice;
@@ -188,6 +182,9 @@ namespace KhduSouvenirShop.API.Controllers
                 doc.Notes = dto.Notes;
                 _warehouseRepository.Update(doc);
                 await _warehouseRepository.SaveChangesAsync();
+                await _warehouseService.RecalculateStockAsync(doc.ProductId);
+                // Якщо товар змінився - перераховуємо залишок і для попереднього товару
+                if (oldProductId != doc.ProductId) await _warehouseService.RecalculateStockAsync(oldProductId);
                 await transaction.CommitAsync();
                 InvalidateCache();
                 return Ok(ApiResponse<object>.SuccessResult(doc, "Прибуткову накладну оновлено"));
@@ -209,10 +206,10 @@ namespace KhduSouvenirShop.API.Controllers
             using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
-                var product = await _productRepository.GetByIdAsync(doc.ProductId);
-                if (product != null) product.Stock -= doc.Quantity; // Повернення залишку назад
+                var productId = doc.ProductId;
                 _warehouseRepository.Remove(doc);
                 await _warehouseRepository.SaveChangesAsync();
+                await _warehouseService.RecalculateStockAsync(productId); // Повернення залишку назад
                 await transaction.CommitAsync();
                 InvalidateCache();
                 return Ok(ApiResponse<object?>.SuccessResult(null, "Прибуткову накладну видалено"));
@@ -295,8 +292,8 @@ namespace KhduSouvenirShop.API.Controllers
                     Notes = dto.Notes
                 };
                 await _warehouseRepository.AddAsync(doc);
-                product.Stock -= dto.Quantity; // Оновлення залишку
                 await _warehouseRepository.SaveChangesAsync();
+                await _warehouseService.RecalculateStockAsync(doc.ProductId); // Залишок перераховується за документами
                 await transaction.CommitAsync();
                 InvalidateCache();
                 return Ok(ApiResponse<object>.SuccessResult(doc, "Видаткову накладну створено"));
@@ -330,17 +327,7 @@ namespace KhduSouvenirShop.API.Controllers
             using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
-                if (doc.ProductId != dto.ProductId)
-                {
-                    // Товар змінився: повертаємо стару кількість старому товару, списуємо нову - з нового
-                    var oldProduct = await _productRepository.GetByIdAsync(doc.ProductId);
-                    if (oldProduct != null) oldProduct.Stock += doc.Quantity;
-                    newProduct.Stock -= dto.Quantity;
-                }
-                else
-                {
-                    newProduct.Stock += doc.Quantity - dto.Quantity;
-                }
+                var oldProductId = doc.ProductId;
                 doc.ProductId = dto.ProductId;
                 doc.Quantity = dto.Quantity;
                 doc.Reason = dto.Reason;
@@ -349,6 +336,9 @@ namespace KhduSouvenirShop.API.Controllers
                 doc.Notes = dto.Notes;
                 _warehouseRepository.Update(doc);
                 await _warehouseRepository.SaveChangesAsync();
+                await _warehouseService.RecalculateStockAsync(doc.ProductId);
+                // Якщо товар змінився - перераховуємо залишок і для попереднього товару
+                if (oldProductId != doc.ProductId) await _warehouseService.RecalculateStockAsync(oldProductId);
                 await transaction.CommitAsync();
                 InvalidateCache();
                 return Ok(ApiResponse<object>.SuccessResult(doc, "Видаткову накладну оновлено"));
@@ -370,10 +360,10 @@ namespace KhduSouvenirShop.API.Controllers
             using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
-                var product = await _productRepository.GetByIdAsync(doc.ProductId);
-                if (product != null) product.Stock += doc.Quantity; // Повернення залишку назад
+                var productId = doc.ProductId;
                 _warehouseRepository.Remove(doc);
                 await _warehouseRepository.SaveChangesAsync();
+                await _warehouseService.RecalculateStockAsync(productId); // Повернення залишку назад
                 await transaction.CommitAsync();
                 InvalidateCache();
                 return Ok(ApiResponse<object?>.SuccessResult(null, "Видаткову накладну видалено"));
@@ -391,6 +381,7 @@ namespace KhduSouvenirShop.API.Controllers
         [HttpGet("stock")]
         public async Task<ActionResult> GetCurrentStock()
         {
+            var threshold = _warehouseService.LowStockThreshold;
             var stock = await _productRepository.Query()
                 .Select(p => new
                 {
@@ -398,7 +389,9 @@ namespace KhduSouvenirShop.API.Controllers
                     name = p.Name,
                     currentStock = p.Stock,
                     totalIncoming = _incomingRepository.Query().Where(id => id.ProductId == p.ProductId).Sum(id => id.Quantity),
-                    totalOutgoing = _outgoingRepository.Query().Where(od => od.ProductId == p.ProductId).Sum(od => od.Quantity)
+                    totalOutgoing = _outgoingRepository.Query().Where(od => od.ProductId == p.ProductId).Sum(od => od.Quantity),
+                    // Відмітка низького залишку в адмін-панелі
+                    lowStock = p.Stock <= threshold
                 })
                 .ToListAsync();
             return Ok(ApiResponse<object>.SuccessResult(stock));

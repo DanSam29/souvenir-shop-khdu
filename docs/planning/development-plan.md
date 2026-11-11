@@ -480,7 +480,7 @@
 - Валідація: унікальність Name, Email
 - Заборона: в новому IncomingDocument не можна вибрати деактивовану компанію
 
-8.4. Розрахунок залишків (не дублювати в Product.Stock як джерело істини, але Product.Stock для швидкого відображення)
+8.4. Розрахунок залишків (не дублювати в Product.Stock як джерело істини, але Product.Stock для швидкого відображення) ✅
 - Метод WarehouseService.RecalculateStockAsync(productId) = SUM(Incoming.Qty) - SUM(Outgoing.Qty)
 - При кожному документі - автоматичне оновлення Product.Stock через тригер/метод
 - Low stock alert: Products.Stock <= 5 (налаштовується) → відмітка в адмін-панелі
