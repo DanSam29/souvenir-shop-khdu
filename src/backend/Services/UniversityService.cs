@@ -46,6 +46,7 @@ namespace KhduSouvenirShop.API.Services
         private readonly IEmailService _emailService;
         private readonly ILogger<UniversityService> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IHostEnvironment _environment;
         private readonly HttpClient _httpClient;
 
         public UniversityService(
@@ -54,6 +55,7 @@ namespace KhduSouvenirShop.API.Services
             IEmailService emailService,
             ILogger<UniversityService> logger,
             IConfiguration configuration,
+            IHostEnvironment environment,
             HttpClient httpClient)
         {
             _userRepository = userRepository;
@@ -61,6 +63,7 @@ namespace KhduSouvenirShop.API.Services
             _emailService = emailService;
             _logger = logger;
             _configuration = configuration;
+            _environment = environment;
             _httpClient = httpClient;
         }
 
@@ -76,11 +79,62 @@ namespace KhduSouvenirShop.API.Services
             return allowedDomains.Any(domain => email.EndsWith("@" + domain, StringComparison.OrdinalIgnoreCase));
         }
 
+        // Заглушка вмикається лише в Development, коли не задано ні ApiKey (University:ApiKey / UNIVERSITY_API_KEY), ні BaseUrl
+        private bool IsStubEnabled()
+        {
+            if (!_environment.IsDevelopment()) return false;
+            var apiKey = _configuration["University:ApiKey"] ?? _configuration["UNIVERSITY_API_KEY"];
+            var baseUrl = _configuration["University:BaseUrl"];
+            return string.IsNullOrWhiteSpace(apiKey) && string.IsNullOrWhiteSpace(baseUrl);
+        }
+
+        // Детермінована заглушка University API: статус визначається за локальною частиною email
+        private UniversityStudentInfo? GetStubStudentInfo(string email)
+        {
+            var localPart = email.Split('@')[0].ToLowerInvariant();
+            if (localPart.Contains("notfound"))
+            {
+                return null; // імітація 404 — студента не знайдено
+            }
+
+            var info = new UniversityStudentInfo
+            {
+                Email = email,
+                IsActive = true,
+                FullName = "Студент Тестовий",
+                Faculty = "Факультет тестування"
+            };
+            if (localPart.Contains("scholarship"))
+            {
+                info.StudentStatus = "SCHOLARSHIP";
+                info.GPA = 4.0m;
+            }
+            else if (localPart.Contains("high"))
+            {
+                // GPA >= 4.5 у мапінгу дає HIGH_ACHIEVER
+                info.StudentStatus = "HIGH_ACHIEVER";
+                info.GPA = 4.8m;
+            }
+            else
+            {
+                info.StudentStatus = "REGULAR";
+                info.GPA = 3.5m;
+            }
+            return info;
+        }
+
         // HTTP GET до University API. Повертає дані студента, null — якщо студента не знайдено (404),
         // кидає UniversityApiUnavailableException — якщо API недоступний (немає BaseUrl, мережа, timeout, 5xx).
         public async Task<UniversityStudentInfo?> GetStudentInfoAsync(string email)
         {
             if (!IsAllowedDomain(email)) return null;
+
+            // У Development без налаштованого API використовується детермінована заглушка (Етап 9.5)
+            if (IsStubEnabled())
+            {
+                _logger.LogDebug("University API (stub) для {Email}", email);
+                return GetStubStudentInfo(email);
+            }
 
             var baseUrl = _configuration["University:BaseUrl"];
             if (string.IsNullOrWhiteSpace(baseUrl))

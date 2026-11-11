@@ -538,7 +538,7 @@
 - Надсилання email нагадування за тиждень до expiry
 - В профілі показувати "Закінчується через N днів"
 
-9.5. Stub / Mock University API для тестування
+9.5. Stub / Mock University API для тестування ✅
 - У Development режимі, якщо UNIVERSITY_API_KEY не заданий → використовувати stub, що повертає випадкові дані або по сутності email:
   - student.regular@ → REGULAR
   - student.scholarship@ → SCHOLARSHIP
