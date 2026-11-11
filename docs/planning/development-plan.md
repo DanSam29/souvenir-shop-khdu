@@ -598,7 +598,7 @@
 ## Етап 11: Analytics Module - Дашборди, метрики, експорт звітів
 **Мета:** Реалізувати аналітику продажів, фінанси, ефективність акцій.
 
-11.1. Метрики (з DTO)
+11.1. Метрики (з DTO) ✅
 - SalesMetrics: totalOrders, totalRevenue, averageOrderValue, ordersCountByStatus
 - TimeSeries: salesByDay (date → revenue), salesByMonth
 - TopProducts: productId, name, quantitySold, revenue

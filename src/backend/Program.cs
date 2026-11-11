@@ -116,6 +116,7 @@ builder.Services.AddScoped<KhduSouvenirShop.API.Services.IPaymentService, KhduSo
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IEmailService, KhduSouvenirShop.API.Services.EmailService>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IImageService, KhduSouvenirShop.API.Services.ImageService>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IAuthService, KhduSouvenirShop.API.Services.AuthService>();
+builder.Services.AddScoped<KhduSouvenirShop.API.Services.IAnalyticsService, KhduSouvenirShop.API.Services.AnalyticsService>();
 builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.INovaPoshtaService, KhduSouvenirShop.API.Services.NovaPoshtaService>()
     // Retry для тимчасових збоїв NP API: 3 спроби з експоненційним відкатом (2с, 4с, 8с)
     .AddTransientHttpErrorPolicy(policy => policy.WaitAndRetryAsync(
