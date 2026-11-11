@@ -615,7 +615,7 @@
 - GET /api/analytics/financial?from=...
 - GET /api/analytics/overview?from=... - короткий summary для головного дашборду
 
-11.3. Оптимізації
+11.3. Оптимізації ✅
 - Всі складні агрегати кешувати з TTL 15-30 хвилин
 - Інвалідація кешу при створенні/зміні замовлень/документів
 - Індекси в БД: Orders(CreatedAt, Status), OrderItems(ProductId, AppliedPromotionId)

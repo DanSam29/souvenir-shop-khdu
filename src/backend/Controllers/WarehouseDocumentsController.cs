@@ -64,6 +64,8 @@ namespace KhduSouvenirShop.API.Controllers
             var currentVersion = _cache.Get<int>("Products_Cache_Version");
             _cache.Set("Products_Cache_Version", currentVersion + 1);
             _cache.Remove("Public_Products_All");
+            // Аналітичні агрегати залежать від складських документів — інвалідуємо разом
+            AnalyticsService.InvalidateCache(_cache);
         }
 
         // Перевірка компанії-постачальника: компанія обов'язкова та має бути активна

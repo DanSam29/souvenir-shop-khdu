@@ -329,6 +329,8 @@ namespace KhduSouvenirShop.API.Migrations
 
                     b.HasIndex("UserId");
 
+                    b.HasIndex("CreatedAt", "Status");
+
                     b.ToTable("orders");
                 });
 
@@ -401,7 +403,7 @@ namespace KhduSouvenirShop.API.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.HasIndex("ProductId");
+                    b.HasIndex("ProductId", "AppliedPromotionId");
 
                     b.ToTable("orderitems");
                 });

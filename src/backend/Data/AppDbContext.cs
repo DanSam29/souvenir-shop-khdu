@@ -62,6 +62,11 @@ namespace KhduSouvenirShop.API.Data
             modelBuilder.Entity<SentEmail>()
                 .HasIndex(e => new { e.TemplateType, e.ReferenceId })
                 .IsUnique();
+            // Індекси для швидких аналітичних агрегатів
+            modelBuilder.Entity<Order>()
+                .HasIndex(o => new { o.CreatedAt, o.Status });
+            modelBuilder.Entity<OrderItem>()
+                .HasIndex(oi => new { oi.ProductId, oi.AppliedPromotionId });
             // Налаштування унікальної пари для CartItems
             modelBuilder.Entity<CartItem>()
                 .HasIndex(ci => new { ci.CartId, ci.ProductId })

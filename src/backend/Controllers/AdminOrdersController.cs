@@ -51,6 +51,8 @@ namespace KhduSouvenirShop.API.Controllers
             var currentVersion = _cache.Get<int>("Products_Cache_Version");
             _cache.Set("Products_Cache_Version", currentVersion + 1);
             _cache.Remove("Public_Products_All");
+            // Аналітичні агрегати залежать від замовлень — інвалідуємо разом
+            AnalyticsService.InvalidateCache(_cache);
         }
         private int? GetCurrentUserId()
         {
