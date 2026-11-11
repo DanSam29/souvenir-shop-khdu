@@ -158,6 +158,10 @@ export const warehouseAPI = {
   updateOutgoing: (id, data) => api.put(`/admin/outgoing/${id}`, data),
   deleteOutgoing: (id) => api.delete(`/admin/outgoing/${id}`),
   getStock: () => api.get('/admin/stock'),
+  // Агреговані поточні залишки по всіх товарах
+  getStockCurrent: () => api.get('/admin/stock/current'),
+  // Експорт залишків у CSV/XLSX/PDF (бінарний файл)
+  exportStock: (format) => api.get('/admin/stock/export', { params: { format }, responseType: 'blob' }),
 };
 // API функції для компаній
 export const companiesAPI = {

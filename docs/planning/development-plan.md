@@ -489,7 +489,7 @@
 - GET /api/admin/stock/current - агреговані залишки по всіх товарах: productId, productName, totalIncoming, totalOutgoing, currentStock, lowStock(bool)
 - GET /api/admin/stock/export?format=csv|xlsx|pdf - експорт
 
-8.6. Frontend - AdminWarehousePage
+8.6. Frontend - AdminWarehousePage ✅
 - Таби: Прибуткові / Видаткові / Поточні залишки / Компанії
 - Прибуткові: create/edit/delete модалка, вибір компанії, товару, кількості, закупівельної ціни, причина
 - Видаткові: create/edit/delete, причина (WRITE_OFF/INVENTORY), товар, кількість
