@@ -88,9 +88,11 @@ namespace KhduSouvenirShop.API.Services
         public async Task SendStudentVerificationEmailAsync(string email, string status, string lang = "ua", int? discountPercent = null)
         {
             string subject = lang == "en" ? "Student Status Verified" : "Студентський статус підтверджено";
-            // Блок про призначену знижку додається лише коли відсоток відомий
+            // Блок про призначену знижку додається лише коли відсоток відомий (мовозалежний)
             string discountBlock = discountPercent.HasValue
-                ? $"<p>Вам призначено студентську знижку <b>{discountPercent}%</b>.</p>"
+                ? (lang == "en"
+                    ? $"<p>You have been granted a student discount of <b>{discountPercent}%</b>.</p>"
+                    : $"<p>Вам призначено студентську знижку <b>{discountPercent}%</b>.</p>")
                 : string.Empty;
             string body = _templateRenderer.Render("StudentVerified", new Dictionary<string, string>
             {

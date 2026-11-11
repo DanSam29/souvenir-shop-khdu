@@ -110,7 +110,7 @@ namespace KhduSouvenirShop.API.Controllers
             await _queueRepository.SaveChangesAsync();
 
             var discount = UniversityService.GetDiscountPercent(status);
-            await _emailService.SendStudentVerificationEmailAsync(user.Email, status, "ua", discount);
+            await _emailService.SendStudentVerificationEmailAsync(user.Email, status, user.PreferredLanguage, discount);
             _logger.LogInformation("Запис черги {QueueId} підтверджено вручну; користувачу {UserId} присвоєно {Status}",
                 id, user.UserId, status);
 

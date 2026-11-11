@@ -252,7 +252,7 @@ namespace KhduSouvenirShop.API.Services
             await _userRepository.SaveChangesAsync();
 
             var discount = GetDiscountPercent(user.StudentStatus);
-            await _emailService.SendStudentVerificationEmailAsync(user.Email, user.StudentStatus, "ua", discount);
+            await _emailService.SendStudentVerificationEmailAsync(user.Email, user.StudentStatus, user.PreferredLanguage, discount);
             _logger.LogInformation("Користувача {UserId} верифіковано як {Status} (знижка {Discount}%)",
                 user.UserId, user.StudentStatus, discount);
         }

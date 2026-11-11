@@ -363,7 +363,7 @@ namespace KhduSouvenirShop.API.Services
             }
             await _orderRepository.SaveChangesAsync();
             _logger.LogInformation("PaymentIntent {PaymentIntentId} succeeded for Order {OrderId}", paymentIntent.Id, order.OrderId);
-            await _emailService.SendPaymentConfirmationAsync(order.User.Email, order.OrderNumber, payment.Amount, "ua");
+            await _emailService.SendPaymentConfirmationAsync(order.User.Email, order.OrderNumber, payment.Amount, order.User.PreferredLanguage);
             return true;
         }
         // charge.refunded: кошти повернуто (напр. через панель Stripe)
@@ -447,7 +447,7 @@ namespace KhduSouvenirShop.API.Services
             await _orderRepository.SaveChangesAsync();
             _logger.LogInformation("Order {OrderId} successfully paid via Stripe", orderId);
             // Відправка листа про успішну оплату
-            await _emailService.SendPaymentConfirmationAsync(order.User.Email, order.OrderNumber, order.Payment.Amount, "ua");
+            await _emailService.SendPaymentConfirmationAsync(order.User.Email, order.OrderNumber, order.Payment.Amount, order.User.PreferredLanguage);
             return true;
         }
         private async Task<bool> CreateOrderFromSuccessfulSession(Session session)
@@ -592,7 +592,7 @@ namespace KhduSouvenirShop.API.Services
                 await transaction.CommitAsync();
                 InvalidateCache();
                 _logger.LogInformation("Order {OrderNumber} created from Stripe Session {SessionId}", order.OrderNumber, session.Id);
-                await _emailService.SendOrderConfirmationAsync(user.Email, order.OrderNumber, "ua");
+                await _emailService.SendOrderConfirmationAsync(user.Email, order.OrderNumber, user.PreferredLanguage);
                 return true;
             }
             catch (Exception ex)
@@ -630,7 +630,7 @@ namespace KhduSouvenirShop.API.Services
             var cancelled = await CancelOrderAndRestoreStock(payment.OrderId, "Помилка оплати через Stripe (PaymentIntent Failed)");
             if (cancelled && payment.Order != null)
             {
-                await _emailService.SendPaymentFailedAsync(payment.Order.User.Email, payment.Order.OrderNumber, "ua");
+                await _emailService.SendPaymentFailedAsync(payment.Order.User.Email, payment.Order.OrderNumber, payment.Order.User.PreferredLanguage);
             }
             return cancelled;
         }

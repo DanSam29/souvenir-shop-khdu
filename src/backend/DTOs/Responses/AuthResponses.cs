@@ -11,6 +11,8 @@ namespace KhduSouvenirShop.API.DTOs.Responses
         public string Email { get; set; } = string.Empty;
         public string? Phone { get; set; }
         public string Role { get; set; } = string.Empty;
+        // Мова листів-сповіщень, обрана користувачем ('ua' або 'en')
+        public string PreferredLanguage { get; set; } = string.Empty;
         public string StudentStatus { get; set; } = string.Empty;
         public DateTime? StudentVerifiedAt { get; set; }
         public DateTime? StudentExpiresAt { get; set; }

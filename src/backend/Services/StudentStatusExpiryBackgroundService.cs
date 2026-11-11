@@ -77,7 +77,7 @@ namespace KhduSouvenirShop.API.Services
             foreach (var user in toRemind)
             {
                 var daysLeft = (int)Math.Ceiling((user.StudentExpiresAt!.Value.Date - today).TotalDays);
-                await emailService.SendStudentExpiryReminderEmailAsync(user.Email, daysLeft);
+                await emailService.SendStudentExpiryReminderEmailAsync(user.Email, daysLeft, user.PreferredLanguage);
                 user.StudentExpiryReminderSentAt = now;
                 _logger.LogInformation("Нагадування про закінчення студентського статусу надіслано користувачу {UserId}", user.UserId);
             }

@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { usersAPI } from '../services/api';
+import i18n from '../i18n';
 
 const AuthContext = createContext(null);
 
@@ -18,6 +19,10 @@ export const AuthProvider = ({ children }) => {
       const response = await usersAPI.getCurrentUser();
       const userData = response.data;
       setUser(userData);
+      // Мова інтерфейсу береться з налаштувань користувача
+      if (userData.preferredLanguage && userData.preferredLanguage !== i18n.language) {
+        i18n.changeLanguage(userData.preferredLanguage);
+      }
     } catch (error) {
       console.error('Помилка завантаження даних користувача:', error);
       logout(); // Якщо токен невалідний - вихід

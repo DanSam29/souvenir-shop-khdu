@@ -27,6 +27,9 @@ namespace KhduSouvenirShop.API.Models
         [Required]
         [MaxLength(50)]
         public string Role { get; set; } = "Customer"; // Guest, Customer, Manager, Administrator, SuperAdmin
+        // Мова листів-сповіщень, обрана користувачем: 'ua' або 'en'
+        [MaxLength(5)]
+        public string PreferredLanguage { get; set; } = "ua";
         [MaxLength(20)]
         public string StudentStatus { get; set; } = "NONE"; // NONE, REGULAR, SCHOLARSHIP, HIGH_ACHIEVER
         [Column(TypeName = "decimal(3,2)")]

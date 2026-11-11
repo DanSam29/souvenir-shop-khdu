@@ -96,6 +96,8 @@ export const usersAPI = {
   getById: (id) => api.get(`/Users/${id}`),
   updateProfile: (data) => api.put('/Users/me', data),
   changePassword: (data) => api.post('/Users/change-password', data),
+  // PUT збереження обраної мови листів-сповіщень ('ua' або 'en')
+  updateLanguage: (language) => api.put('/Users/me/language', { language }),
   // Збережені адреси доставки
   getAddresses: () => api.get('/Users/me/addresses'),
   createAddress: (data) => api.post('/Users/me/addresses', data),

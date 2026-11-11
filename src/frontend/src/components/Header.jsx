@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
-import { cartAPI } from '../services/api';
+import { cartAPI, usersAPI } from '../services/api';
 import logo from '../assets/khdu-logo.png';
 import './Header.css';
 
@@ -31,6 +31,12 @@ function Header() {
   const toggleLanguage = () => {
     const newLang = i18n.language === 'ua' ? 'en' : 'ua';
     i18n.changeLanguage(newLang);
+    // Для авторизованих зберігаємо мову в профілі, щоб листи надходили цією мовою
+    if (isAuthenticated) {
+      usersAPI.updateLanguage(newLang).catch((error) => {
+        console.error('Помилка збереження мови:', error);
+      });
+    }
   };
   return (
     <header className="header">

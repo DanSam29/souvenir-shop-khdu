@@ -244,7 +244,7 @@ namespace KhduSouvenirShop.API.Controllers
             var user = await _userRepository.GetByIdAsync(order.UserId);
             if (user != null)
             {
-                await _emailService.SendOrderCancellationAsync(user.Email, order.OrderNumber, reason, "ua");
+                await _emailService.SendOrderCancellationAsync(user.Email, order.OrderNumber, reason, user.PreferredLanguage);
             }
             InvalidateCache();
             _logger.LogInformation("Замовлення {OrderId} скасовано адміністратором {AdminId}", order.OrderId, adminUserId);

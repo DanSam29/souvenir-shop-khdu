@@ -1199,6 +1199,13 @@ namespace KhduSouvenirShop.API.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
+                    b.Property<string>("PreferredLanguage")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(5)
+                        .HasColumnType("varchar(5)")
+                        .HasDefaultValue("ua");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(50)

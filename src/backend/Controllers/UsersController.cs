@@ -196,6 +196,7 @@ namespace KhduSouvenirShop.API.Controllers
                 email = user.Email,
                 phone = user.Phone,
                 role = user.Role,
+                preferredLanguage = user.PreferredLanguage,
                 createdAt = user.CreatedAt,
                 studentStatus = user.StudentStatus,
                 studentVerifiedAt = user.StudentVerifiedAt,
@@ -203,6 +204,27 @@ namespace KhduSouvenirShop.API.Controllers
                 gpa = user.GPA
             };
             return Ok(ApiResponse<object>.SuccessResult(result));
+        }
+        // PUT: api/Users/me/language - збереження обраної мови листів-сповіщень ('ua' або 'en')
+        [Authorize]
+        [HttpPut("me/language")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> UpdateLanguage([FromBody] LanguageUpdateDto dto)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
+            var user = await _userRepository.GetByIdAsync(userId.Value);
+            if (user == null) return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено", "NotFound"));
+            var lang = (dto.Language ?? string.Empty).Trim().ToLowerInvariant();
+            // Підтримуються лише дві мовні версії шаблонів листів
+            if (lang != "ua" && lang != "en")
+            {
+                return BadRequest(ApiResponse<object>.FailureResult("Підтримуються лише мови 'ua' та 'en'", "InvalidLanguage"));
+            }
+            user.PreferredLanguage = lang;
+            await _userRepository.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResult(new { preferredLanguage = user.PreferredLanguage }, "Мову оновлено"));
         }
         // PUT: api/Users/me
         [Authorize]
@@ -529,5 +551,10 @@ namespace KhduSouvenirShop.API.Controllers
     {
         public string OldPassword { get; set; } = string.Empty;
         public string NewPassword { get; set; } = string.Empty;
+    }
+    // DTO для зміни мови листів-сповіщень ('ua' або 'en')
+    public class LanguageUpdateDto
+    {
+        public string? Language { get; set; }
     }
 }

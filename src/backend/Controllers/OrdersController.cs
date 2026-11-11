@@ -309,7 +309,7 @@ namespace KhduSouvenirShop.API.Controllers
                 // Відправка листа-підтвердження для накладеного платежу
                 if (PaymentStates.IsCashOnDelivery(payment.Method))
                 {
-                    await _emailService.SendOrderConfirmationAsync(user!.Email, order.OrderNumber, "ua");
+                    await _emailService.SendOrderConfirmationAsync(user!.Email, order.OrderNumber, user!.PreferredLanguage);
                 }
                 if (payment.Method == "Card")
                 {
@@ -651,7 +651,7 @@ namespace KhduSouvenirShop.API.Controllers
             var user = await _userRepository.GetByIdAsync(order.UserId);
             if (user != null)
             {
-                await _emailService.SendOrderCancellationAsync(user.Email, order.OrderNumber, cancelReason, "ua");
+                await _emailService.SendOrderCancellationAsync(user.Email, order.OrderNumber, cancelReason, user.PreferredLanguage);
             }
             InvalidateCache();
             return Ok(ApiResponse<object?>.SuccessResult(null, "Замовлення скасовано"));

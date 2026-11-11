@@ -94,6 +94,10 @@ namespace KhduSouvenirShop.API.Data
             modelBuilder.Entity<User>()
                 .Property(u => u.StudentStatus)
                 .HasColumnType("enum('NONE','REGULAR','SCHOLARSHIP','HIGH_ACHIEVER')");
+            // Мова листів за замовчуванням — українська
+            modelBuilder.Entity<User>()
+                .Property(u => u.PreferredLanguage)
+                .HasDefaultValue("ua");
             modelBuilder.Entity<Order>()
                 .Property(o => o.Status)
                 .HasColumnType("enum('Processing','Paid','Shipped','Delivered','Cancelled')");

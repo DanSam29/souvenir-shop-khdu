@@ -163,7 +163,9 @@ namespace KhduSouvenirShop.API.Services
             });
             await _passwordResetTokenRepository.SaveChangesAsync();
 
-            await _emailService.SendPasswordResetEmailAsync(user.Email, token, lang);
+            // Мова листа — з налаштувань користувача (з відкатом на передану мову за замовчуванням)
+            var emailLang = string.IsNullOrWhiteSpace(user.PreferredLanguage) ? lang : user.PreferredLanguage;
+            await _emailService.SendPasswordResetEmailAsync(user.Email, token, emailLang);
             _logger.LogInformation("Створено токен скидання паролю для {Email}", user.Email);
             return true;
         }
