@@ -516,7 +516,7 @@
   - Якщо API повертає помилку/timeout → створити запис VerificationQueue з retryAfter=1 година
   - Background service (IHostedService) що раз на 5 хвилин перевіряє чергу і ретраїть
 
-9.2. VerificationQueue entity (додати в БД міграцією)
+9.2. VerificationQueue entity (додати в БД міграцією) ✅
 - QueueId, UserId, Email, Attempts, NextAttemptAt, LastError, Status (Pending/Processing/Completed/Failed)
 - Створити міграцію #2
 
