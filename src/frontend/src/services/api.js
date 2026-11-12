@@ -194,10 +194,22 @@ export const integrationsAPI = {
 export const featuresAPI = {
   getStatus: () => api.get('/Features/status'),
 };
-// API функції для аналітики
+// API функції для аналітики (Manager+)
 export const analyticsAPI = {
-  getSummary: (params) => api.get('/Analytics/summary', { params }),
-  exportSales: (params) => api.get('/Analytics/export/sales', { params, responseType: 'blob' }),
+  // Зведений огляд для головного дашборду (KPI, динаміка продажів, оплати)
+  getOverview: (params) => api.get('/Analytics/overview', { params }),
+  // Продажі: метрики та часовий ряд (groupBy=day|month)
+  getSales: (params) => api.get('/Analytics/sales', { params }),
+  // Топ товарів за продажами
+  getProducts: (params) => api.get('/Analytics/products', { params }),
+  // Топ категорій за виручкою
+  getCategories: (params) => api.get('/Analytics/categories', { params }),
+  // Ефективність акцій
+  getPromotions: (params) => api.get('/Analytics/promotions', { params }),
+  // Фінансові показники
+  getFinancial: (params) => api.get('/Analytics/financial', { params }),
+  // Універсальний експорт звіту (бінарний файл): type=sales|products|promotions|financial, format=csv|xlsx|pdf
+  exportReport: (params) => api.get('/Analytics/export', { params, responseType: 'blob' }),
 };
 // Адмін API для Products
 export const adminProductsAPI = {

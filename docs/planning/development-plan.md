@@ -627,7 +627,7 @@
   - PDF (iText7) - таблиці, заголовки, графік (згенерований як image через Chart.js serverside або ZXing)
 - Endpoint: GET /api/analytics/export?type=sales|products|promotions|financial&format=csv|xlsx|pdf&from=...&to=...
 
-11.5. Frontend AdminAnalyticsPage
+11.5. Frontend AdminAnalyticsPage ✅
 - Overview дашборд: KPI картки (Total Revenue, Orders, AOV, Margin), графік продажів за період, фільтр періоду (Today, Yesterday, Last 7 Days, Last 30 Days, Custom Range)
 - Таби: Продажі / Товари / Категорії / Акції / Фінанси
 - Графіки: Line chart for sales by date, Bar chart for top products/categories, Pie chart for payment methods
