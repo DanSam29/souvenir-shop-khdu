@@ -620,7 +620,7 @@
 - Інвалідація кешу при створенні/зміні замовлень/документів
 - Індекси в БД: Orders(CreatedAt, Status), OrderItems(ProductId, AppliedPromotionId)
 
-11.4. ReportExportService
+11.4. ReportExportService ✅
 - Експорт у 3 формати:
   - CSV (CsvHelper)
   - Excel XLSX (EPPlus) - з форматуванням, заголовками, сумами, графіками

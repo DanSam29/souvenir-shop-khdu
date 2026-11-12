@@ -17,17 +17,20 @@ namespace KhduSouvenirShop.API.Controllers
     public class AnalyticsController : ControllerBase
     {
         private readonly IAnalyticsService _analyticsService;
+        private readonly IReportExportService _reportExportService;
         private readonly IOrderRepository _orderRepository;
         private readonly IRepository<OrderItem> _orderItemRepository;
         private readonly IWarehouseRepository _warehouseRepository;
 
         public AnalyticsController(
             IAnalyticsService analyticsService,
+            IReportExportService reportExportService,
             IOrderRepository orderRepository,
             IRepository<OrderItem> orderItemRepository,
             IWarehouseRepository warehouseRepository)
         {
             _analyticsService = analyticsService;
+            _reportExportService = reportExportService;
             _orderRepository = orderRepository;
             _orderItemRepository = orderItemRepository;
             _warehouseRepository = warehouseRepository;
@@ -184,6 +187,29 @@ namespace KhduSouvenirShop.API.Controllers
             }
             var bytes = Encoding.UTF8.GetBytes(csv.ToString());
             return File(bytes, "text/csv", $"sales_report_{DateTime.Now:yyyyMMdd}.csv");
+        }
+
+        // Універсальний експорт звіту: type=sales|products|promotions|financial, format=csv|xlsx|pdf
+        [HttpGet("export")]
+        public async Task<IActionResult> Export(
+            [FromQuery] string type,
+            [FromQuery] string format,
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to)
+        {
+            var normalizedType = (type ?? string.Empty).Trim().ToLowerInvariant();
+            var normalizedFormat = (format ?? string.Empty).Trim().ToLowerInvariant();
+
+            if (normalizedType is not ("sales" or "products" or "promotions" or "financial"))
+                return BadRequest(ApiResponse<object>.FailureResult(
+                    "Непідтримуваний тип звіту. Доступні: sales, products, promotions, financial", "BadRequest"));
+
+            if (normalizedFormat is not ("csv" or "xlsx" or "pdf"))
+                return BadRequest(ApiResponse<object>.FailureResult(
+                    "Непідтримуваний формат експорту. Доступні: csv, xlsx, pdf", "BadRequest"));
+
+            var file = await _reportExportService.ExportAsync(normalizedType, normalizedFormat, from, NormalizeTo(to));
+            return File(file.Content, file.ContentType, file.FileName);
         }
 
         // Якщо в `to` передано лише дату (час 00:00), включаємо весь останній день періоду.
