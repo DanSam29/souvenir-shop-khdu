@@ -45,7 +45,7 @@ function ProductCard({ product }) {
       <Link to={`/product/${product.productId}`} className="flex-1 flex flex-col no-underline text-inherit">
         <div className="w-full h-[250px] overflow-hidden bg-[#f4f4f4]">
           {primaryImageUrl ? (
-            <img src={primaryImageUrl} alt={displayName} className="w-full h-full object-cover" />
+            <img src={primaryImageUrl} alt={displayName} width={400} height={400} loading="lazy" decoding="async" className="w-full h-full object-cover" />
           ) : (
             <div className="no-image">{t('product.no_image')}</div>
           )}

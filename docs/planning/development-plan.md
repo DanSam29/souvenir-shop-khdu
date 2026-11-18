@@ -689,7 +689,7 @@
   - Email шаблони (Етап 10)
   - Категорії та товари (NameEn/DescriptionEn використовувати при language=en)
 
-12.7. Оптимізація продуктивності Frontend
+12.7. Оптимізація продуктивності Frontend ✅
 - React.lazy + Suspense для lazy loading сторінок
 - Картинки з lazy loading + width/height атрибутами для CLS
 - Мініфікація JS/CSS при build

@@ -1,37 +1,49 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './components/ui/Toast';
+import { Spinner } from './components/ui';
 import Header from './components/Header';
 import ProtectedRoute from './components/ProtectedRoute';
-import HomePage from './pages/HomePage';
-import ProductPage from './pages/ProductPage';
-import RegisterPage from './pages/RegisterPage';
-import LoginPage from './pages/LoginPage';
-import ProfilePage from './pages/ProfilePage';
-import OrderDetailsPage from './pages/OrderDetailsPage';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminOrdersPage from './pages/AdminOrdersPage';
-import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
-import AdminUsersPage from './pages/AdminUsersPage';
-import AdminWarehousePage from './pages/AdminWarehousePage';
-import CartPage from './pages/CartPage';
-import CheckoutPage from './pages/CheckoutPage';
-import PaymentSuccessPage from './pages/PaymentSuccessPage';
-import PaymentCancelPage from './pages/PaymentCancelPage';
-import CategoriesAdmin from './pages/admin/CategoriesAdmin';
-import ProductsAdmin from './pages/admin/ProductsAdmin';
-import CompaniesAdmin from './pages/admin/CompaniesAdmin';
-import PromotionsAdmin from './pages/admin/PromotionsAdmin';
-import PromotionsPage from './pages/PromotionsPage';
-import AccessDenied from './pages/AccessDenied';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import Returns from './pages/Returns';
-import Contacts from './pages/Contacts';
 import logo from './assets/khdu-logo.png';
 
+// Ліниве завантаження сторінок: кожна збирається в окремий chunk і вантажиться на вимогу
+const HomePage = lazy(() => import('./pages/HomePage'));
+const ProductPage = lazy(() => import('./pages/ProductPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const OrderDetailsPage = lazy(() => import('./pages/OrderDetailsPage'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminOrdersPage = lazy(() => import('./pages/AdminOrdersPage'));
+const AdminAnalyticsPage = lazy(() => import('./pages/AdminAnalyticsPage'));
+const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'));
+const AdminWarehousePage = lazy(() => import('./pages/AdminWarehousePage'));
+const CartPage = lazy(() => import('./pages/CartPage'));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage'));
+const PaymentCancelPage = lazy(() => import('./pages/PaymentCancelPage'));
+const CategoriesAdmin = lazy(() => import('./pages/admin/CategoriesAdmin'));
+const ProductsAdmin = lazy(() => import('./pages/admin/ProductsAdmin'));
+const CompaniesAdmin = lazy(() => import('./pages/admin/CompaniesAdmin'));
+const PromotionsAdmin = lazy(() => import('./pages/admin/PromotionsAdmin'));
+const PromotionsPage = lazy(() => import('./pages/PromotionsPage'));
+const AccessDenied = lazy(() => import('./pages/AccessDenied'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const Returns = lazy(() => import('./pages/Returns'));
+const Contacts = lazy(() => import('./pages/Contacts'));
+
 const ADMIN_ROLES = ['Manager', 'Administrator', 'SuperAdmin'];
+
+// Індикатор завантаження сторінки (fallback для Suspense)
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center py-24" role="status" aria-live="polite">
+      <Spinner size="lg" />
+    </div>
+  );
+}
 function App() {
   const { t } = useTranslation();
   return (
@@ -41,7 +53,8 @@ function App() {
           <div className="App min-h-screen flex flex-col">
           <Header />
           <main className="flex-1">
-            <Routes>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/product/:id" element={<ProductPage />} />
               <Route path="/register" element={<RegisterPage />} />
@@ -105,12 +118,13 @@ function App() {
               <Route path="/contacts" element={<Contacts />} />
               {/* Перенаправлення для неіснуючих сторінок */}
               <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+              </Routes>
+            </Suspense>
           </main>
           <footer className="text-white mt-12 pt-14 px-8 pb-6 bg-[linear-gradient(135deg,#1a1a1a_0%,#2d2d2d_100%)]">
             <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 pb-8 border-b border-white/10">
               <div className="flex items-center gap-4 justify-center md:justify-start">
-                <img src={logo} alt="Герб ХДУ" className="w-[60px] h-[60px] bg-white rounded-full flex items-center justify-center object-contain shadow-[0_2px_8px_rgba(0,0,0,0.3)] p-2" />
+                <img src={logo} alt={t('common.emblem_alt')} width={60} height={60} loading="lazy" decoding="async" className="w-[60px] h-[60px] bg-white rounded-full flex items-center justify-center object-contain shadow-[0_2px_8px_rgba(0,0,0,0.3)] p-2" />
                 <div>
                   <h3 className="m-0 text-2xl">{t('footer.app_name_full')}</h3>
                   <p className="mt-1 text-[0.95rem] opacity-70">{t('footer.university_full')}</p>

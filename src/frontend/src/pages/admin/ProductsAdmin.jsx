@@ -403,7 +403,7 @@ function ProductsAdmin() {
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       {p.images && p.images.length > 0 && (
-                        <img src={buildImageUrl(p.images[0].imageURL)} alt={p.name} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }} />
+                        <img src={buildImageUrl(p.images[0].imageURL)} alt={p.name} width={40} height={40} loading="lazy" decoding="async" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }} />
                       )}
                       <div>
                         <div style={{ fontWeight: 500 }}>{p.name}</div>
@@ -561,7 +561,7 @@ function ProductsAdmin() {
                           overflow: 'hidden'
                         }}
                       >
-                        <img src={buildImageUrl(img.imageURL)} alt={t('admin.products.alt_product_image', { index: index + 1 })} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={buildImageUrl(img.imageURL)} alt={t('admin.products.alt_product_image', { index: index + 1 })} width={72} height={72} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <button type="button" onClick={() => setPrimary(img.imageId)} title={t('admin.products.make_primary')} style={imgBadgeStyle('#28a745', 'left')}>★</button>
                         <button type="button" onClick={() => removeExistingImage(img.imageId)} title={t('admin.common.delete')} style={imgBadgeStyle('#dc3545', 'right')}>✕</button>
                         {img.isPrimary && (
@@ -599,7 +599,7 @@ function ProductsAdmin() {
                           overflow: 'hidden'
                         }}
                       >
-                        <img src={URL.createObjectURL(file)} alt={t('admin.products.alt_preview', { index: index + 1 })} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={URL.createObjectURL(file)} alt={t('admin.products.alt_preview', { index: index + 1 })} width={72} height={72} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <button type="button" onClick={() => removeSelectedFile(index)} title={t('admin.products.remove')} style={imgBadgeStyle('#dc3545', 'right')}>✕</button>
                       </div>
                     ))}

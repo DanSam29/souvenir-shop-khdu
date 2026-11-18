@@ -11,9 +11,34 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 using KhduSouvenirShop.API.DTOs.Mappings;
+using Microsoft.AspNetCore.ResponseCompression;
+using System.IO.Compression;
 using Polly;
 
 var builder = WebApplication.CreateBuilder(args);
+// Стиснення відповідей (Brotli/Gzip) для зменшення обсягу даних, що передаються клієнту
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    // Стискаємо не лише статику, а й JSON/XML-відповіді API
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
+    {
+        "application/json",
+        "text/json",
+        "application/xml",
+        "text/xml"
+    });
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+{
+    options.Level = CompressionLevel.Optimal;
+});
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+{
+    options.Level = CompressionLevel.Optimal;
+});
 // Захист від занадто частого звернення до сервера
 builder.Services.AddRateLimiter(options =>
 {
@@ -219,6 +244,8 @@ using (var scope = app.Services.CreateScope())
 }
 // Глобальний обробник помилок для зручного відображення помилок
 app.UseMiddleware<ExceptionMiddleware>();
+// Стиснення відповідей (Brotli/Gzip) — має стояти якомога раніше у конвеєрі
+app.UseResponseCompression();
 // Налаштування увімкнення Swagger в режимі розробки
 if (app.Environment.IsDevelopment())
 {

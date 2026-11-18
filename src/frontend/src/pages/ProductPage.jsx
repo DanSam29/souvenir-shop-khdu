@@ -101,7 +101,7 @@ function ProductPage() {
       </Link>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 bg-white p-8 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
         <div className="product-images">
-          <img src={imageUrl} alt={displayName} className="w-full rounded-lg object-cover" />
+          <img src={imageUrl} alt={displayName} width={600} height={600} loading="eager" decoding="async" className="w-full rounded-lg object-cover" />
           {images.length > 1 && (
             <div className="flex gap-3 mt-4 flex-wrap">
               {images.map((img, index) => (
@@ -111,7 +111,7 @@ function ProductPage() {
                   className={`w-[72px] h-[72px] p-0 border-2 rounded-lg bg-none cursor-pointer overflow-hidden transition-colors hover:border-[#007bff] ${index === selectedImage ? 'border-[#007bff] shadow-[0_0_0_2px_rgba(0,123,255,0.2)]' : 'border-[#e9ecef]'}`}
                   onClick={() => setSelectedImage(index)}
                 >
-                  <img src={buildImageUrl(img.imageURL)} alt={`${displayName} ${index + 1}`} className="w-full h-full object-cover rounded-none" />
+                  <img src={buildImageUrl(img.imageURL)} alt={`${displayName} ${index + 1}`} width={72} height={72} loading="lazy" decoding="async" className="w-full h-full object-cover rounded-none" />
                 </button>
               ))}
             </div>
@@ -183,7 +183,7 @@ function ProductPage() {
                 <Link key={rel.productId} to={`/product/${rel.productId}`} className="flex flex-col bg-white border border-[#e9ecef] rounded-xl overflow-hidden no-underline transition-all shadow-[0_2px_8px_rgba(0,0,0,0.05)] hover:-translate-y-1 hover:shadow-[0_6px_16px_rgba(0,86,179,0.15)]">
                   <div className="aspect-square overflow-hidden bg-[#f8f9fa]">
                     {rel.primaryImage ? (
-                      <img src={buildImageUrl(rel.primaryImage)} alt={relName} className="w-full h-full object-cover" />
+                      <img src={buildImageUrl(rel.primaryImage)} alt={relName} width={300} height={300} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                     ) : (
                       <div className="no-image">{t('product.no_image')}</div>
                     )}
