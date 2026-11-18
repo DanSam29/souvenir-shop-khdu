@@ -1,12 +1,186 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+  }
+
+  code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+      monospace;
+  }
+
+  /* Відновлення базових розмірів заголовків, які скидає Tailwind Preflight.
+     Utility-класи в JSX (text-*, font-*, m-*) мають вищий пріоритет і перекривають ці стилі. */
+  h1 { font-size: 2em; font-weight: 700; margin: 0.67em 0; }
+  h2 { font-size: 1.5em; font-weight: 700; margin: 0.83em 0; }
+  h3 { font-size: 1.17em; font-weight: 700; margin: 1em 0; }
+  h4 { font-size: 1em; font-weight: 700; margin: 1.33em 0; }
+  h5 { font-size: 0.83em; font-weight: 700; margin: 1.67em 0; }
+  h6 { font-size: 0.67em; font-weight: 700; margin: 2.33em 0; }
 }
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+
+/* Спільні класи, які використовуються в кількох компонентах/сторінках */
+@layer components {
+  /* Обгортка сторінки */
+  .container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  /* Індикатор завантаження */
+  .loading {
+    @apply text-center p-12 text-[1.2rem] text-[#666];
+  }
+
+  .loading::before {
+    content: '⏳';
+    display: block;
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    animation: spin 2s linear infinite;
+  }
+
+  /* Повідомлення про помилку */
+  .error {
+    @apply text-center p-12 text-[1.2rem] text-[#dc3545];
+  }
+
+  .error button {
+    @apply mt-4 rounded-lg font-semibold text-white border-none cursor-pointer;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    transition: all 0.3s;
+  }
+
+  .error button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 86, 179, 0.3);
+  }
+
+  /* Навігаційне посилання "назад" */
+  .back-link {
+    @apply inline-block mb-6 text-[#007bff] no-underline hover:underline;
+  }
+
+  .back-to-catalog-btn {
+    @apply inline-block text-white no-underline rounded-lg font-semibold;
+    padding: 0.85rem 2rem;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    transition: all 0.3s;
+  }
+
+  .back-to-catalog-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 86, 179, 0.3);
+  }
+
+  /* Кнопки кошика */
+  .btn-primary,
+  .btn-secondary {
+    @apply px-8 py-[0.85rem] rounded-lg text-base font-semibold no-underline transition-transform hover:-translate-y-0.5;
+  }
+
+  .btn-primary {
+    @apply text-white;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+
+  .btn-secondary {
+    @apply bg-white text-[#667eea];
+    border: 2px solid #667eea;
+  }
+
+  /* Порожній кошик */
+  .empty-cart-page {
+    min-height: calc(100vh - 400px);
+    @apply flex items-center justify-center py-12 px-5;
+  }
+
+  .empty-cart-content {
+    @apply text-center max-w-[500px];
+  }
+
+  .guest-message,
+  .empty-cart {
+    @apply text-center bg-white rounded-xl max-w-[600px] mx-auto;
+    padding: 4rem 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .guest-message h2,
+  .empty-cart h2 {
+    margin: 1rem 0;
+    @apply text-[1.8rem] text-[#333];
+  }
+
+  .guest-message p,
+  .empty-cart p {
+    @apply text-[#666] text-[1.1rem] mb-8;
+  }
+
+  .cart-icon {
+    @apply text-[5rem] mb-4;
+  }
+
+  .guest-actions {
+    @apply flex gap-4 justify-center;
+  }
+
+  /* Заглушка зображення */
+  .no-image {
+    @apply w-full h-full bg-[#e0e0e0] flex items-center justify-center rounded-lg text-[#999] text-[0.9rem];
+  }
+
+  /* Кнопка додавання до кошика */
+  .add-to-cart-btn {
+    @apply w-full text-white border-none rounded cursor-pointer disabled:bg-[#6c757d] disabled:cursor-not-allowed;
+    padding: 1rem;
+    font-size: 1.1rem;
+    background: #28a745;
+    transition: background 0.3s;
+  }
+
+  .add-to-cart-btn:hover:not(:disabled) {
+    background: #218838;
+  }
+
+  /* Адаптивна сітка товарів: 4/3/2/1 колонки */
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 1200px) {
+  .product-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .product-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

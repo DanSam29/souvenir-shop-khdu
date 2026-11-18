@@ -30,7 +30,6 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import Returns from './pages/Returns';
 import Contacts from './pages/Contacts';
 import logo from './assets/khdu-logo.png';
-import './App.css';
 
 const ADMIN_ROLES = ['Manager', 'Administrator', 'SuperAdmin'];
 function App() {
@@ -39,9 +38,9 @@ function App() {
     <AuthProvider>
       <ToastProvider>
         <Router>
-          <div className="App">
+          <div className="App min-h-screen flex flex-col">
           <Header />
-          <main>
+          <main className="flex-1">
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/product/:id" element={<ProductPage />} />
@@ -108,36 +107,36 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
-          <footer className="footer">
-            <div className="footer-content">
-              <div className="footer-logo">
-                <img src={logo} alt="Герб ХДУ" className="footer-emblem" />
+          <footer className="text-white mt-12 pt-14 px-8 pb-6 bg-[linear-gradient(135deg,#1a1a1a_0%,#2d2d2d_100%)]">
+            <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 pb-8 border-b border-white/10">
+              <div className="flex items-center gap-4 justify-center md:justify-start">
+                <img src={logo} alt="Герб ХДУ" className="w-[60px] h-[60px] bg-white rounded-full flex items-center justify-center object-contain shadow-[0_2px_8px_rgba(0,0,0,0.3)] p-2" />
                 <div>
-                  <h3>{t('footer.app_name_full')}</h3>
-                  <p>{t('footer.university_full')}</p>
+                  <h3 className="m-0 text-2xl">{t('footer.app_name_full')}</h3>
+                  <p className="mt-1 text-[0.95rem] opacity-70">{t('footer.university_full')}</p>
                 </div>
               </div>
-              <div className="footer-info">
-                <div className="footer-section">
-                  <h4>{t('checkout.phone')} / {t('profile.email')}</h4>
-                  <p>📧 office@ksu.ks.ua</p>
-                  <p>📞 +380963102636</p>
-                  <p>🌐 <a href="https://www.kspu.edu/default.aspx?lang=uk" target="_blank" rel="noopener noreferrer">www.kspu.edu</a></p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div>
+                  <h4 className="mb-4 text-gold text-[1.15rem]">{t('checkout.phone')} / {t('profile.email')}</h4>
+                  <p className="my-2 text-base leading-normal opacity-80">📧 office@ksu.ks.ua</p>
+                  <p className="my-2 text-base leading-normal opacity-80">📞 +380963102636</p>
+                  <p className="my-2 text-base leading-normal opacity-80">🌐 <a href="https://www.kspu.edu/default.aspx?lang=uk" target="_blank" rel="noopener noreferrer" className="text-white no-underline transition-colors hover:text-gold">www.kspu.edu</a></p>
                 </div>
-                <div className="footer-section">
-                  <h4>{t('common.addresses')}</h4>
-                  <p><strong>{t('order.legal_address')}:</strong><br />{t('order.legal_street')},<br />{t('checkout.city_prefix')} {t('order.legal_city')}, 73003</p>
-                  <p><strong>{t('order.actual_address')}:</strong><br />{t('order.actual_street')},<br />{t('checkout.city_prefix')} {t('order.actual_city')}, 76018</p>
+                <div>
+                  <h4 className="mb-4 text-gold text-[1.15rem]">{t('common.addresses')}</h4>
+                  <p className="my-2 text-base leading-normal opacity-80"><strong>{t('order.legal_address')}:</strong><br />{t('order.legal_street')},<br />{t('checkout.city_prefix')} {t('order.legal_city')}, 73003</p>
+                  <p className="my-2 text-base leading-normal opacity-80"><strong>{t('order.actual_address')}:</strong><br />{t('order.actual_street')},<br />{t('checkout.city_prefix')} {t('order.actual_city')}, 76018</p>
                 </div>
-                <div className="footer-section">
-                  <h4>{t('footer.info_links') || 'Інформація'}</h4>
-                  <p><Link to="/privacy-policy">{t('legal.privacy_policy')}</Link></p>
-                  <p><Link to="/returns">{t('legal.returns')}</Link></p>
-                  <p><Link to="/contacts">{t('legal.contacts')}</Link></p>
+                <div>
+                  <h4 className="mb-4 text-gold text-[1.15rem]">{t('footer.info_links') || 'Інформація'}</h4>
+                  <p className="my-2 text-base leading-normal opacity-80"><Link to="/privacy-policy" className="text-white no-underline transition-colors hover:text-gold">{t('legal.privacy_policy')}</Link></p>
+                  <p className="my-2 text-base leading-normal opacity-80"><Link to="/returns" className="text-white no-underline transition-colors hover:text-gold">{t('legal.returns')}</Link></p>
+                  <p className="my-2 text-base leading-normal opacity-80"><Link to="/contacts" className="text-white no-underline transition-colors hover:text-gold">{t('legal.contacts')}</Link></p>
                 </div>
               </div>
             </div>
-            <div className="footer-bottom">
+            <div className="max-w-[1600px] mx-auto pt-8 text-center opacity-60 text-[0.95rem]">
               <p>© 2026 {t('footer.university_full')}. {t('footer.copyright')}</p>
             </div>
           </footer>

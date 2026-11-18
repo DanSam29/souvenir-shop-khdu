@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { cartAPI, buildImageUrl } from '../services/api';
-import './ProductCard.css';
 
 function ProductCard({ product }) {
   const { t, i18n } = useTranslation();
@@ -42,28 +41,28 @@ function ProductCard({ product }) {
     }
   };
   return (
-    <div className="product-card">
-      <Link to={`/product/${product.productId}`} className="product-link">
-        <div className="product-image">
+    <div className="flex flex-col bg-white rounded-lg overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition hover:-translate-y-1 hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)]">
+      <Link to={`/product/${product.productId}`} className="flex-1 flex flex-col no-underline text-inherit">
+        <div className="w-full h-[250px] overflow-hidden bg-[#f4f4f4]">
           {primaryImageUrl ? (
-            <img src={primaryImageUrl} alt={displayName} />
+            <img src={primaryImageUrl} alt={displayName} className="w-full h-full object-cover" />
           ) : (
             <div className="no-image">{t('product.no_image')}</div>
           )}
         </div>
-        <div className="product-info">
-          <h3 className="product-name">{displayName}</h3>
+        <div className="p-4">
+          <h3 className="m-0 mb-2 text-[1.1rem] text-[#333]">{displayName}</h3>
           {displayCategory && (
-            <p className="product-category">{displayCategory}</p>
+            <p className="m-0 mb-3 text-[#666] text-[0.9rem]">{displayCategory}</p>
           )}
-          <div className="product-price-container">
+          <div className="flex gap-2 items-center flex-wrap">
             {product.originalPrice && product.originalPrice !== product.price ? (
               <>
-                <span className="product-price-original">{product.originalPrice.toFixed(2)} {t('common.currency')}</span>
-                <span className="product-price">{product.price.toFixed(2)} {t('common.currency')}</span>
+                <span className="text-base text-[#999] line-through">{product.originalPrice.toFixed(2)} {t('common.currency')}</span>
+                <span className="text-[1.25rem] font-bold text-[#007bff]">{product.price.toFixed(2)} {t('common.currency')}</span>
               </>
             ) : (
-              <span className="product-price">{product.price.toFixed(2)} {t('common.currency')}</span>
+              <span className="text-[1.25rem] font-bold text-[#007bff]">{product.price.toFixed(2)} {t('common.currency')}</span>
             )}
           </div>
         </div>

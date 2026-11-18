@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usersAPI } from '../services/api';
-import './RegisterForm.css';
 
 function RegisterForm() {
   const { t, i18n } = useTranslation();
@@ -65,12 +64,12 @@ function RegisterForm() {
     }
   };
   return (
-    <div className="register-form-container">
-      <form onSubmit={handleSubmit} className="register-form">
-        <h2>{t('auth.register_title')}</h2>
-        {error && <div className="error-message">{error}</div>}
-        <div className="form-group">
-          <label htmlFor="firstName">{t('auth.first_name')} *</label>
+    <div className="max-w-[500px] mx-auto my-8 px-5">
+      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
+        <h2 className="m-0 mb-6 text-[#333]">{t('auth.register_title')}</h2>
+        {error && <div className="p-3 mb-4 bg-[#f8d7da] text-[#dc3545] rounded border border-[#f5c6cb]">{error}</div>}
+        <div className="mb-6">
+          <label htmlFor="firstName" className="block mb-2 font-medium text-[#333]">{t('auth.first_name')} *</label>
           <input
             type="text"
             id="firstName"
@@ -78,10 +77,11 @@ function RegisterForm() {
             value={formData.firstName}
             onChange={handleChange}
             required
+            className="w-full p-3 border border-[#ddd] rounded text-base box-border focus:outline-none focus:border-[#007bff]"
           />
         </div>
-        <div className="form-group">
-          <label htmlFor="lastName">{t('auth.last_name')} *</label>
+        <div className="mb-6">
+          <label htmlFor="lastName" className="block mb-2 font-medium text-[#333]">{t('auth.last_name')} *</label>
           <input
             type="text"
             id="lastName"
@@ -89,10 +89,11 @@ function RegisterForm() {
             value={formData.lastName}
             onChange={handleChange}
             required
+            className="w-full p-3 border border-[#ddd] rounded text-base box-border focus:outline-none focus:border-[#007bff]"
           />
         </div>
-        <div className="form-group">
-          <label htmlFor="email">{t('auth.email')} *</label>
+        <div className="mb-6">
+          <label htmlFor="email" className="block mb-2 font-medium text-[#333]">{t('auth.email')} *</label>
           <input
             type="email"
             id="email"
@@ -101,10 +102,11 @@ function RegisterForm() {
             onChange={handleChange}
             required
             placeholder="example@ksu.edu.ua"
+            className="w-full p-3 border border-[#ddd] rounded text-base box-border focus:outline-none focus:border-[#007bff]"
           />
         </div>
-        <div className="form-group">
-          <label htmlFor="password">{t('auth.password')} *</label>
+        <div className="mb-6">
+          <label htmlFor="password" className="block mb-2 font-medium text-[#333]">{t('auth.password')} *</label>
           <input
             type="password"
             id="password"
@@ -113,11 +115,12 @@ function RegisterForm() {
             onChange={handleChange}
             required
             minLength="8"
+            className="w-full p-3 border border-[#ddd] rounded text-base box-border focus:outline-none focus:border-[#007bff]"
           />
-          <small>{t('auth.password_hint')}</small>
+          <small className="block mt-1 text-[#666] text-[0.85rem]">{t('auth.password_hint')}</small>
         </div>
-        <div className="form-group">
-          <label htmlFor="phone">{t('auth.phone')}</label>
+        <div className="mb-6">
+          <label htmlFor="phone" className="block mb-2 font-medium text-[#333]">{t('auth.phone')}</label>
           <input
             type="tel"
             id="phone"
@@ -125,9 +128,10 @@ function RegisterForm() {
             value={formData.phone}
             onChange={handleChange}
             placeholder="+380501234567"
+            className="w-full p-3 border border-[#ddd] rounded text-base box-border focus:outline-none focus:border-[#007bff]"
           />
         </div>
-        <button type="submit" disabled={loading} className="submit-btn">
+        <button type="submit" disabled={loading} className="w-full p-3 bg-[#007bff] text-white border-none rounded text-base cursor-pointer transition-colors [&:enabled:hover]:bg-[#0056b3] disabled:bg-[#6c757d] disabled:cursor-not-allowed">
           {loading ? t('auth.registering') : t('auth.register_btn')}
         </button>
       </form>

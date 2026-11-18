@@ -641,7 +641,7 @@
 ## Етап 12: Frontend UX, Tailwind CSS, адаптивність, локалізація
 **Мета:** Привести інтерфейс до сучасного стану, забезпечити зручність, поліглотність та адаптив.
 
-12.1. Tailwind CSS Integration
+12.1. Tailwind CSS Integration ✅
 - Встановити tailwindcss, postcss, autoprefixer: npm install -D tailwindcss@3 postcss autoprefixer
 - Налаштувати tailwind.config.js, postcss.config.js
 - Додати directives в index.css: @tailwind base; @tailwind components; @tailwind utilities;
@@ -744,11 +744,7 @@
   - Negatives: невалідний промокод, нестача stock, некоректний логін
 - Паралельний запуск тестів
 
-13.5. Навантажувальні тести (опціонально для диплома)
-- k6 / NBomber: 500 одночасних користувачів, 50 замовлень/хвилину
-- Перевірити: API response time < 2s, DB connections не вичерпано, cache hit > 70%
-
-13.6. Безпекові тести
+13.5. Безпекові тести
 - Перевірити:
   - JWT token expire after 1 год
   - Без ролі Manager не можна викликати admin endpoints → 401/403
