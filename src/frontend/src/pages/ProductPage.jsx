@@ -3,6 +3,7 @@ import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next';
 import { productsAPI, buildImageUrl, cartAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { Skeleton, SkeletonText } from '../components/ui';
 
 function ProductPage() {
   const { id } = useParams();
@@ -63,7 +64,18 @@ function ProductPage() {
     loadProduct();
   }, [loadProduct]); // Залежність: стабільна функція loadProduct (з useCallback)
   if (loading) {
-    return <div className="loading">{t('common.loading')}</div>;
+    return (
+      <div role="status" aria-live="polite" className="max-w-[1200px] mx-auto py-8 px-5">
+        <span className="sr-only">{t('common.loading')}</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white p-8 rounded-lg">
+          <Skeleton className="h-80 w-full" />
+          <div className="flex flex-col gap-4">
+            <SkeletonText lines={5} />
+            <Skeleton className="h-10 w-40" />
+          </div>
+        </div>
+      </div>
+    );
   }
   if (error || !product) {
     return (

@@ -14,12 +14,20 @@ function LoginPage() {
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
   const { login } = useAuth();
   const navigate = useNavigate();
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
+    });
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
     });
   };
   const handleSubmit = async (e) => {
@@ -27,13 +35,11 @@ function LoginPage() {
     setLoading(true);
     setError(null);
     // Базова валідація
-    if (!formData.email.includes('@')) {
-      setError(t('auth.email_invalid'));
-      setLoading(false);
-      return;
-    }
-    if (formData.password.length < 8) {
-      setError(t('auth.password_too_short'));
+    const errors = {};
+    if (!formData.email.includes('@')) errors.email = t('auth.email_invalid');
+    if (formData.password.length < 8) errors.password = t('auth.password_too_short');
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
       setLoading(false);
       return;
     }
@@ -92,8 +98,13 @@ function LoginPage() {
               onChange={handleChange}
               required
               placeholder="example@ksu.edu.ua"
+              aria-invalid={fieldErrors.email ? true : undefined}
+              aria-describedby={fieldErrors.email ? 'email-error' : undefined}
               className="w-full p-[0.85rem] border-2 border-[#e0e0e0] rounded-lg text-base transition-colors focus:outline-none focus:border-[#667eea]"
             />
+            {fieldErrors.email && (
+              <span id="email-error" className="block mt-1 text-[0.85rem] text-[#c33]">{fieldErrors.email}</span>
+            )}
           </div>
           <div className="mb-6">
             <label htmlFor="password" className="block mb-2 font-semibold text-[#555] text-[0.95rem]">{t('auth.password')} *</label>
@@ -106,8 +117,13 @@ function LoginPage() {
               required
               minLength="8"
               placeholder={t('auth.password')}
+              aria-invalid={fieldErrors.password ? true : undefined}
+              aria-describedby={fieldErrors.password ? 'password-error' : undefined}
               className="w-full p-[0.85rem] border-2 border-[#e0e0e0] rounded-lg text-base transition-colors focus:outline-none focus:border-[#667eea]"
             />
+            {fieldErrors.password && (
+              <span id="password-error" className="block mt-1 text-[0.85rem] text-[#c33]">{fieldErrors.password}</span>
+            )}
           </div>
           <div className="mb-5">
             <label htmlFor="remember" className="flex items-center gap-2 m-0 font-medium cursor-pointer">

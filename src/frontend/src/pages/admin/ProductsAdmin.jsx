@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { productsAPI, categoriesAPI, adminProductsAPI, buildImageUrl } from '../../services/api';
+import { TableSkeleton } from '../../components/ui';
 
 const ADMIN_ROLES = ['Manager', 'Administrator', 'SuperAdmin'];
 
@@ -323,7 +324,12 @@ function ProductsAdmin() {
   const selectedParentCategory = categoriesTree.find((c) => c.categoryId === Number(form.parentCategoryId));
   const subCategories = selectedParentCategory?.subCategories || [];
 
-  if (loading || pageLoading) return <div style={{ padding: 20 }}>Завантаження...</div>;
+  if (loading || pageLoading) return (
+    <div role="status" aria-live="polite" style={{ padding: 20 }}>
+      <span className="sr-only">Завантаження...</span>
+      <TableSkeleton rows={6} cols={6} />
+    </div>
+  );
   if (error) return <div style={{ padding: 20 }}>{error}</div>;
 
   return (

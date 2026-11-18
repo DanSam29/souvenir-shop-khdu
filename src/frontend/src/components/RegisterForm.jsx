@@ -15,10 +15,18 @@ function RegisterForm() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
+    });
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
     });
   };
   const handleSubmit = async (e) => {
@@ -26,13 +34,11 @@ function RegisterForm() {
     setLoading(true);
     setError(null);
     // Базова валідація
-    if (!formData.email.includes('@')) {
-      setError(t('auth.email_invalid'));
-      setLoading(false);
-      return;
-    }
-    if (formData.password.length < 8) {
-      setError(t('auth.password_too_short'));
+    const errors = {};
+    if (!formData.email.includes('@')) errors.email = t('auth.email_invalid');
+    if (formData.password.length < 8) errors.password = t('auth.password_too_short');
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
       setLoading(false);
       return;
     }
@@ -102,8 +108,13 @@ function RegisterForm() {
             onChange={handleChange}
             required
             placeholder="example@ksu.edu.ua"
+            aria-invalid={fieldErrors.email ? true : undefined}
+            aria-describedby={fieldErrors.email ? 'email-error' : undefined}
             className="w-full p-3 border border-[#ddd] rounded text-base box-border focus:outline-none focus:border-[#007bff]"
           />
+          {fieldErrors.email && (
+            <span id="email-error" className="block mt-1 text-[0.85rem] text-[#dc3545]">{fieldErrors.email}</span>
+          )}
         </div>
         <div className="mb-6">
           <label htmlFor="password" className="block mb-2 font-medium text-[#333]">{t('auth.password')} *</label>
@@ -115,8 +126,13 @@ function RegisterForm() {
             onChange={handleChange}
             required
             minLength="8"
+            aria-invalid={fieldErrors.password ? true : undefined}
+            aria-describedby={fieldErrors.password ? 'password-error' : undefined}
             className="w-full p-3 border border-[#ddd] rounded text-base box-border focus:outline-none focus:border-[#007bff]"
           />
+          {fieldErrors.password && (
+            <span id="password-error" className="block mt-1 text-[0.85rem] text-[#dc3545]">{fieldErrors.password}</span>
+          )}
           <small className="block mt-1 text-[#666] text-[0.85rem]">{t('auth.password_hint')}</small>
         </div>
         <div className="mb-6">

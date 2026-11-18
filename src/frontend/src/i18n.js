@@ -18,7 +18,14 @@ i18n
   .init({
     resources,
     fallbackLng: 'ua',
+    supportedLngs: ['ua', 'en'],
     debug: false,
+    detection: {
+      // Зберігаємо вибір мови у localStorage, щоб він зберігався між сесіями
+      order: ['localStorage', 'navigator'],
+      caches: ['localStorage'],
+      lookupLocalStorage: 'i18nextLng'
+    },
     interpolation: {
       escapeValue: false, // not needed for react as it escapes by default
     }

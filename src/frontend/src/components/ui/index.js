@@ -6,5 +6,6 @@ export { default as Dropdown } from './Dropdown';
 export { default as Card } from './Card';
 export { default as Badge } from './Badge';
 export { default as Spinner, ProgressBar } from './Spinner';
+export { Skeleton, SkeletonText, ProductCardSkeleton, TableSkeleton } from './Skeleton';
 export { Tabs, Accordion } from './Tabs';
 export { ToastProvider, useToast } from './Toast';

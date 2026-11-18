@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ProductCard from './ProductCard';
+import { ProductCardSkeleton } from './ui';
 import { productsAPI, categoriesAPI } from '../services/api';
 
 const PAGE_SIZE = 12;
@@ -208,7 +209,16 @@ function ProductList() {
     });
   };
   if (loading && products.length === 0) {
-    return <div className="loading">{t('common.loading')}</div>;
+    return (
+      <div role="status" aria-live="polite">
+        <span className="sr-only">{t('common.loading')}</span>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <ProductCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
   }
   if (error) {
     return (
@@ -312,7 +322,10 @@ function ProductList() {
             </div>
           </div>
           {paginatedProducts.length === 0 ? (
-            <p className="text-center p-12 text-[#666] text-[1.1rem]">{t('common.no_results')}</p>
+            <div className="text-center p-12">
+              <div className="mb-3 text-5xl" aria-hidden="true">🔍</div>
+              <p className="text-[#595959] text-[1.1rem]">{t('common.no_results')}</p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {paginatedProducts.map(product => (

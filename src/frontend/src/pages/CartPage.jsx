@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { cartAPI, buildImageUrl } from '../services/api';
+import { Skeleton, SkeletonText } from '../components/ui';
 
 function CartPage() {
   const { t, i18n } = useTranslation();
@@ -84,7 +85,17 @@ function CartPage() {
   if (loading) {
     return (
       <div className="min-h-[80vh] p-8 bg-[#f5f5f5]">
-        <div className="loading">{t('common.loading')}</div>
+        <div role="status" aria-live="polite" className="max-w-[1200px] mx-auto flex flex-col gap-4">
+          <span className="sr-only">{t('common.loading')}</span>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-6 p-6 bg-white rounded-lg">
+              <Skeleton className="w-6 h-6 flex-shrink-0" />
+              <div className="flex-1">
+                <SkeletonText lines={2} />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

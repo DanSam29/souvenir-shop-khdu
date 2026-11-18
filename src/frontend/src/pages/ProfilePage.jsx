@@ -422,6 +422,7 @@ function ProfilePage() {
         <div>
           {orders.length === 0 ? (
             <div style={{ ...cardStyle, textAlign: 'center' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: 8 }} aria-hidden="true">📦</div>
               <p style={{ color: '#595959' }}>{t('profile.no_orders')}</p>
               <Link to="/" style={{ color: '#007bff' }}>{t('profile.go_shopping')}</Link>
             </div>
@@ -515,7 +516,10 @@ function ProfilePage() {
           )}
 
           {addresses.length === 0 && !showAddressForm ? (
-            <p style={{ color: '#595959' }}>{t('profile.no_addresses')}</p>
+            <div>
+              <div style={{ fontSize: '2.5rem', marginBottom: 8 }} aria-hidden="true">📍</div>
+              <p style={{ color: '#595959' }}>{t('profile.no_addresses')}</p>
+            </div>
           ) : (
             <div style={{ display: 'grid', gap: 12 }}>
               {addresses.map(a => (
@@ -552,7 +556,12 @@ function ProfilePage() {
         <div style={{ display: 'grid', gap: 20 }}>
           <div style={cardStyle}>
             <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>{t('profile.discounts_available')}</h2>
-            {promos.length === 0 ? <p style={{ color: '#595959' }}>{t('profile.no_discounts')}</p> : (
+            {promos.length === 0 ? (
+              <div>
+                <div style={{ fontSize: '2.5rem', marginBottom: 8 }} aria-hidden="true">🎁</div>
+                <p style={{ color: '#595959' }}>{t('profile.no_discounts')}</p>
+              </div>
+            ) : (
               <ul style={{ listStyle: 'none', padding: 0 }}>
                 {promos.map(p => {
                   const displayName = (isEn && p.nameEn) ? p.nameEn : p.name;
@@ -570,7 +579,12 @@ function ProfilePage() {
           </div>
           <div style={cardStyle}>
             <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>{t('profile.discounts_history')}</h2>
-            {promoHistory.length === 0 ? <p style={{ color: '#595959' }}>{t('profile.no_discounts_history')}</p> : (
+            {promoHistory.length === 0 ? (
+              <div>
+                <div style={{ fontSize: '2.5rem', marginBottom: 8 }} aria-hidden="true">🎁</div>
+                <p style={{ color: '#595959' }}>{t('profile.no_discounts_history')}</p>
+              </div>
+            ) : (
               <ul style={{ listStyle: 'none', padding: 0 }}>
                 {promoHistory.map(h => {
                   const displayName = (isEn && h.nameEn) ? h.nameEn : h.name;

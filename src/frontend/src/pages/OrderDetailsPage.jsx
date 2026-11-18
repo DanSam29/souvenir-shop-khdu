@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ordersAPI, novaPoshtaAPI } from '../services/api';
+import { Skeleton, SkeletonText } from '../components/ui';
 
 // Лінійний життєвий цикл замовлення (без врахування скасування)
 const ORDER_STEPS = ['Processing', 'Paid', 'Shipped', 'Delivered'];
@@ -103,7 +104,17 @@ function OrderDetailsPage() {
     return () => { active = false; };
   }, [order]);
 
-  if (loading) return <div className="loading">{t('common.loading')}</div>;
+  if (loading) {
+    return (
+      <div role="status" aria-live="polite" style={{ maxWidth: 800, margin: '40px auto', padding: '0 20px' }}>
+        <span className="sr-only">{t('common.loading')}</span>
+        <Skeleton className="h-6 w-48" />
+        <div style={{ marginTop: 16 }}>
+          <SkeletonText lines={4} />
+        </div>
+      </div>
+    );
+  }
   if (error) return <div className="error">{error}</div>;
   if (!order) return <div>{t('order.not_found')}</div>;
 

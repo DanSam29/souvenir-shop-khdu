@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ordersAPI } from '../services/api';
+import { TableSkeleton } from '../components/ui';
 
 // Публічна сторінка відстеження Нової Пошти за номером ТТН
 const npTrackingUrl = (ttn) => `https://novaposhta.ua/tracking/?cargo_number=${encodeURIComponent(ttn)}`;
@@ -69,7 +70,12 @@ function AdminOrdersPage() {
     }
     submitStatusChange(trackingModalOrderId, 'Shipped', value);
   };
-  if (loading) return <div className="loading">Завантаження...</div>;
+  if (loading) return (
+    <div role="status" aria-live="polite" style={{ padding: 20, maxWidth: 1400, margin: '0 auto' }}>
+      <span className="sr-only">Завантаження...</span>
+      <TableSkeleton rows={6} cols={5} />
+    </div>
+  );
   return (
     <div className="admin-orders" style={{ padding: 20, maxWidth: 1400, margin: '0 auto' }}>
       <div style={{ marginBottom: 20 }}>
