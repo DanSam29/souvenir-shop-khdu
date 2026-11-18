@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider } from './contexts/AuthContext';
-import { ToastProvider } from './components/Toast';
+import { ToastProvider } from './components/ui/Toast';
 import Header from './components/Header';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';

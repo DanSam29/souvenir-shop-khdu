@@ -649,7 +649,7 @@
 - Налаштувати теми (світла/темна опціонально)
 - Переписати наявні CSS класи (.css файли) на Tailwind utility класи; видалити застарілі CSS
 
-12.2. UI Components Library
+12.2. UI Components Library ✅
 - Використати готові компоненти або створити:
   - Button (primary, secondary, danger, outlined, disabled, loading states)
   - Input, Textarea, Select, Checkbox, Radio

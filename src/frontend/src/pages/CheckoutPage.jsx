@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../components/Toast';
+import { useToast } from '../components/ui/Toast';
 import { cartAPI, ordersAPI, usersAPI, novaPoshtaAPI, featuresAPI, promotionsAPI } from '../services/api';
 
 const TOTAL_STEPS = 4;

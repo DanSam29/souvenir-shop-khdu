@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { promotionsAPI } from '../../services/api';
-import { useToast } from '../../components/Toast';
+import { useToast } from '../../components/ui/Toast';
 
 // Дозволені значення (узгоджено з бекендом: PromotionValidators / PromotionService)
 const PROMO_TYPES = ['PERCENTAGE', 'FIXED_AMOUNT', 'SPECIAL_PRICE'];
