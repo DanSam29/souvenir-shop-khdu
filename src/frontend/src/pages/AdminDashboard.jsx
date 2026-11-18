@@ -124,7 +124,12 @@ const statCardStyle = {
   padding: 20,
   borderRadius: 12,
   boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-  textAlign: 'center'
+  textAlign: 'center',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8
 };
 const integrationCardStyle = (isActive) => ({
   background: '#fff',
