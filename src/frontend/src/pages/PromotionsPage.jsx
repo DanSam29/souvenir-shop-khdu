@@ -37,12 +37,12 @@ function PromotionsPage() {
   return (
     <div className="promotions-page" style={{ maxWidth: 1000, margin: '40px auto', padding: '0 20px' }}>
       <h1 style={{ marginBottom: 10 }}>{t('promotions.title')}</h1>
-      <p style={{ color: '#888', marginBottom: 30 }}>{t('promotions.subtitle')}</p>
+      <p style={{ color: '#595959', marginBottom: 30 }}>{t('promotions.subtitle')}</p>
 
       {error && <div className="error">{error}</div>}
 
       {!error && promotions.length === 0 && (
-        <div style={{ background: '#fff', padding: 30, borderRadius: 12, textAlign: 'center', color: '#888', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+        <div style={{ background: '#fff', padding: 30, borderRadius: 12, textAlign: 'center', color: '#595959', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
           {t('promotions.empty')}
         </div>
       )}
@@ -72,7 +72,7 @@ function PromotionsPage() {
                 </span>
               </div>
               {description && <p style={{ margin: 0, color: '#555', fontSize: '0.95rem' }}>{description}</p>}
-              <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', color: '#888', fontSize: '0.85rem' }}>
+              <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', color: '#595959', fontSize: '0.85rem' }}>
                 <span>{t(`promotions.target_${p.targetType}`, { defaultValue: p.targetType })}</span>
                 {p.endDate && (
                   <span>{t('promotions.valid_until')}: {new Date(p.endDate).toLocaleDateString()}</span>

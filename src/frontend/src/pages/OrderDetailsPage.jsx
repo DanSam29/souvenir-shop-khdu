@@ -40,7 +40,7 @@ function StatusProgress({ status, t }) {
               }}>
                 {done ? '✓' : ''}
               </div>
-              <small style={{ fontSize: '0.75rem', textAlign: 'center', color: done ? '#28a745' : '#999' }}>
+              <small style={{ fontSize: '0.75rem', textAlign: 'center', color: done ? '#28a745' : '#595959' }}>
                 {t(`order.status_${step}`)}
               </small>
             </div>
@@ -196,9 +196,9 @@ function OrderDetailsPage() {
                 <div>
                   <div style={{ fontWeight: 600 }}>
                     {t(`order.status_${h.newStatus}`, { defaultValue: h.newStatus })}
-                    {h.oldStatus && <span style={{ color: '#999', fontWeight: 400 }}> ({t(`order.status_${h.oldStatus}`, { defaultValue: h.oldStatus })} → )</span>}
+                    {h.oldStatus && <span style={{ color: '#595959', fontWeight: 400 }}> ({t(`order.status_${h.oldStatus}`, { defaultValue: h.oldStatus })} → )</span>}
                   </div>
-                  <div style={{ color: '#888', fontSize: '0.85rem' }}>{new Date(h.timestamp).toLocaleString()}</div>
+                  <div style={{ color: '#595959', fontSize: '0.85rem' }}>{new Date(h.timestamp).toLocaleString()}</div>
                   {h.comment && <div style={{ color: '#666', fontSize: '0.85rem' }}>{h.comment}</div>}
                 </div>
               </li>
@@ -226,7 +226,7 @@ function OrderDetailsPage() {
                 <td>
                   {item.unitDiscount > 0 ? (
                     <>
-                      <span style={{ textDecoration: 'line-through', color: '#999', marginRight: 6 }}>{item.originalPrice.toFixed(2)}</span>
+                      <span style={{ textDecoration: 'line-through', color: '#595959', marginRight: 6 }}>{item.originalPrice.toFixed(2)}</span>
                       <span style={{ fontWeight: 600 }}>{item.finalPrice.toFixed(2)}</span>
                     </>
                   ) : (
@@ -234,7 +234,7 @@ function OrderDetailsPage() {
                   )}{' '}
                   {t('common.currency')}
                 </td>
-                <td style={{ color: item.lineDiscount > 0 ? '#28a745' : '#999' }}>
+                <td style={{ color: item.lineDiscount > 0 ? '#28a745' : '#595959' }}>
                   {item.lineDiscount > 0 ? `-${item.lineDiscount.toFixed(2)} ${t('common.currency')}` : '—'}
                 </td>
                 <td>{item.quantity}</td>

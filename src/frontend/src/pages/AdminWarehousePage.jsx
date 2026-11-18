@@ -135,46 +135,46 @@ function IncomingTab({ products, companies }) {
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label style={labelStyle}>Товар *</label>
-                <select required value={form.productId} style={inputStyle}
+                <label htmlFor="incoming-product" style={labelStyle}>Товар *</label>
+                <select id="incoming-product" required value={form.productId} style={inputStyle}
                   onChange={(e) => setForm({ ...form, productId: e.target.value })}>
                   <option value="">— Оберіть товар —</option>
                   {products.map((p) => <option key={p.productId} value={p.productId}>{p.name}</option>)}
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Кількість *</label>
-                <input type="number" min="1" required value={form.quantity} style={inputStyle}
+                <label htmlFor="incoming-quantity" style={labelStyle}>Кількість *</label>
+                <input id="incoming-quantity" type="number" min="1" required value={form.quantity} style={inputStyle}
                   onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
               </div>
               <div>
-                <label style={labelStyle}>Ціна закупівлі, ₴ *</label>
-                <input type="number" min="0.01" step="0.01" required value={form.purchasePrice} style={inputStyle}
+                <label htmlFor="incoming-purchase-price" style={labelStyle}>Ціна закупівлі, ₴ *</label>
+                <input id="incoming-purchase-price" type="number" min="0.01" step="0.01" required value={form.purchasePrice} style={inputStyle}
                   onChange={(e) => setForm({ ...form, purchasePrice: e.target.value })} />
               </div>
               <div>
-                <label style={labelStyle}>Причина *</label>
-                <select value={form.reason} style={inputStyle}
+                <label htmlFor="incoming-reason" style={labelStyle}>Причина *</label>
+                <select id="incoming-reason" value={form.reason} style={inputStyle}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}>
                   {INCOMING_REASONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Компанія-постачальник {companyRequired ? '*' : '(необов’язково)'}</label>
-                <select required={companyRequired} value={form.companyId} style={inputStyle}
+                <label htmlFor="incoming-company" style={labelStyle}>Компанія-постачальник {companyRequired ? '*' : '(необов’язково)'}</label>
+                <select id="incoming-company" required={companyRequired} value={form.companyId} style={inputStyle}
                   onChange={(e) => setForm({ ...form, companyId: e.target.value })}>
                   <option value="">— Оберіть компанію —</option>
                   {companies.filter((c) => c.isActive).map((c) => <option key={c.companyId} value={c.companyId}>{c.name}</option>)}
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Дата документа</label>
-                <input type="date" value={form.documentDate} style={inputStyle}
+                <label htmlFor="incoming-document-date" style={labelStyle}>Дата документа</label>
+                <input id="incoming-document-date" type="date" value={form.documentDate} style={inputStyle}
                   onChange={(e) => setForm({ ...form, documentDate: e.target.value })} />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={labelStyle}>Примітки</label>
-                <textarea rows={2} value={form.notes} style={inputStyle}
+                <label htmlFor="incoming-notes" style={labelStyle}>Примітки</label>
+                <textarea id="incoming-notes" rows={2} value={form.notes} style={inputStyle}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
             </div>
@@ -317,41 +317,41 @@ function OutgoingTab({ products, companies }) {
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label style={labelStyle}>Товар *</label>
-                <select required value={form.productId} style={inputStyle}
+                <label htmlFor="outgoing-product" style={labelStyle}>Товар *</label>
+                <select id="outgoing-product" required value={form.productId} style={inputStyle}
                   onChange={(e) => setForm({ ...form, productId: e.target.value })}>
                   <option value="">— Оберіть товар —</option>
                   {products.map((p) => <option key={p.productId} value={p.productId}>{p.name}</option>)}
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Кількість *</label>
-                <input type="number" min="1" required value={form.quantity} style={inputStyle}
+                <label htmlFor="outgoing-quantity" style={labelStyle}>Кількість *</label>
+                <input id="outgoing-quantity" type="number" min="1" required value={form.quantity} style={inputStyle}
                   onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
               </div>
               <div>
-                <label style={labelStyle}>Причина *</label>
-                <select value={form.reason} style={inputStyle}
+                <label htmlFor="outgoing-reason" style={labelStyle}>Причина *</label>
+                <select id="outgoing-reason" value={form.reason} style={inputStyle}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}>
                   {OUTGOING_REASONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Компанія {companyRequired ? '*' : '(необов’язково)'}</label>
-                <select required={companyRequired} value={form.companyId} style={inputStyle}
+                <label htmlFor="outgoing-company" style={labelStyle}>Компанія {companyRequired ? '*' : '(необов’язково)'}</label>
+                <select id="outgoing-company" required={companyRequired} value={form.companyId} style={inputStyle}
                   onChange={(e) => setForm({ ...form, companyId: e.target.value })}>
                   <option value="">— Оберіть компанію —</option>
                   {companies.filter((c) => c.isActive).map((c) => <option key={c.companyId} value={c.companyId}>{c.name}</option>)}
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Дата документа</label>
-                <input type="date" value={form.documentDate} style={inputStyle}
+                <label htmlFor="outgoing-document-date" style={labelStyle}>Дата документа</label>
+                <input id="outgoing-document-date" type="date" value={form.documentDate} style={inputStyle}
                   onChange={(e) => setForm({ ...form, documentDate: e.target.value })} />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={labelStyle}>Примітки</label>
-                <textarea rows={2} value={form.notes} style={inputStyle}
+                <label htmlFor="outgoing-notes" style={labelStyle}>Примітки</label>
+                <textarea id="outgoing-notes" rows={2} value={form.notes} style={inputStyle}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
             </div>
@@ -391,7 +391,7 @@ function OutgoingTab({ products, companies }) {
                   <td style={tdStyle}>{toDateInput(doc.documentDate)}</td>
                   <td style={tdStyle}>
                     {doc.reason === 'Order' ? (
-                      <span style={{ color: '#888', fontSize: '0.85rem' }}>створено системою</span>
+                      <span style={{ color: '#595959', fontSize: '0.85rem' }}>створено системою</span>
                     ) : (
                       <>
                         <button type="button" style={{ ...btnSmall, border: '1px solid #007bff', background: 'transparent', color: '#007bff' }}
@@ -596,38 +596,38 @@ function CompaniesTab({ companies, reloadCompanies }) {
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label style={labelStyle}>Назва компанії *</label>
-                <input type="text" required value={form.name} style={inputStyle}
+                <label htmlFor="warehouse-company-name" style={labelStyle}>Назва компанії *</label>
+                <input id="warehouse-company-name" type="text" required value={form.name} style={inputStyle}
                   onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
               <div>
-                <label style={labelStyle}>Назва (EN)</label>
-                <input type="text" value={form.nameEn} style={inputStyle}
+                <label htmlFor="warehouse-company-name-en" style={labelStyle}>Назва (EN)</label>
+                <input id="warehouse-company-name-en" type="text" value={form.nameEn} style={inputStyle}
                   onChange={(e) => setForm({ ...form, nameEn: e.target.value })} />
               </div>
               <div>
-                <label style={labelStyle}>Контактна особа</label>
-                <input type="text" value={form.contactPerson} style={inputStyle}
+                <label htmlFor="warehouse-company-contact" style={labelStyle}>Контактна особа</label>
+                <input id="warehouse-company-contact" type="text" value={form.contactPerson} style={inputStyle}
                   onChange={(e) => setForm({ ...form, contactPerson: e.target.value })} />
               </div>
               <div>
-                <label style={labelStyle}>Телефон</label>
-                <input type="text" placeholder="+380XXXXXXXXX" value={form.phone} style={inputStyle}
+                <label htmlFor="warehouse-company-phone" style={labelStyle}>Телефон</label>
+                <input id="warehouse-company-phone" type="text" placeholder="+380XXXXXXXXX" value={form.phone} style={inputStyle}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               </div>
               <div>
-                <label style={labelStyle}>Email</label>
-                <input type="email" value={form.email} style={inputStyle}
+                <label htmlFor="warehouse-company-email" style={labelStyle}>Email</label>
+                <input id="warehouse-company-email" type="email" value={form.email} style={inputStyle}
                   onChange={(e) => setForm({ ...form, email: e.target.value })} />
               </div>
               <div>
-                <label style={labelStyle}>Адреса</label>
-                <input type="text" value={form.address} style={inputStyle}
+                <label htmlFor="warehouse-company-address" style={labelStyle}>Адреса</label>
+                <input id="warehouse-company-address" type="text" value={form.address} style={inputStyle}
                   onChange={(e) => setForm({ ...form, address: e.target.value })} />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={labelStyle}>Примітки</label>
-                <textarea rows={2} value={form.notes} style={inputStyle}
+                <label htmlFor="warehouse-company-notes" style={labelStyle}>Примітки</label>
+                <textarea id="warehouse-company-notes" rows={2} value={form.notes} style={inputStyle}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
               <div>

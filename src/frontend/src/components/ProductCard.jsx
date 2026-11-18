@@ -58,7 +58,7 @@ function ProductCard({ product }) {
           <div className="flex gap-2 items-center flex-wrap">
             {product.originalPrice && product.originalPrice !== product.price ? (
               <>
-                <span className="text-base text-[#999] line-through">{product.originalPrice.toFixed(2)} {t('common.currency')}</span>
+                <span className="text-base text-[#595959] line-through">{product.originalPrice.toFixed(2)} {t('common.currency')}</span>
                 <span className="text-[1.25rem] font-bold text-[#007bff]">{product.price.toFixed(2)} {t('common.currency')}</span>
               </>
             ) : (

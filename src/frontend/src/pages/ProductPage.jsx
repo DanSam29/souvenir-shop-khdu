@@ -111,7 +111,7 @@ function ProductPage() {
           <div className="flex justify-between items-center mb-8 pb-6 border-b border-[#e9ecef] gap-4 flex-wrap">
             {product.originalPrice && product.originalPrice !== product.price ? (
               <>
-                <span className="text-[1.25rem] text-[#999] line-through">{product.originalPrice.toFixed(2)} {t('common.currency')}</span>
+                <span className="text-[1.25rem] text-[#595959] line-through">{product.originalPrice.toFixed(2)} {t('common.currency')}</span>
                 <span className="text-[2rem] font-bold text-[#007bff]">{product.price.toFixed(2)} {t('common.currency')}</span>
               </>
             ) : (
@@ -181,7 +181,7 @@ function ProductPage() {
                     <div className="flex items-baseline gap-2">
                       {rel.originalPrice && rel.originalPrice !== rel.price ? (
                         <>
-                          <span className="text-[1.25rem] text-[#999] line-through">{rel.originalPrice.toFixed(2)} {t('common.currency')}</span>
+                          <span className="text-[1.25rem] text-[#595959] line-through">{rel.originalPrice.toFixed(2)} {t('common.currency')}</span>
                           <span className="text-[2rem] font-bold text-[#007bff]">{rel.price.toFixed(2)} {t('common.currency')}</span>
                         </>
                       ) : (

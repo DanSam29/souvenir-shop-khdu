@@ -95,7 +95,7 @@ function AdminOrdersPage() {
             {orders.map(o => (
               <tr key={o.orderId} style={{ borderBottom: '1px solid #eee' }}>
                 <td style={tdStyle}>{o.orderNumber}</td>
-                <td style={tdStyle}>{o.userName}<br/><small style={{ color: '#888' }}>{o.userEmail}</small></td>
+                <td style={tdStyle}>{o.userName}<br/><small style={{ color: '#595959' }}>{o.userEmail}</small></td>
                 <td style={tdStyle}>{o.totalAmount.toFixed(2)} грн</td>
                 <td style={tdStyle}>{new Date(o.createdAt).toLocaleDateString()}</td>
                 <td style={tdStyle}>
@@ -170,10 +170,11 @@ function AdminOrdersPage() {
             <p style={{ color: '#666', fontSize: '0.9rem' }}>
               Для переходу в статус «Shipped» вкажіть номер ТТН Nova Poshta.
             </p>
-            <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
+            <label htmlFor="order-ttn" style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
               Номер ТТН
             </label>
             <input
+              id="order-ttn"
               type="text"
               value={trackingValue}
               onChange={(e) => {

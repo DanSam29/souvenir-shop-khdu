@@ -108,8 +108,9 @@ function CompaniesAdmin() {
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Назва компанії *</label>
+                <label htmlFor="company-name" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Назва компанії *</label>
                 <input
+                  id="company-name"
                   type="text"
                   required
                   value={form.name}
@@ -118,8 +119,9 @@ function CompaniesAdmin() {
                 />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Контактна особа</label>
+                <label htmlFor="company-contact" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Контактна особа</label>
                 <input
+                  id="company-contact"
                   type="text"
                   value={form.contactPerson}
                   onChange={(e) => setForm({ ...form, contactPerson: e.target.value })}
@@ -127,8 +129,9 @@ function CompaniesAdmin() {
                 />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Телефон</label>
+                <label htmlFor="company-phone" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Телефон</label>
                 <input
+                  id="company-phone"
                   type="text"
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -137,8 +140,9 @@ function CompaniesAdmin() {
                 />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Email</label>
+                <label htmlFor="company-email" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Email</label>
                 <input
+                  id="company-email"
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -146,8 +150,9 @@ function CompaniesAdmin() {
                 />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Адреса</label>
+                <label htmlFor="company-address" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Адреса</label>
                 <input
+                  id="company-address"
                   type="text"
                   value={form.address}
                   onChange={(e) => setForm({ ...form, address: e.target.value })}
@@ -155,8 +160,9 @@ function CompaniesAdmin() {
                 />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Примітки</label>
+                <label htmlFor="company-notes" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Примітки</label>
                 <textarea
+                  id="company-notes"
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   rows={3}

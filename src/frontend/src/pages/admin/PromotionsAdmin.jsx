@@ -346,7 +346,7 @@ function PromotionsAdmin() {
       {loading ? (
         <div>{t('common.loading')}</div>
       ) : items.length === 0 ? (
-        <div style={{ color: '#888' }}>{t('admin_promotions.empty')}</div>
+        <div style={{ color: '#595959' }}>{t('admin_promotions.empty')}</div>
       ) : (
         <div style={{ overflowX: 'auto', background: '#fff', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
@@ -372,7 +372,7 @@ function PromotionsAdmin() {
                   <td style={td}>{p.priority}</td>
                   <td style={td}>{p.currentUsage} / {p.usageLimit ?? '∞'}</td>
                   <td style={td}>
-                    <span style={{ color: p.isActive ? '#28a745' : '#999', fontWeight: 600 }}>
+                    <span style={{ color: p.isActive ? '#28a745' : '#595959', fontWeight: 600 }}>
                       {p.isActive ? t('admin_promotions.active') : t('admin_promotions.inactive')}
                     </span>
                   </td>
@@ -405,10 +405,11 @@ function PromotionsAdmin() {
 }
 
 function Field({ label, children }) {
+  const id = React.useId();
   return (
     <div>
-      <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{label}</label>
-      {children}
+      <label htmlFor={id} style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{label}</label>
+      {React.isValidElement(children) ? React.cloneElement(children, { id }) : children}
     </div>
   );
 }
@@ -416,7 +417,7 @@ function Field({ label, children }) {
 function StatBox({ label, value }) {
   return (
     <div style={{ background: '#fff', padding: 12, borderRadius: 8, border: '1px solid #eee' }}>
-      <div style={{ color: '#888', fontSize: '0.85rem' }}>{label}</div>
+      <div style={{ color: '#595959', fontSize: '0.85rem' }}>{label}</div>
       <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{value}</div>
     </div>
   );

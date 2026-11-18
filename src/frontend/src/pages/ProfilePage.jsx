@@ -65,7 +65,7 @@ function StatusProgress({ status, t }) {
               }}>
                 {done ? '✓' : ''}
               </div>
-              <small style={{ fontSize: '0.7rem', textAlign: 'center', color: done ? '#28a745' : '#999' }}>
+              <small style={{ fontSize: '0.7rem', textAlign: 'center', color: done ? '#28a745' : '#595959' }}>
                 {t(`order.status_${step}`)}
               </small>
             </div>
@@ -393,9 +393,9 @@ function ProfilePage() {
             </div>
           ) : (
             <form onSubmit={handleUpdateProfile}>
-              <input type="text" value={formData.firstName} onChange={e => setForm({ ...formData, firstName: e.target.value })} placeholder={t('profile.first_name')} style={inputStyle} required />
-              <input type="text" value={formData.lastName} onChange={e => setForm({ ...formData, lastName: e.target.value })} placeholder={t('profile.last_name')} style={inputStyle} required />
-              <input type="text" value={formData.phone} onChange={e => setForm({ ...formData, phone: e.target.value })} placeholder={t('profile.phone')} style={inputStyle} />
+              <input type="text" aria-label={t('profile.first_name')} value={formData.firstName} onChange={e => setForm({ ...formData, firstName: e.target.value })} placeholder={t('profile.first_name')} style={inputStyle} required />
+              <input type="text" aria-label={t('profile.last_name')} value={formData.lastName} onChange={e => setForm({ ...formData, lastName: e.target.value })} placeholder={t('profile.last_name')} style={inputStyle} required />
+              <input type="text" aria-label={t('profile.phone')} value={formData.phone} onChange={e => setForm({ ...formData, phone: e.target.value })} placeholder={t('profile.phone')} style={inputStyle} />
               <div style={{ display: 'flex', gap: 10 }}>
                 <button type="submit" style={{ flex: 1, padding: 10, borderRadius: 6, border: 'none', background: '#28a745', color: '#fff', cursor: 'pointer' }}>{t('common.save')}</button>
                 <button type="button" onClick={() => setEditing(false)} style={{ flex: 1, padding: 10, borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}>{t('common.cancel')}</button>
@@ -410,8 +410,8 @@ function ProfilePage() {
         <div style={cardStyle}>
           <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>{t('profile.change_password')}</h2>
           <form onSubmit={handleChangePassword} style={{ maxWidth: 420 }}>
-            <input type="password" value={passData.oldPassword} onChange={e => setPass({ ...passData, oldPassword: e.target.value })} placeholder={t('profile.old_password')} style={inputStyle} required />
-            <input type="password" value={passData.newPassword} onChange={e => setPass({ ...passData, newPassword: e.target.value })} placeholder={t('profile.new_password')} style={inputStyle} minLength={8} required />
+            <input type="password" aria-label={t('profile.old_password')} value={passData.oldPassword} onChange={e => setPass({ ...passData, oldPassword: e.target.value })} placeholder={t('profile.old_password')} style={inputStyle} required />
+            <input type="password" aria-label={t('profile.new_password')} value={passData.newPassword} onChange={e => setPass({ ...passData, newPassword: e.target.value })} placeholder={t('profile.new_password')} style={inputStyle} minLength={8} required />
             <button type="submit" style={{ width: '100%', padding: 10, borderRadius: 6, border: 'none', background: '#666', color: '#fff', cursor: 'pointer' }}>{t('profile.update_password')}</button>
           </form>
         </div>
@@ -422,7 +422,7 @@ function ProfilePage() {
         <div>
           {orders.length === 0 ? (
             <div style={{ ...cardStyle, textAlign: 'center' }}>
-              <p style={{ color: '#888' }}>{t('profile.no_orders')}</p>
+              <p style={{ color: '#595959' }}>{t('profile.no_orders')}</p>
               <Link to="/" style={{ color: '#007bff' }}>{t('profile.go_shopping')}</Link>
             </div>
           ) : (
@@ -434,7 +434,7 @@ function ProfilePage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                       <div>
                         <strong style={{ fontSize: '1.05rem' }}>{order.orderNumber}</strong>
-                        <div style={{ color: '#888', fontSize: '0.85rem' }}>{new Date(order.createdAt).toLocaleDateString()}</div>
+                        <div style={{ color: '#595959', fontSize: '0.85rem' }}>{new Date(order.createdAt).toLocaleDateString()}</div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <span style={{ fontWeight: 700 }}>{order.totalAmount.toFixed(2)} {t('common.currency')}</span>
@@ -472,25 +472,27 @@ function ProfilePage() {
           {showAddressForm && (
             <form onSubmit={handleSaveAddress} style={{ maxWidth: 520, marginBottom: 24, padding: 16, background: '#f8f9fa', borderRadius: 8 }}>
               <div style={{ position: 'relative' }}>
-                <input type="text" value={addressForm.city} onChange={e => handleCityInput(e.target.value)} placeholder={t('profile.address_city')} style={inputStyle} required />
+                <input type="text" aria-label={t('profile.address_city')} value={addressForm.city} onChange={e => handleCityInput(e.target.value)} placeholder={t('profile.address_city')} style={inputStyle} required />
                 {showNpCityList && npCities.length > 0 && (
-                  <ul style={npDropdownStyle}>
+                  <ul role="listbox" style={npDropdownStyle}>
                     {npCities.map(city => (
-                      <li key={city.ref} onClick={() => handleCitySelect(city)} style={npItemStyle}
+                      <li key={city.ref} role="option" aria-selected={false} tabIndex={0} onClick={() => handleCitySelect(city)} style={npItemStyle}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCitySelect(city); } }}
                         onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
                         onMouseLeave={(e) => e.target.style.background = '#fff'}>
-                        {city.description} <small style={{ color: '#888' }}>({city.areaDescription})</small>
+                        {city.description} <small style={{ color: '#595959' }}>({city.areaDescription})</small>
                       </li>
                     ))}
                   </ul>
                 )}
               </div>
               <div style={{ position: 'relative' }}>
-                <input type="text" value={addressForm.warehouseNumber} onChange={e => handleWarehouseInput(e.target.value)} disabled={!addressForm.cityRef} placeholder={addressForm.cityRef ? t('profile.address_warehouse_search') : t('checkout.select_city_first')} style={{ ...inputStyle, background: addressForm.cityRef ? '#fff' : '#f0f0f0' }} required />
+                <input type="text" aria-label={t('profile.address_warehouse_search')} value={addressForm.warehouseNumber} onChange={e => handleWarehouseInput(e.target.value)} disabled={!addressForm.cityRef} placeholder={addressForm.cityRef ? t('profile.address_warehouse_search') : t('checkout.select_city_first')} style={{ ...inputStyle, background: addressForm.cityRef ? '#fff' : '#f0f0f0' }} required />
                 {showNpWarehouseList && npWarehouses.length > 0 && (
-                  <ul style={npDropdownStyle}>
+                  <ul role="listbox" style={npDropdownStyle}>
                     {npWarehouses.map(wh => (
-                      <li key={wh.ref} onClick={() => handleWarehouseSelect(wh)} style={npItemStyle}
+                      <li key={wh.ref} role="option" aria-selected={false} tabIndex={0} onClick={() => handleWarehouseSelect(wh)} style={npItemStyle}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleWarehouseSelect(wh); } }}
                         onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
                         onMouseLeave={(e) => e.target.style.background = '#fff'}>
                         {wh.description}
@@ -499,8 +501,8 @@ function ProfilePage() {
                   </ul>
                 )}
               </div>
-              <input type="text" value={addressForm.recipientName} onChange={e => setAddressForm({ ...addressForm, recipientName: e.target.value })} placeholder={t('profile.address_recipient')} style={inputStyle} required />
-              <input type="tel" value={addressForm.recipientPhone} onChange={e => setAddressForm({ ...addressForm, recipientPhone: e.target.value })} placeholder="+380501234567" style={inputStyle} required />
+              <input type="text" aria-label={t('profile.address_recipient')} value={addressForm.recipientName} onChange={e => setAddressForm({ ...addressForm, recipientName: e.target.value })} placeholder={t('profile.address_recipient')} style={inputStyle} required />
+              <input type="tel" aria-label={t('checkout.phone')} value={addressForm.recipientPhone} onChange={e => setAddressForm({ ...addressForm, recipientPhone: e.target.value })} placeholder="+380501234567" style={inputStyle} required />
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <input type="checkbox" checked={addressForm.isDefault} onChange={e => setAddressForm({ ...addressForm, isDefault: e.target.checked })} />
                 {t('profile.address_is_default')}
@@ -513,7 +515,7 @@ function ProfilePage() {
           )}
 
           {addresses.length === 0 && !showAddressForm ? (
-            <p style={{ color: '#888' }}>{t('profile.no_addresses')}</p>
+            <p style={{ color: '#595959' }}>{t('profile.no_addresses')}</p>
           ) : (
             <div style={{ display: 'grid', gap: 12 }}>
               {addresses.map(a => (
@@ -550,7 +552,7 @@ function ProfilePage() {
         <div style={{ display: 'grid', gap: 20 }}>
           <div style={cardStyle}>
             <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>{t('profile.discounts_available')}</h2>
-            {promos.length === 0 ? <p style={{ color: '#888' }}>{t('profile.no_discounts')}</p> : (
+            {promos.length === 0 ? <p style={{ color: '#595959' }}>{t('profile.no_discounts')}</p> : (
               <ul style={{ listStyle: 'none', padding: 0 }}>
                 {promos.map(p => {
                   const displayName = (isEn && p.nameEn) ? p.nameEn : p.name;
@@ -568,7 +570,7 @@ function ProfilePage() {
           </div>
           <div style={cardStyle}>
             <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>{t('profile.discounts_history')}</h2>
-            {promoHistory.length === 0 ? <p style={{ color: '#888' }}>{t('profile.no_discounts_history')}</p> : (
+            {promoHistory.length === 0 ? <p style={{ color: '#595959' }}>{t('profile.no_discounts_history')}</p> : (
               <ul style={{ listStyle: 'none', padding: 0 }}>
                 {promoHistory.map(h => {
                   const displayName = (isEn && h.nameEn) ? h.nameEn : h.name;
@@ -606,7 +608,7 @@ function ProfilePage() {
               {t('profile.student_expires_in_days', { days: daysUntilExpiry })}
             </p>
           )}
-          <p style={{ color: '#888', fontSize: '0.9rem' }}>{t('profile.student_hint')}</p>
+          <p style={{ color: '#595959', fontSize: '0.9rem' }}>{t('profile.student_hint')}</p>
           <button
             onClick={handleVerifyStudent}
             disabled={studentBusy}

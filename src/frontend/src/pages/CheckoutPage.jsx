@@ -400,13 +400,13 @@ function CheckoutPage() {
               }}>
                 {done ? '✓' : n}
               </div>
-              <span style={{ color: active ? '#000' : '#888', fontWeight: active ? 600 : 400, fontSize: '0.9rem' }}>{label}</span>
+              <span style={{ color: active ? '#000' : '#595959', fontWeight: active ? 600 : 400, fontSize: '0.9rem' }}>{label}</span>
               {n < TOTAL_STEPS && <span style={{ color: '#ccc' }}>—</span>}
             </div>
           );
         })}
       </div>
-      <p style={{ color: '#888', marginTop: -20, marginBottom: 20, fontSize: '0.9rem' }}>
+      <p style={{ color: '#595959', marginTop: -20, marginBottom: 20, fontSize: '0.9rem' }}>
         {t('checkout.step_of', { current: step, total: TOTAL_STEPS })}
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 30 }}>
@@ -416,8 +416,9 @@ function CheckoutPage() {
             <>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>{t('checkout.step_contacts')}</h2>
               <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.full_name')}</label>
+                <label htmlFor="recipientName" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.full_name')}</label>
                 <input
+                  id="recipientName"
                   type="text"
                   name="recipientName"
                   value={form.recipientName}
@@ -426,8 +427,9 @@ function CheckoutPage() {
                 />
               </div>
               <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.phone')}</label>
+                <label htmlFor="recipientPhone" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.phone')}</label>
                 <input
+                  id="recipientPhone"
                   type="tel"
                   name="recipientPhone"
                   value={form.recipientPhone}
@@ -478,8 +480,9 @@ function CheckoutPage() {
               {isNpMode ? (
                 <>
                   <div style={{ position: 'relative', marginBottom: 20 }}>
-                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.city_np')}</label>
+                    <label htmlFor="citySearch" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.city_np')}</label>
                     <input
+                      id="citySearch"
                       type="text"
                       value={citySearch}
                       onChange={(e) => {
@@ -490,24 +493,29 @@ function CheckoutPage() {
                       style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
                     />
                     {showCityDropdown && cities.length > 0 && (
-                      <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderRadius: '0 0 8px 8px', listStyle: 'none', padding: 0, margin: 0, zIndex: 10, maxHeight: 200, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                      <ul role="listbox" style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderRadius: '0 0 8px 8px', listStyle: 'none', padding: 0, margin: 0, zIndex: 10, maxHeight: 200, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                         {cities.map(city => (
                           <li
                             key={city.ref}
+                            role="option"
+                            aria-selected={false}
+                            tabIndex={0}
                             onClick={() => handleCitySelect(city)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCitySelect(city); } }}
                             style={{ padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
                             onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
                             onMouseLeave={(e) => e.target.style.background = '#fff'}
                           >
-                            {city.description} <small style={{ color: '#888' }}>({city.areaDescription})</small>
+                            {city.description} <small style={{ color: '#595959' }}>({city.areaDescription})</small>
                           </li>
                         ))}
                       </ul>
                     )}
                   </div>
                   <div style={{ position: 'relative', marginBottom: 20 }}>
-                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.warehouse')}</label>
+                    <label htmlFor="warehouseSearch" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.warehouse')}</label>
                     <input
+                      id="warehouseSearch"
                       type="text"
                       value={warehouseSearch}
                       onChange={(e) => setWarehouseSearch(e.target.value)}
@@ -516,11 +524,15 @@ function CheckoutPage() {
                       style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box', background: form.cityRef ? '#fff' : '#f9f9f9' }}
                     />
                     {showWarehouseDropdown && warehouses.length > 0 && (
-                      <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderRadius: '0 0 8px 8px', listStyle: 'none', padding: 0, margin: 0, zIndex: 10, maxHeight: 200, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                      <ul role="listbox" style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderRadius: '0 0 8px 8px', listStyle: 'none', padding: 0, margin: 0, zIndex: 10, maxHeight: 200, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                         {warehouses.map(wh => (
                           <li
                             key={wh.ref}
+                            role="option"
+                            aria-selected={false}
+                            tabIndex={0}
                             onClick={() => handleWarehouseSelect(wh)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleWarehouseSelect(wh); } }}
                             style={{ padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
                             onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
                             onMouseLeave={(e) => e.target.style.background = '#fff'}
@@ -548,8 +560,9 @@ function CheckoutPage() {
               ) : (
                 <>
                   <div style={{ marginBottom: 20 }}>
-                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.city')}</label>
+                    <label htmlFor="city" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.city')}</label>
                     <input
+                      id="city"
                       type="text"
                       name="city"
                       value={form.city}
@@ -559,8 +572,9 @@ function CheckoutPage() {
                     />
                   </div>
                   <div style={{ marginBottom: 20 }}>
-                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.warehouse')}</label>
+                    <label htmlFor="warehouseNumber" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.warehouse')}</label>
                     <input
+                      id="warehouseNumber"
                       type="text"
                       name="warehouseNumber"
                       value={form.warehouseNumber}
@@ -606,7 +620,7 @@ function CheckoutPage() {
                           />
                           <span>
                             <span style={{ display: 'block', fontWeight: 500 }}>{method.icon} {t(method.labelKey)}</span>
-                            <span style={{ display: 'block', color: '#888', fontSize: '0.85rem' }}>
+                            <span style={{ display: 'block', color: '#595959', fontSize: '0.85rem' }}>
                               {t(method.value === 'Card' ? 'checkout.payment_card_hint' : 'checkout.payment_cod_hint')}
                             </span>
                           </span>
@@ -616,9 +630,10 @@ function CheckoutPage() {
                 </div>
               </div>
               <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.promo_code')}</label>
+                <label htmlFor="promoCode" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('checkout.promo_code')}</label>
                 <div style={{ display: 'flex', gap: 10 }}>
                   <input
+                    id="promoCode"
                     type="text"
                     name="promoCode"
                     value={form.promoCode}
@@ -657,15 +672,15 @@ function CheckoutPage() {
             <>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 20, borderBottom: '1px solid #eee', paddingBottom: 10 }}>{t('checkout.step_confirmation')}</h2>
               <div style={{ marginBottom: 16 }}>
-                <div style={{ color: '#888', fontSize: '0.85rem' }}>{t('checkout.recipient')}</div>
+                <div style={{ color: '#595959', fontSize: '0.85rem' }}>{t('checkout.recipient')}</div>
                 <div>{form.recipientName} · {form.recipientPhone}</div>
               </div>
               <div style={{ marginBottom: 16 }}>
-                <div style={{ color: '#888', fontSize: '0.85rem' }}>{t('checkout.address')}</div>
+                <div style={{ color: '#595959', fontSize: '0.85rem' }}>{t('checkout.address')}</div>
                 <div>{t('checkout.city_prefix')} {form.city}, {form.warehouseNumber}</div>
               </div>
               <div style={{ marginBottom: 16 }}>
-                <div style={{ color: '#888', fontSize: '0.85rem' }}>{t('checkout.payment_method')}</div>
+                <div style={{ color: '#595959', fontSize: '0.85rem' }}>{t('checkout.payment_method')}</div>
                 <div>{form.paymentMethod === 'Card' ? t('checkout.payment_card') : t('checkout.payment_cod')}</div>
               </div>
               <div style={{ marginTop: 20, paddingTop: 15, borderTop: '1px solid #eee' }}>
@@ -681,7 +696,7 @@ function CheckoutPage() {
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ color: '#666' }}>{t('checkout.delivery_cost')}</span>
-                  <span style={{ color: shippingCost > 0 ? '#000' : '#888' }}>{shippingCost > 0 ? `${shippingCost.toFixed(2)} ${t('common.currency')}` : t('checkout.will_be_calculated')}</span>
+                  <span style={{ color: shippingCost > 0 ? '#000' : '#595959' }}>{shippingCost > 0 ? `${shippingCost.toFixed(2)} ${t('common.currency')}` : t('checkout.will_be_calculated')}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 700, marginTop: 10, color: '#000' }}>
                   <span>{t('cart.total')}</span>
@@ -756,7 +771,7 @@ function CheckoutPage() {
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                 <span style={{ color: '#666' }}>{t('checkout.delivery_cost')}</span>
-                <span style={{ color: shippingCost > 0 ? '#000' : '#888' }}>{shippingCost > 0 ? `${shippingCost.toFixed(2)} ${t('common.currency')}` : t('checkout.will_be_calculated')}</span>
+                <span style={{ color: shippingCost > 0 ? '#000' : '#595959' }}>{shippingCost > 0 ? `${shippingCost.toFixed(2)} ${t('common.currency')}` : t('checkout.will_be_calculated')}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 700, marginTop: 10, color: '#000' }}>
                 <span>{t('cart.total')}</span>

@@ -146,7 +146,7 @@ function CartPage() {
                     <p className="m-0 text-[#666] text-base flex items-center gap-2">
                       {hasDiscount ? (
                         <>
-                          <span className="text-[#999] line-through text-[0.9rem]">{item.originalPrice.toFixed(2)} {t('common.currency')}</span>
+                          <span className="text-[#595959] line-through text-[0.9rem]">{item.originalPrice.toFixed(2)} {t('common.currency')}</span>
                           <span className="text-[#dc3545] font-semibold">{item.productPrice} {t('common.currency')}</span>
                         </>
                       ) : (

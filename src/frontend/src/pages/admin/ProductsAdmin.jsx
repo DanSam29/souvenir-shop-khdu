@@ -342,12 +342,13 @@ function ProductsAdmin() {
         {/* Фільтри */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
           <input
+            aria-label="Пошук за назвою"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Пошук за назвою..."
             style={{ ...inputStyle, maxWidth: 260 }}
           />
-          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ ...inputStyle, maxWidth: 220 }}>
+          <select aria-label="Фільтр за категорією" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ ...inputStyle, maxWidth: 220 }}>
             <option value="">Усі категорії</option>
             {flatCategories.map((c) => (
               <option key={c.categoryId} value={c.categoryId}>
@@ -355,7 +356,7 @@ function ProductsAdmin() {
               </option>
             ))}
           </select>
-          <select value={filterStock} onChange={(e) => setFilterStock(e.target.value)} style={{ ...inputStyle, maxWidth: 180 }}>
+          <select aria-label="Фільтр за наявністю" value={filterStock} onChange={(e) => setFilterStock(e.target.value)} style={{ ...inputStyle, maxWidth: 180 }}>
             <option value="all">Уся наявність</option>
             <option value="in">Лише в наявності</option>
             <option value="out">Немає в наявності</option>
@@ -395,11 +396,11 @@ function ProductsAdmin() {
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       {p.images && p.images.length > 0 && (
-                        <img src={buildImageUrl(p.images[0].imageURL)} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }} />
+                        <img src={buildImageUrl(p.images[0].imageURL)} alt={p.name} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }} />
                       )}
                       <div>
                         <div style={{ fontWeight: 500 }}>{p.name}</div>
-                        <div style={{ fontSize: '0.8rem', color: '#888' }}>ID: {p.productId}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#595959' }}>ID: {p.productId}</div>
                       </div>
                     </div>
                   </td>
@@ -426,7 +427,7 @@ function ProductsAdmin() {
               ))}
               {filteredProducts.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ padding: 24, textAlign: 'center', color: '#888' }}>
+                  <td colSpan={6} style={{ padding: 24, textAlign: 'center', color: '#595959' }}>
                     Товарів не знайдено
                   </td>
                 </tr>
@@ -468,7 +469,7 @@ function ProductsAdmin() {
                   background: i <= step ? '#007bff' : '#e9ecef',
                   marginBottom: 6
                 }} />
-                <span style={{ fontSize: '0.8rem', color: i <= step ? '#007bff' : '#aaa', fontWeight: 600 }}>{label}</span>
+                <span style={{ fontSize: '0.8rem', color: i <= step ? '#007bff' : '#595959', fontWeight: 600 }}>{label}</span>
               </div>
             ))}
           </div>
@@ -476,16 +477,16 @@ function ProductsAdmin() {
           {step === 0 && (
             <div style={{ display: 'grid', gap: 15 }}>
               <div>
-                <label style={labelStyle}>Назва *</label>
-                <input name="name" value={form.name} onChange={handleChange} placeholder="Назва товару" style={inputStyle} />
+                <label htmlFor="product-name" style={labelStyle}>Назва *</label>
+                <input id="product-name" name="name" value={form.name} onChange={handleChange} placeholder="Назва товару" style={inputStyle} />
               </div>
               <div>
-                <label style={labelStyle}>Опис * (мін. 10 симв.)</label>
-                <textarea name="description" value={form.description} onChange={handleChange} placeholder="Опис товару" rows={4} style={inputStyle} />
+                <label htmlFor="product-description" style={labelStyle}>Опис * (мін. 10 симв.)</label>
+                <textarea id="product-description" name="description" value={form.description} onChange={handleChange} placeholder="Опис товару" rows={4} style={inputStyle} />
               </div>
               <div>
-                <label style={labelStyle}>Категорія *</label>
-                <select name="parentCategoryId" value={form.parentCategoryId} onChange={handleChange} style={inputStyle}>
+                <label htmlFor="product-category" style={labelStyle}>Категорія *</label>
+                <select id="product-category" name="parentCategoryId" value={form.parentCategoryId} onChange={handleChange} style={inputStyle}>
                   <option value="">Оберіть категорію</option>
                   {categoriesTree.map((c) => (
                     <option key={c.categoryId} value={c.categoryId}>{c.name}</option>
@@ -494,8 +495,8 @@ function ProductsAdmin() {
               </div>
               {form.parentCategoryId && subCategories.length > 0 && (
                 <div>
-                  <label style={labelStyle}>Підкатегорія (необов'язково)</label>
-                  <select name="subCategoryId" value={form.subCategoryId} onChange={handleChange} style={inputStyle}>
+                  <label htmlFor="product-subcategory" style={labelStyle}>Підкатегорія (необов'язково)</label>
+                  <select id="product-subcategory" name="subCategoryId" value={form.subCategoryId} onChange={handleChange} style={inputStyle}>
                     <option value="">Без підкатегорії</option>
                     {subCategories.map((c) => (
                       <option key={c.categoryId} value={c.categoryId}>{c.name}</option>
@@ -510,18 +511,18 @@ function ProductsAdmin() {
             <div style={{ display: 'grid', gap: 15 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15 }}>
                 <div>
-                  <label style={labelStyle}>Ціна (грн) *</label>
-                  <input name="price" type="number" step="0.01" value={form.price} onChange={handleChange} style={inputStyle} />
+                  <label htmlFor="product-price" style={labelStyle}>Ціна (грн) *</label>
+                  <input id="product-price" name="price" type="number" step="0.01" value={form.price} onChange={handleChange} style={inputStyle} />
                 </div>
                 <div>
-                  <label style={labelStyle}>Вага (кг) *</label>
-                  <input name="weight" type="number" step="0.001" value={form.weight} onChange={handleChange} style={inputStyle} />
+                  <label htmlFor="product-weight" style={labelStyle}>Вага (кг) *</label>
+                  <input id="product-weight" name="weight" type="number" step="0.001" value={form.weight} onChange={handleChange} style={inputStyle} />
                 </div>
               </div>
               <div>
-                <label style={labelStyle}>Залишок на складі</label>
-                <input name="stock" type="number" value={form.stock} onChange={handleChange} style={inputStyle} />
-                <p style={{ fontSize: '0.8rem', color: '#888', marginTop: 6 }}>
+                <label htmlFor="product-stock" style={labelStyle}>Залишок на складі</label>
+                <input id="product-stock" name="stock" type="number" value={form.stock} onChange={handleChange} style={inputStyle} />
+                <p style={{ fontSize: '0.8rem', color: '#595959', marginTop: 6 }}>
                   Зменшення залишку відбувається через замовлення; тут можна скоригувати вручну.
                 </p>
               </div>
@@ -553,7 +554,7 @@ function ProductsAdmin() {
                           overflow: 'hidden'
                         }}
                       >
-                        <img src={buildImageUrl(img.imageURL)} alt="Product" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={buildImageUrl(img.imageURL)} alt={`Зображення товару ${index + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <button type="button" onClick={() => setPrimary(img.imageId)} title="Зробити головним" style={imgBadgeStyle('#28a745', 'left')}>★</button>
                         <button type="button" onClick={() => removeExistingImage(img.imageId)} title="Видалити" style={imgBadgeStyle('#dc3545', 'right')}>✕</button>
                         {img.isPrimary && (
@@ -568,8 +569,8 @@ function ProductsAdmin() {
               )}
 
               <div>
-                <label style={labelStyle}>Додати зображення</label>
-                <input type="file" accept="image/*" multiple onChange={handleFileChange} style={{ ...inputStyle, padding: '8px' }} />
+                <label htmlFor="product-images" style={labelStyle}>Додати зображення</label>
+                <input id="product-images" type="file" accept="image/*" multiple onChange={handleFileChange} style={{ ...inputStyle, padding: '8px' }} />
                 {selectedFiles.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 12 }}>
                     {selectedFiles.map((file, index) => (
@@ -591,13 +592,13 @@ function ProductsAdmin() {
                           overflow: 'hidden'
                         }}
                       >
-                        <img src={URL.createObjectURL(file)} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={URL.createObjectURL(file)} alt={`Попередній перегляд ${index + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <button type="button" onClick={() => removeSelectedFile(index)} title="Прибрати" style={imgBadgeStyle('#dc3545', 'right')}>✕</button>
                       </div>
                     ))}
                   </div>
                 )}
-                <p style={{ fontSize: '0.8rem', color: '#888', marginTop: 6 }}>
+                <p style={{ fontSize: '0.8rem', color: '#595959', marginTop: 6 }}>
                   Порядок завантаження відповідає порядку мініатюр. Перше зображення нового товару стане головним.
                 </p>
               </div>
@@ -628,7 +629,7 @@ const Modal = ({ title, children, onClose, wide }) => (
     <div style={{ ...modalStyle, maxWidth: wide ? 680 : 480 }} onClick={(e) => e.stopPropagation()}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <h3 style={{ margin: 0 }}>{title}</h3>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: '#888' }}>✕</button>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: '#595959' }}>✕</button>
       </div>
       {children}
     </div>

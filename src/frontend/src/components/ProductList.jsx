@@ -227,6 +227,7 @@ function ProductList() {
             <div className="flex-1 relative flex">
               <input
                 type="text"
+                aria-label={t('common.search')}
                 placeholder={t('common.search')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -236,7 +237,7 @@ function ProductList() {
                 <button
                   type="button"
                   onClick={handleClearSearch}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-none border-none text-[#999] cursor-pointer text-2xl p-[0.2rem] leading-none transition-colors z-[2] hover:text-[#333]"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-none border-none text-[#595959] cursor-pointer text-2xl p-[0.2rem] leading-none transition-colors z-[2] hover:text-[#333]"
                 >
                   &times;
                 </button>
@@ -259,6 +260,7 @@ function ProductList() {
             <div className="flex flex-col gap-2">
               <input
                 type="range"
+                aria-label={t('common.price')}
                 min="0"
                 max={maxPrice}
                 value={priceRange[1]}

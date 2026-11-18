@@ -268,7 +268,7 @@ function CategoriesAdmin() {
           <h1>Керування категоріями</h1>
           <button onClick={openCreate} style={primaryBtnStyle('#28a745')}>+ Додати категорію</button>
         </div>
-        <p style={{ color: '#888', fontSize: '0.85rem', marginTop: 8 }}>
+        <p style={{ color: '#595959', fontSize: '0.85rem', marginTop: 8 }}>
           Перетягніть рядок, щоб змінити порядок відображення в межах одного рівня.
         </p>
       </div>
@@ -295,12 +295,12 @@ function CategoriesAdmin() {
         <Modal title={editId ? 'Редагувати категорію' : 'Нова категорія'} onClose={() => setModal(null)}>
           <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 15 }}>
             <div>
-              <label style={labelStyle}>Назва *</label>
-              <input name="name" value={form.name} onChange={handleChange} style={inputStyle} required />
+              <label htmlFor="category-name" style={labelStyle}>Назва *</label>
+              <input id="category-name" name="name" value={form.name} onChange={handleChange} style={inputStyle} required />
             </div>
             <div>
-              <label style={labelStyle}>Батьківська категорія</label>
-              <select name="parentCategoryId" value={form.parentCategoryId} onChange={handleChange} style={inputStyle}>
+              <label htmlFor="category-parent" style={labelStyle}>Батьківська категорія</label>
+              <select id="category-parent" name="parentCategoryId" value={form.parentCategoryId} onChange={handleChange} style={inputStyle}>
                 <option value="">Немає (головна)</option>
                 {categoriesTree
                   .filter(c => c.categoryId !== editId)
@@ -310,12 +310,12 @@ function CategoriesAdmin() {
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Опис</label>
-              <textarea name="description" value={form.description} onChange={handleChange} rows={3} style={inputStyle} />
+              <label htmlFor="category-description" style={labelStyle}>Опис</label>
+              <textarea id="category-description" name="description" value={form.description} onChange={handleChange} rows={3} style={inputStyle} />
             </div>
             <div>
-              <label style={labelStyle}>Порядок відображення</label>
-              <input name="displayOrder" type="number" value={form.displayOrder} onChange={handleChange} style={inputStyle} />
+              <label htmlFor="category-order" style={labelStyle}>Порядок відображення</label>
+              <input id="category-order" name="displayOrder" type="number" value={form.displayOrder} onChange={handleChange} style={inputStyle} />
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 10 }}>
               <button type="button" onClick={() => setModal(null)} style={secondaryBtnStyle} disabled={saving}>Скасувати</button>
@@ -350,7 +350,7 @@ const Modal = ({ title, children, onClose }) => (
     <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <h3 style={{ margin: 0 }}>{title}</h3>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: '#888' }}>✕</button>
+        <button onClick={onClose} aria-label="Закрити" style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: '#595959' }}>✕</button>
       </div>
       {children}
     </div>

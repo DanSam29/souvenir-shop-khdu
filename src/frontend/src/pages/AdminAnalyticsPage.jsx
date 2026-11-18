@@ -188,7 +188,15 @@ function MetricsTable({ columns, rows, pageSize = 10 }) {
           <thead>
             <tr>
               {columns.map((c) => (
-                <th key={c.key} style={{ ...thStyle, textAlign: c.align || 'left' }} onClick={() => toggleSort(c.key)}>
+                <th
+                  key={c.key}
+                  scope="col"
+                  tabIndex={0}
+                  aria-sort={sortKey === c.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                  style={{ ...thStyle, textAlign: c.align || 'left', cursor: 'pointer' }}
+                  onClick={() => toggleSort(c.key)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSort(c.key); } }}
+                >
                   {c.label}{sortKey === c.key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                 </th>
               ))}

@@ -11,7 +11,7 @@ function PaymentCancelPage() {
       <p style={{ fontSize: '18px', color: '#666', marginBottom: '15px' }}>
         {t('checkout.cancel_message')}
       </p>
-      <p style={{ fontSize: '15px', color: '#888', marginBottom: '30px' }}>
+      <p style={{ fontSize: '15px', color: '#595959', marginBottom: '30px' }}>
         {t('checkout.cancel_hint')}
       </p>
       <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
