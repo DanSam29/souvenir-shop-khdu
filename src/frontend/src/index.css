@@ -30,11 +30,11 @@
 
 /* Спільні класи, які використовуються в кількох компонентах/сторінках */
 @layer components {
-  /* Обгортка сторінки */
+  /* Обгортка сторінки (адаптивні відступи: mobile-first) */
   .container {
     max-width: 1600px;
     margin: 0 auto;
-    padding: 0 32px;
+    padding: 0 16px;
   }
 
   /* Індикатор завантаження */
@@ -153,30 +153,11 @@
   .add-to-cart-btn:hover:not(:disabled) {
     background: #218838;
   }
-
-  /* Адаптивна сітка товарів: 4/3/2/1 колонки */
-  .product-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
-  }
 }
 
-@media (max-width: 1200px) {
-  .product-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .product-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 600px) {
-  .product-grid {
-    grid-template-columns: 1fr;
+@media (min-width: 768px) {
+  .container {
+    padding: 0 32px;
   }
 }
 

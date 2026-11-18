@@ -78,68 +78,70 @@ function AdminOrdersPage() {
         </Link>
         <h1>Керування замовленнями</h1>
       </div>
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 20, background: '#fff', borderRadius: 8, overflow: 'hidden' }}>
-        <thead style={{ background: '#f8f9fa' }}>
-          <tr>
-            <th style={thStyle}>Номер</th>
-            <th style={thStyle}>Клієнт</th>
-            <th style={thStyle}>Сума</th>
-            <th style={thStyle}>Дата</th>
-            <th style={thStyle}>Статус</th>
-            <th style={thStyle}>ТТН</th>
-            <th style={thStyle}>Дії</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map(o => (
-            <tr key={o.orderId} style={{ borderBottom: '1px solid #eee' }}>
-              <td style={tdStyle}>{o.orderNumber}</td>
-              <td style={tdStyle}>{o.userName}<br/><small style={{ color: '#888' }}>{o.userEmail}</small></td>
-              <td style={tdStyle}>{o.totalAmount.toFixed(2)} грн</td>
-              <td style={tdStyle}>{new Date(o.createdAt).toLocaleDateString()}</td>
-              <td style={tdStyle}>
-                <span style={statusBadgeStyle(o.status)}>{o.status}</span>
-              </td>
-              <td style={tdStyle}>
-                {o.trackingNumber ? (
-                  <a
-                    href={npTrackingUrl(o.trackingNumber)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: '#1890ff', fontWeight: 600 }}
-                  >
-                    {o.trackingNumber} ↗
-                  </a>
-                ) : (
-                  <span style={{ color: '#bbb' }}>—</span>
-                )}
-              </td>
-              <td style={tdStyle}>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button 
-                    onClick={() => navigate(`/order/${o.orderId}`, { state: { from: 'admin' } })}
-                    style={{ padding: '5px 10px', background: '#007bff', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}
-                  >
-                    Деталі
-                  </button>
-                  <select 
-                    value={o.status} 
-                    onChange={(e) => handleStatusChange(o.orderId, e.target.value)}
-                    disabled={updating || o.status === 'Cancelled' || o.status === 'Delivered'}
-                    style={{ padding: '5px', borderRadius: 4 }}
-                  >
-                    <option value="Processing">Processing</option>
-                    <option value="Paid">Paid</option>
-                    <option value="Shipped">Shipped</option>
-                    <option value="Delivered">Delivered</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
-                </div>
-              </td>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 20, background: '#fff', borderRadius: 8, overflow: 'hidden' }}>
+          <thead style={{ background: '#f8f9fa' }}>
+            <tr>
+              <th style={thStyle}>Номер</th>
+              <th style={thStyle}>Клієнт</th>
+              <th style={thStyle}>Сума</th>
+              <th style={thStyle}>Дата</th>
+              <th style={thStyle}>Статус</th>
+              <th style={thStyle}>ТТН</th>
+              <th style={thStyle}>Дії</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {orders.map(o => (
+              <tr key={o.orderId} style={{ borderBottom: '1px solid #eee' }}>
+                <td style={tdStyle}>{o.orderNumber}</td>
+                <td style={tdStyle}>{o.userName}<br/><small style={{ color: '#888' }}>{o.userEmail}</small></td>
+                <td style={tdStyle}>{o.totalAmount.toFixed(2)} грн</td>
+                <td style={tdStyle}>{new Date(o.createdAt).toLocaleDateString()}</td>
+                <td style={tdStyle}>
+                  <span style={statusBadgeStyle(o.status)}>{o.status}</span>
+                </td>
+                <td style={tdStyle}>
+                  {o.trackingNumber ? (
+                    <a
+                      href={npTrackingUrl(o.trackingNumber)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#1890ff', fontWeight: 600 }}
+                    >
+                      {o.trackingNumber} ↗
+                    </a>
+                  ) : (
+                    <span style={{ color: '#bbb' }}>—</span>
+                  )}
+                </td>
+                <td style={tdStyle}>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button 
+                      onClick={() => navigate(`/order/${o.orderId}`, { state: { from: 'admin' } })}
+                      style={{ padding: '5px 10px', background: '#007bff', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+                    >
+                      Деталі
+                    </button>
+                    <select 
+                      value={o.status} 
+                      onChange={(e) => handleStatusChange(o.orderId, e.target.value)}
+                      disabled={updating || o.status === 'Cancelled' || o.status === 'Delivered'}
+                      style={{ padding: '5px', borderRadius: 4 }}
+                    >
+                      <option value="Processing">Processing</option>
+                      <option value="Paid">Paid</option>
+                      <option value="Shipped">Shipped</option>
+                      <option value="Delivered">Delivered</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {pagination.totalPages > 1 && (
         <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center', gap: 10 }}>
           <button 

@@ -4,7 +4,7 @@ import { warehouseAPI, companiesAPI, productsAPI } from '../services/api';
 
 // Спільні inline-стилі (у стилі інших адмін-сторінок проєкту)
 const tabsStyle = { display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' };
-const cardStyle = { background: '#fff', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden' };
+const cardStyle = { background: '#fff', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflowX: 'auto' };
 const tableStyle = { width: '100%', borderCollapse: 'collapse' };
 const thStyle = { padding: 16, textAlign: 'left', borderBottom: '1px solid #eee' };
 const tdStyle = { padding: 16, borderBottom: '1px solid #f0f0f0' };

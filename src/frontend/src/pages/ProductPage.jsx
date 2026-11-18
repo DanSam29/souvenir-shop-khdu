@@ -164,7 +164,7 @@ function ProductPage() {
       {product.relatedProducts && product.relatedProducts.length > 0 && (
         <section className="mt-12">
           <h2 className="mt-0 mb-6 text-[#1a1a1a] text-[1.6rem]">{t('product.related')}</h2>
-          <div className="product-grid">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {product.relatedProducts.map(rel => {
               const relName = (isEn && rel.nameEn) ? rel.nameEn : rel.name;
               return (

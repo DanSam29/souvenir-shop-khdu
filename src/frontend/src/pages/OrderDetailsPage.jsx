@@ -207,7 +207,7 @@ function OrderDetailsPage() {
         </div>
       )}
 
-      <div style={{ background: '#fff', padding: 20, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', marginTop: 20 }}>
+      <div style={{ background: '#fff', padding: 20, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', marginTop: 20, overflowX: 'auto' }}>
         <h3>{t('cart.items')}</h3>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>

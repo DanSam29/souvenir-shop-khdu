@@ -661,7 +661,7 @@
   - Tabs, Accordion
 - Окремий файл components/ui/
 
-12.3. Адаптивність
+12.3. Адаптивність ✅
 - Mobile-first design за допомогою Tailwind breakpoints: sm (640px), md (768px), lg (1024px), xl (1280px)
 - Гаманець меню на мобільних
 - Сітки продуктів: 1→2→3→4 колонки
