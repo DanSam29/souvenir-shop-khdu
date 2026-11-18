@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const SIZES = {
   sm: 'h-4 w-4',
@@ -7,13 +8,14 @@ const SIZES = {
 };
 
 export default function Spinner({ size = 'md', className = '' }) {
+  const { t } = useTranslation();
   return (
     <svg
       className={`inline-block animate-spin text-brand ${SIZES[size] || SIZES.md} ${className}`}
       viewBox="0 0 24 24"
       fill="none"
       role="status"
-      aria-label="Завантаження"
+      aria-label={t('common.loading')}
     >
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />

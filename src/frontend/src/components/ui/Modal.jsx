@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const SIZES = {
   sm: 'max-w-sm',
@@ -8,6 +9,7 @@ const SIZES = {
 };
 
 export default function Modal({ open, onClose, title, children, footer, size = 'md' }) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => {
@@ -33,7 +35,7 @@ export default function Modal({ open, onClose, title, children, footer, size = '
           <button
             type="button"
             onClick={onClose}
-            aria-label="Закрити"
+            aria-label={t('common.close')}
             className="rounded-lg p-1 text-2xl leading-none text-ink-light transition-colors hover:bg-ink/5 hover:text-ink"
           >
             &times;

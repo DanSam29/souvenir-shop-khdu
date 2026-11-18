@@ -6,13 +6,13 @@ function PrivacyPolicy() {
   return (
     <div className="container" style={{ padding: '40px 20px', lineHeight: '1.6' }}>
       <h1>{t('legal.privacy_policy')}</h1>
-      <p>Ми поважаємо вашу конфіденційність і зобов'язуємося захищати ваші персональні дані.</p>
-      <h3>1. Які дані ми збираємо</h3>
-      <p>Ми збираємо ваше ім'я, email, номер телефону та адресу доставки для обробки замовлень.</p>
-      <h3>2. Як ми використовуємо ваші дані</h3>
-      <p>Ваші дані використовуються виключно для виконання замовлень та покращення сервісу нашого магазину.</p>
-      <h3>3. Захист даних</h3>
-      <p>Ми використовуємо сучасні методи шифрування для захисту вашої особистої інформації.</p>
+      <p>{t('legal.privacy_intro')}</p>
+      <h3>{t('legal.privacy_s1_title')}</h3>
+      <p>{t('legal.privacy_s1_text')}</p>
+      <h3>{t('legal.privacy_s2_title')}</h3>
+      <p>{t('legal.privacy_s2_text')}</p>
+      <h3>{t('legal.privacy_s3_title')}</h3>
+      <p>{t('legal.privacy_s3_text')}</p>
     </div>
   );
 }

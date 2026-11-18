@@ -114,7 +114,7 @@ function Header() {
           >
             <img
               src={logo}
-              alt="Герб ХДУ"
+              alt={t('common.emblem_alt')}
               className="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.2)] p-[5px] object-contain"
             />
             <div className="flex flex-col">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ordersAPI } from '../services/api';
 import { TableSkeleton } from '../components/ui';
 
@@ -7,6 +8,7 @@ import { TableSkeleton } from '../components/ui';
 const npTrackingUrl = (ttn) => `https://novaposhta.ua/tracking/?cargo_number=${encodeURIComponent(ttn)}`;
 
 function AdminOrdersPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [pagination, setPagination] = useState({ pageNumber: 1, totalPages: 1 });
@@ -15,6 +17,7 @@ function AdminOrdersPage() {
   const [trackingModalOrderId, setTrackingModalOrderId] = useState(null);
   const [trackingValue, setTrackingValue] = useState('');
   const [trackingError, setTrackingError] = useState('');
+  const statusLabel = (s) => t('order.status_' + s, { defaultValue: s });
   useEffect(() => {
     loadOrders(1);
   }, []);
@@ -43,11 +46,11 @@ function AdminOrdersPage() {
     try {
       setUpdating(true);
       await ordersAPI.updateStatus(id, { status: newStatus, trackingNumber });
-      alert('Статус оновлено');
+      alert(t('admin.orders.status_updated'));
       setTrackingModalOrderId(null);
       loadOrders();
     } catch (err) {
-      alert(err?.message || 'Помилка при оновленні статусу');
+      alert(err?.message || t('admin.orders.status_update_error'));
     } finally {
       setUpdating(false);
     }
@@ -65,14 +68,14 @@ function AdminOrdersPage() {
   const confirmShipped = () => {
     const value = trackingValue.trim();
     if (!value) {
-      setTrackingError('Вкажіть номер ТТН Nova Poshta');
+      setTrackingError(t('admin.orders.ttn_required'));
       return;
     }
     submitStatusChange(trackingModalOrderId, 'Shipped', value);
   };
   if (loading) return (
     <div role="status" aria-live="polite" style={{ padding: 20, maxWidth: 1400, margin: '0 auto' }}>
-      <span className="sr-only">Завантаження...</span>
+      <span className="sr-only">{t('common.loading')}</span>
       <TableSkeleton rows={6} cols={5} />
     </div>
   );
@@ -80,21 +83,21 @@ function AdminOrdersPage() {
     <div className="admin-orders" style={{ padding: 20, maxWidth: 1400, margin: '0 auto' }}>
       <div style={{ marginBottom: 20 }}>
         <Link to="/admin" className="back-link">
-          ← Назад до дашборду
+          {t('admin.common.back_to_dashboard')}
         </Link>
-        <h1>Керування замовленнями</h1>
+        <h1>{t('admin.orders.title')}</h1>
       </div>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 20, background: '#fff', borderRadius: 8, overflow: 'hidden' }}>
           <thead style={{ background: '#f8f9fa' }}>
             <tr>
-              <th style={thStyle}>Номер</th>
-              <th style={thStyle}>Клієнт</th>
-              <th style={thStyle}>Сума</th>
-              <th style={thStyle}>Дата</th>
-              <th style={thStyle}>Статус</th>
-              <th style={thStyle}>ТТН</th>
-              <th style={thStyle}>Дії</th>
+              <th style={thStyle}>{t('admin.orders.col_number')}</th>
+              <th style={thStyle}>{t('admin.orders.col_customer')}</th>
+              <th style={thStyle}>{t('admin.orders.col_amount')}</th>
+              <th style={thStyle}>{t('admin.common.date')}</th>
+              <th style={thStyle}>{t('admin.common.status')}</th>
+              <th style={thStyle}>{t('admin.orders.col_ttn')}</th>
+              <th style={thStyle}>{t('admin.common.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -102,10 +105,10 @@ function AdminOrdersPage() {
               <tr key={o.orderId} style={{ borderBottom: '1px solid #eee' }}>
                 <td style={tdStyle}>{o.orderNumber}</td>
                 <td style={tdStyle}>{o.userName}<br/><small style={{ color: '#595959' }}>{o.userEmail}</small></td>
-                <td style={tdStyle}>{o.totalAmount.toFixed(2)} грн</td>
+                <td style={tdStyle}>{o.totalAmount.toFixed(2)} {t('common.currency')}</td>
                 <td style={tdStyle}>{new Date(o.createdAt).toLocaleDateString()}</td>
                 <td style={tdStyle}>
-                  <span style={statusBadgeStyle(o.status)}>{o.status}</span>
+                  <span style={statusBadgeStyle(o.status)}>{statusLabel(o.status)}</span>
                 </td>
                 <td style={tdStyle}>
                   {o.trackingNumber ? (
@@ -127,7 +130,7 @@ function AdminOrdersPage() {
                       onClick={() => navigate(`/order/${o.orderId}`, { state: { from: 'admin' } })}
                       style={{ padding: '5px 10px', background: '#007bff', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}
                     >
-                      Деталі
+                      {t('admin.orders.details')}
                     </button>
                     <select 
                       value={o.status} 
@@ -135,11 +138,11 @@ function AdminOrdersPage() {
                       disabled={updating || o.status === 'Cancelled' || o.status === 'Delivered'}
                       style={{ padding: '5px', borderRadius: 4 }}
                     >
-                      <option value="Processing">Processing</option>
-                      <option value="Paid">Paid</option>
-                      <option value="Shipped">Shipped</option>
-                      <option value="Delivered">Delivered</option>
-                      <option value="Cancelled">Cancelled</option>
+                      <option value="Processing">{t('order.status_Processing')}</option>
+                      <option value="Paid">{t('order.status_Paid')}</option>
+                      <option value="Shipped">{t('order.status_Shipped')}</option>
+                      <option value="Delivered">{t('order.status_Delivered')}</option>
+                      <option value="Cancelled">{t('order.status_Cancelled')}</option>
                     </select>
                   </div>
                 </td>
@@ -155,29 +158,29 @@ function AdminOrdersPage() {
             disabled={pagination.pageNumber === 1 || loading}
             style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: pagination.pageNumber === 1 ? 'not-allowed' : 'pointer' }}
           >
-            ← Попередня
+            ← {t('common.prev')}
           </button>
           <span style={{ alignSelf: 'center' }}>
-            Сторінка {pagination.pageNumber} з {pagination.totalPages}
+            {t('admin.common.page_of', { current: pagination.pageNumber, total: pagination.totalPages })}
           </span>
           <button 
             onClick={() => loadOrders(pagination.pageNumber + 1)} 
             disabled={pagination.pageNumber === pagination.totalPages || loading}
             style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: pagination.pageNumber === pagination.totalPages ? 'not-allowed' : 'pointer' }}
           >
-            Наступна →
+            {t('common.next')} →
           </button>
         </div>
       )}
       {trackingModalOrderId !== null && (
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
-            <h3 style={{ marginTop: 0 }}>Відправлення Новою Поштою</h3>
+            <h3 style={{ marginTop: 0 }}>{t('admin.orders.shipping_title')}</h3>
             <p style={{ color: '#666', fontSize: '0.9rem' }}>
-              Для переходу в статус «Shipped» вкажіть номер ТТН Nova Poshta.
+              {t('admin.orders.shipping_hint')}
             </p>
             <label htmlFor="order-ttn" style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
-              Номер ТТН
+              {t('admin.orders.ttn_label')}
             </label>
             <input
               id="order-ttn"
@@ -187,7 +190,7 @@ function AdminOrdersPage() {
                 setTrackingValue(e.target.value);
                 if (trackingError) setTrackingError('');
               }}
-              placeholder="Наприклад, 20450000000000"
+              placeholder={t('admin.orders.ttn_placeholder')}
               disabled={updating}
               autoFocus
               style={{
@@ -209,14 +212,14 @@ function AdminOrdersPage() {
                 disabled={updating}
                 style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
               >
-                Скасувати
+                {t('common.cancel')}
               </button>
               <button
                 onClick={confirmShipped}
                 disabled={updating}
                 style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#007bff', color: '#fff', cursor: updating ? 'not-allowed' : 'pointer' }}
               >
-                {updating ? 'Збереження...' : 'Підтвердити'}
+                {updating ? t('admin.common.saving') : t('admin.orders.confirm')}
               </button>
             </div>
           </div>

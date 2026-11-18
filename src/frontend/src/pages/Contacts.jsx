@@ -8,15 +8,15 @@ function Contacts() {
       <h1>{t('legal.contacts')}</h1>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', marginTop: '20px' }}>
         <div>
-          <h3>Зв'яжіться з нами</h3>
+          <h3>{t('legal.contact_us')}</h3>
           <p>📧 Email: office@ksu.ks.ua</p>
-          <p>📞 Телефон: +380963102636</p>
-          <p>🌐 Веб-сайт: <a href="https://www.kspu.edu" target="_blank" rel="noopener noreferrer">www.kspu.edu</a></p>
+          <p>📞 {t('legal.phone_label')}: +380963102636</p>
+          <p>🌐 {t('legal.website_label')}: <a href="https://www.kspu.edu" target="_blank" rel="noopener noreferrer">www.kspu.edu</a></p>
         </div>
         <div>
-          <h3>Наші адреси</h3>
-          <p><strong>Юридична адреса:</strong><br />вул. Університетська, 27, м. Херсон, 73003</p>
-          <p><strong>Фактична адреса (офіс):</strong><br />вул. Шевченка, 14, м. Івано-Франківськ, 76018</p>
+          <h3>{t('legal.our_addresses')}</h3>
+          <p><strong>{t('legal.legal_address')}:</strong><br />{t('legal.legal_address_value')}</p>
+          <p><strong>{t('legal.office_address')}:</strong><br />{t('legal.office_address_value')}</p>
         </div>
       </div>
     </div>

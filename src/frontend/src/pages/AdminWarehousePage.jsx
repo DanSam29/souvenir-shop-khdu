@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { warehouseAPI, companiesAPI, productsAPI } from '../services/api';
 
 // Спільні inline-стилі (у стилі інших адмін-сторінок проєкту)
@@ -15,17 +16,8 @@ const btnSmall = { padding: '6px 12px', marginRight: 8, borderRadius: 6, cursor:
 const emptyRowStyle = { padding: 40, textAlign: 'center', color: '#666' };
 
 // Допустимі причини (узгоджені з бекендом-валідатором)
-const INCOMING_REASONS = [
-  { value: 'INCOMING', label: 'Надходження' },
-  { value: 'RETURN', label: 'Повернення' },
-];
-const OUTGOING_REASONS = [
-  { value: 'Damaged', label: 'Пошкоджено' },
-  { value: 'Lost', label: 'Втрачено' },
-  { value: 'Return', label: 'Повернення' },
-  { value: 'Inventory', label: 'Інвентаризація' },
-  { value: 'Other', label: 'Інше' },
-];
+const INCOMING_REASON_VALUES = ['INCOMING', 'RETURN'];
+const OUTGOING_REASON_VALUES = ['Damaged', 'Lost', 'Return', 'Inventory', 'Other'];
 
 const emptyIncomingForm = { productId: '', quantity: 1, purchasePrice: '', reason: 'INCOMING', companyId: '', documentDate: '', notes: '' };
 const emptyOutgoingForm = { productId: '', quantity: 1, reason: 'Damaged', companyId: '', documentDate: '', notes: '' };
@@ -49,6 +41,8 @@ const downloadBlob = (blob, filename) => {
 
 // ======================= Таб: Прибуткові накладні =======================
 function IncomingTab({ products, companies }) {
+  const { t } = useTranslation();
+  const INCOMING_REASONS = INCOMING_REASON_VALUES.map((value) => ({ value, label: t('admin.warehouse.reason_' + (value === 'INCOMING' ? 'incoming' : 'return')) }));
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -104,17 +98,17 @@ function IncomingTab({ products, companies }) {
       resetForm();
       load();
     } catch (err) {
-      alert(errMessage(err, 'Не вдалося зберегти прибуткову накладну'));
+      alert(errMessage(err, t('admin.warehouse.save_incoming_error')));
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Видалити прибуткову накладну? Залишки буде перераховано.')) return;
+    if (!window.confirm(t('admin.warehouse.confirm_delete_incoming'))) return;
     try {
       await warehouseAPI.deleteIncoming(id);
       load();
     } catch (err) {
-      alert(errMessage(err, 'Не вдалося видалити документ'));
+      alert(errMessage(err, t('admin.warehouse.delete_error')));
     }
   };
 
@@ -125,84 +119,84 @@ function IncomingTab({ products, companies }) {
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button type="button" style={{ ...btnStyle, background: '#007bff' }}
           onClick={() => { resetForm(); setShowForm(true); }}>
-          + Створити накладну
+          {t('admin.warehouse.create_document')}
         </button>
       </div>
 
       {showForm && (
         <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)', marginBottom: 30 }}>
-          <h3 style={{ marginBottom: 20 }}>{editingId ? 'Редагувати прибуткову накладну' : 'Нова прибуткова накладна'}</h3>
+          <h3 style={{ marginBottom: 20 }}>{editingId ? t('admin.warehouse.edit_incoming') : t('admin.warehouse.new_incoming')}</h3>
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label htmlFor="incoming-product" style={labelStyle}>Товар *</label>
+                <label htmlFor="incoming-product" style={labelStyle}>{t('admin.common.product')} *</label>
                 <select id="incoming-product" required value={form.productId} style={inputStyle}
                   onChange={(e) => setForm({ ...form, productId: e.target.value })}>
-                  <option value="">— Оберіть товар —</option>
+                  <option value="">{t('admin.warehouse.select_product')}</option>
                   {products.map((p) => <option key={p.productId} value={p.productId}>{p.name}</option>)}
                 </select>
               </div>
               <div>
-                <label htmlFor="incoming-quantity" style={labelStyle}>Кількість *</label>
+                <label htmlFor="incoming-quantity" style={labelStyle}>{t('admin.common.quantity')} *</label>
                 <input id="incoming-quantity" type="number" min="1" required value={form.quantity} style={inputStyle}
                   onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
               </div>
               <div>
-                <label htmlFor="incoming-purchase-price" style={labelStyle}>Ціна закупівлі, ₴ *</label>
+                <label htmlFor="incoming-purchase-price" style={labelStyle}>{t('admin.warehouse.purchase_price')} *</label>
                 <input id="incoming-purchase-price" type="number" min="0.01" step="0.01" required value={form.purchasePrice} style={inputStyle}
                   onChange={(e) => setForm({ ...form, purchasePrice: e.target.value })} />
               </div>
               <div>
-                <label htmlFor="incoming-reason" style={labelStyle}>Причина *</label>
+                <label htmlFor="incoming-reason" style={labelStyle}>{t('admin.common.reason')} *</label>
                 <select id="incoming-reason" value={form.reason} style={inputStyle}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}>
                   {INCOMING_REASONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
               </div>
               <div>
-                <label htmlFor="incoming-company" style={labelStyle}>Компанія-постачальник {companyRequired ? '*' : '(необов’язково)'}</label>
+                <label htmlFor="incoming-company" style={labelStyle}>{t('admin.warehouse.supplier_company')} {companyRequired ? '*' : t('admin.common.optional')}</label>
                 <select id="incoming-company" required={companyRequired} value={form.companyId} style={inputStyle}
                   onChange={(e) => setForm({ ...form, companyId: e.target.value })}>
-                  <option value="">— Оберіть компанію —</option>
+                  <option value="">{t('admin.warehouse.select_company')}</option>
                   {companies.filter((c) => c.isActive).map((c) => <option key={c.companyId} value={c.companyId}>{c.name}</option>)}
                 </select>
               </div>
               <div>
-                <label htmlFor="incoming-document-date" style={labelStyle}>Дата документа</label>
+                <label htmlFor="incoming-document-date" style={labelStyle}>{t('admin.warehouse.document_date')}</label>
                 <input id="incoming-document-date" type="date" value={form.documentDate} style={inputStyle}
                   onChange={(e) => setForm({ ...form, documentDate: e.target.value })} />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label htmlFor="incoming-notes" style={labelStyle}>Примітки</label>
+                <label htmlFor="incoming-notes" style={labelStyle}>{t('admin.common.notes')}</label>
                 <textarea id="incoming-notes" rows={2} value={form.notes} style={inputStyle}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
             </div>
             <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
               <button type="submit" style={{ ...btnStyle, background: '#28a745' }}>
-                {editingId ? 'Зберегти зміни' : 'Створити'}
+                {editingId ? t('admin.common.save_changes') : t('admin.common.create')}
               </button>
               <button type="button" style={{ ...btnStyle, background: '#6c757d' }}
                 onClick={() => { setShowForm(false); resetForm(); }}>
-                Скасувати
+                {t('common.cancel')}
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {loading ? <div style={emptyRowStyle}>Завантаження...</div> : (
+      {loading ? <div style={emptyRowStyle}>{t('common.loading')}</div> : (
         <div style={cardStyle}>
           <table style={tableStyle}>
             <thead style={{ background: '#f8f9fa' }}>
               <tr>
-                <th style={thStyle}>Товар</th>
-                <th style={thStyle}>Кількість</th>
-                <th style={thStyle}>Ціна закупівлі</th>
-                <th style={thStyle}>Причина</th>
-                <th style={thStyle}>Компанія</th>
-                <th style={thStyle}>Дата</th>
-                <th style={thStyle}>Дії</th>
+                <th style={thStyle}>{t('admin.common.product')}</th>
+                <th style={thStyle}>{t('admin.common.quantity')}</th>
+                <th style={thStyle}>{t('admin.warehouse.purchase_price_short')}</th>
+                <th style={thStyle}>{t('admin.common.reason')}</th>
+                <th style={thStyle}>{t('admin.common.company')}</th>
+                <th style={thStyle}>{t('admin.common.date')}</th>
+                <th style={thStyle}>{t('admin.common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -216,15 +210,15 @@ function IncomingTab({ products, companies }) {
                   <td style={tdStyle}>{toDateInput(doc.documentDate)}</td>
                   <td style={tdStyle}>
                     <button type="button" style={{ ...btnSmall, border: '1px solid #007bff', background: 'transparent', color: '#007bff' }}
-                      onClick={() => handleEdit(doc)}>Редагувати</button>
+                      onClick={() => handleEdit(doc)}>{t('admin.common.edit')}</button>
                     <button type="button" style={{ ...btnSmall, border: '1px solid #dc3545', background: 'transparent', color: '#dc3545', marginRight: 0 }}
-                      onClick={() => handleDelete(doc.documentId)}>Видалити</button>
+                      onClick={() => handleDelete(doc.documentId)}>{t('admin.common.delete')}</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {items.length === 0 && <div style={emptyRowStyle}>Прибуткових накладних ще немає</div>}
+          {items.length === 0 && <div style={emptyRowStyle}>{t('admin.warehouse.no_incoming')}</div>}
         </div>
       )}
     </div>
@@ -233,6 +227,8 @@ function IncomingTab({ products, companies }) {
 
 // ======================= Таб: Видаткові накладні =======================
 function OutgoingTab({ products, companies }) {
+  const { t } = useTranslation();
+  const OUTGOING_REASONS = OUTGOING_REASON_VALUES.map((value) => ({ value, label: t('admin.warehouse.reason_' + ({Damaged:'damaged',Lost:'lost',Return:'return',Inventory:'inventory',Other:'other'}[value])) }));
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -286,17 +282,17 @@ function OutgoingTab({ products, companies }) {
       resetForm();
       load();
     } catch (err) {
-      alert(errMessage(err, 'Не вдалося зберегти видаткову накладну'));
+      alert(errMessage(err, t('admin.warehouse.save_outgoing_error')));
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Видалити видаткову накладну? Залишки буде перераховано.')) return;
+    if (!window.confirm(t('admin.warehouse.confirm_delete_outgoing'))) return;
     try {
       await warehouseAPI.deleteOutgoing(id);
       load();
     } catch (err) {
-      alert(errMessage(err, 'Не вдалося видалити документ'));
+      alert(errMessage(err, t('admin.warehouse.delete_error')));
     }
   };
 
@@ -307,78 +303,78 @@ function OutgoingTab({ products, companies }) {
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button type="button" style={{ ...btnStyle, background: '#007bff' }}
           onClick={() => { resetForm(); setShowForm(true); }}>
-          + Створити накладну
+          {t('admin.warehouse.create_document')}
         </button>
       </div>
 
       {showForm && (
         <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)', marginBottom: 30 }}>
-          <h3 style={{ marginBottom: 20 }}>{editingId ? 'Редагувати видаткову накладну' : 'Нова видаткова накладна'}</h3>
+          <h3 style={{ marginBottom: 20 }}>{editingId ? t('admin.warehouse.edit_outgoing') : t('admin.warehouse.new_outgoing')}</h3>
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label htmlFor="outgoing-product" style={labelStyle}>Товар *</label>
+                <label htmlFor="outgoing-product" style={labelStyle}>{t('admin.common.product')} *</label>
                 <select id="outgoing-product" required value={form.productId} style={inputStyle}
                   onChange={(e) => setForm({ ...form, productId: e.target.value })}>
-                  <option value="">— Оберіть товар —</option>
+                  <option value="">{t('admin.warehouse.select_product')}</option>
                   {products.map((p) => <option key={p.productId} value={p.productId}>{p.name}</option>)}
                 </select>
               </div>
               <div>
-                <label htmlFor="outgoing-quantity" style={labelStyle}>Кількість *</label>
+                <label htmlFor="outgoing-quantity" style={labelStyle}>{t('admin.common.quantity')} *</label>
                 <input id="outgoing-quantity" type="number" min="1" required value={form.quantity} style={inputStyle}
                   onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
               </div>
               <div>
-                <label htmlFor="outgoing-reason" style={labelStyle}>Причина *</label>
+                <label htmlFor="outgoing-reason" style={labelStyle}>{t('admin.common.reason')} *</label>
                 <select id="outgoing-reason" value={form.reason} style={inputStyle}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}>
                   {OUTGOING_REASONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
               </div>
               <div>
-                <label htmlFor="outgoing-company" style={labelStyle}>Компанія {companyRequired ? '*' : '(необов’язково)'}</label>
+                <label htmlFor="outgoing-company" style={labelStyle}>{t('admin.common.company')} {companyRequired ? '*' : t('admin.common.optional')}</label>
                 <select id="outgoing-company" required={companyRequired} value={form.companyId} style={inputStyle}
                   onChange={(e) => setForm({ ...form, companyId: e.target.value })}>
-                  <option value="">— Оберіть компанію —</option>
+                  <option value="">{t('admin.warehouse.select_company')}</option>
                   {companies.filter((c) => c.isActive).map((c) => <option key={c.companyId} value={c.companyId}>{c.name}</option>)}
                 </select>
               </div>
               <div>
-                <label htmlFor="outgoing-document-date" style={labelStyle}>Дата документа</label>
+                <label htmlFor="outgoing-document-date" style={labelStyle}>{t('admin.warehouse.document_date')}</label>
                 <input id="outgoing-document-date" type="date" value={form.documentDate} style={inputStyle}
                   onChange={(e) => setForm({ ...form, documentDate: e.target.value })} />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label htmlFor="outgoing-notes" style={labelStyle}>Примітки</label>
+                <label htmlFor="outgoing-notes" style={labelStyle}>{t('admin.common.notes')}</label>
                 <textarea id="outgoing-notes" rows={2} value={form.notes} style={inputStyle}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
             </div>
             <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
               <button type="submit" style={{ ...btnStyle, background: '#28a745' }}>
-                {editingId ? 'Зберегти зміни' : 'Створити'}
+                {editingId ? t('admin.common.save_changes') : t('admin.common.create')}
               </button>
               <button type="button" style={{ ...btnStyle, background: '#6c757d' }}
                 onClick={() => { setShowForm(false); resetForm(); }}>
-                Скасувати
+                {t('common.cancel')}
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {loading ? <div style={emptyRowStyle}>Завантаження...</div> : (
+      {loading ? <div style={emptyRowStyle}>{t('common.loading')}</div> : (
         <div style={cardStyle}>
           <table style={tableStyle}>
             <thead style={{ background: '#f8f9fa' }}>
               <tr>
-                <th style={thStyle}>Товар</th>
-                <th style={thStyle}>Кількість</th>
-                <th style={thStyle}>Причина</th>
-                <th style={thStyle}>Компанія</th>
-                <th style={thStyle}>Дата</th>
-                <th style={thStyle}>Дії</th>
+                <th style={thStyle}>{t('admin.common.product')}</th>
+                <th style={thStyle}>{t('admin.common.quantity')}</th>
+                <th style={thStyle}>{t('admin.common.reason')}</th>
+                <th style={thStyle}>{t('admin.common.company')}</th>
+                <th style={thStyle}>{t('admin.common.date')}</th>
+                <th style={thStyle}>{t('admin.common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -391,13 +387,13 @@ function OutgoingTab({ products, companies }) {
                   <td style={tdStyle}>{toDateInput(doc.documentDate)}</td>
                   <td style={tdStyle}>
                     {doc.reason === 'Order' ? (
-                      <span style={{ color: '#595959', fontSize: '0.85rem' }}>створено системою</span>
+                      <span style={{ color: '#595959', fontSize: '0.85rem' }}>{t('admin.warehouse.created_by_system')}</span>
                     ) : (
                       <>
                         <button type="button" style={{ ...btnSmall, border: '1px solid #007bff', background: 'transparent', color: '#007bff' }}
-                          onClick={() => handleEdit(doc)}>Редагувати</button>
+                          onClick={() => handleEdit(doc)}>{t('admin.common.edit')}</button>
                         <button type="button" style={{ ...btnSmall, border: '1px solid #dc3545', background: 'transparent', color: '#dc3545', marginRight: 0 }}
-                          onClick={() => handleDelete(doc.documentId)}>Видалити</button>
+                          onClick={() => handleDelete(doc.documentId)}>{t('admin.common.delete')}</button>
                       </>
                     )}
                   </td>
@@ -405,7 +401,7 @@ function OutgoingTab({ products, companies }) {
               ))}
             </tbody>
           </table>
-          {items.length === 0 && <div style={emptyRowStyle}>Видаткових накладних ще немає</div>}
+          {items.length === 0 && <div style={emptyRowStyle}>{t('admin.warehouse.no_outgoing')}</div>}
         </div>
       )}
     </div>
@@ -414,6 +410,7 @@ function OutgoingTab({ products, companies }) {
 
 // ======================= Таб: Поточні залишки =======================
 function StockTab() {
+  const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lowStockOnly, setLowStockOnly] = useState(false);
@@ -441,7 +438,7 @@ function StockTab() {
       const stamp = new Date().toISOString().split('T')[0].replace(/-/g, '');
       downloadBlob(res.data, `stock_report_${stamp}.${format}`);
     } catch (err) {
-      alert('Не вдалося експортувати залишки');
+      alert(t('admin.warehouse.export_error'));
     } finally {
       setExporting('');
     }
@@ -460,7 +457,7 @@ function StockTab() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 500 }}>
           <input type="checkbox" checked={lowStockOnly} onChange={(e) => setLowStockOnly(e.target.checked)} style={{ marginRight: 8 }} />
-          Лише низький залишок
+          {t('admin.warehouse.low_stock_only')}
         </label>
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="button" disabled={!!exporting} style={{ ...btnStyle, background: '#17a2b8', opacity: exporting ? 0.6 : 1 }}
@@ -472,16 +469,16 @@ function StockTab() {
         </div>
       </div>
 
-      {loading ? <div style={emptyRowStyle}>Завантаження...</div> : (
+      {loading ? <div style={emptyRowStyle}>{t('common.loading')}</div> : (
         <div style={cardStyle}>
           <table style={tableStyle}>
             <thead style={{ background: '#f8f9fa' }}>
               <tr>
-                <th style={thStyle}>Товар</th>
-                <th style={thStyle}>Загальний прихід</th>
-                <th style={thStyle}>Загальний розхід</th>
-                <th style={thStyle}>Поточний залишок</th>
-                <th style={thStyle}>Статус</th>
+                <th style={thStyle}>{t('admin.common.product')}</th>
+                <th style={thStyle}>{t('admin.warehouse.col_total_incoming')}</th>
+                <th style={thStyle}>{t('admin.warehouse.col_total_outgoing')}</th>
+                <th style={thStyle}>{t('admin.warehouse.col_current_stock')}</th>
+                <th style={thStyle}>{t('admin.common.status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -494,11 +491,11 @@ function StockTab() {
                   <td style={tdStyle}>
                     {item.lowStock ? (
                       <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: '0.85rem', background: '#fff3cd', color: '#856404' }}>
-                        Низький залишок
+                        {t('admin.warehouse.low_stock')}
                       </span>
                     ) : (
                       <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: '0.85rem', background: '#d4edda', color: '#155724' }}>
-                        Достатньо
+                        {t('admin.warehouse.enough')}
                       </span>
                     )}
                   </td>
@@ -507,7 +504,7 @@ function StockTab() {
             </tbody>
           </table>
           {visible.length === 0 && (
-            <div style={emptyRowStyle}>{lowStockOnly ? 'Товарів із низьким залишком немає' : 'Даних по складу ще немає'}</div>
+            <div style={emptyRowStyle}>{lowStockOnly ? t('admin.warehouse.no_low_stock') : t('admin.warehouse.no_stock_data')}</div>
           )}
         </div>
       )}
@@ -517,6 +514,7 @@ function StockTab() {
 
 // ======================= Таб: Компанії =======================
 function CompaniesTab({ companies, reloadCompanies }) {
+  const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyCompanyForm);
@@ -557,17 +555,17 @@ function CompaniesTab({ companies, reloadCompanies }) {
       resetForm();
       reloadCompanies();
     } catch (err) {
-      alert(errMessage(err, 'Не вдалося зберегти компанію'));
+      alert(errMessage(err, t('admin.warehouse.save_company_error')));
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Видалити/деактивувати цю компанію?')) return;
+    if (!window.confirm(t('admin.warehouse.confirm_delete_company'))) return;
     try {
       await companiesAPI.delete(id);
       reloadCompanies();
     } catch (err) {
-      alert(errMessage(err, 'Не вдалося видалити компанію'));
+      alert(errMessage(err, t('admin.warehouse.delete_company_error')));
     }
   };
 
@@ -577,7 +575,7 @@ function CompaniesTab({ companies, reloadCompanies }) {
       else await companiesAPI.activate(company.companyId);
       reloadCompanies();
     } catch (err) {
-      alert(errMessage(err, 'Не вдалося змінити статус компанії'));
+      alert(errMessage(err, t('admin.warehouse.toggle_company_error')));
     }
   };
 
@@ -586,47 +584,47 @@ function CompaniesTab({ companies, reloadCompanies }) {
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button type="button" style={{ ...btnStyle, background: '#007bff' }}
           onClick={() => { resetForm(); setShowForm(true); }}>
-          + Додати компанію
+          {t('admin.warehouse.add_company')}
         </button>
       </div>
 
       {showForm && (
         <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)', marginBottom: 30 }}>
-          <h3 style={{ marginBottom: 20 }}>{editingId ? 'Редагувати компанію' : 'Нова компанія'}</h3>
+          <h3 style={{ marginBottom: 20 }}>{editingId ? t('admin.warehouse.edit_company') : t('admin.warehouse.new_company')}</h3>
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label htmlFor="warehouse-company-name" style={labelStyle}>Назва компанії *</label>
+                <label htmlFor="warehouse-company-name" style={labelStyle}>{t('admin.companies.label_name')}</label>
                 <input id="warehouse-company-name" type="text" required value={form.name} style={inputStyle}
                   onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
               <div>
-                <label htmlFor="warehouse-company-name-en" style={labelStyle}>Назва (EN)</label>
+                <label htmlFor="warehouse-company-name-en" style={labelStyle}>{t('admin.common.name_en')}</label>
                 <input id="warehouse-company-name-en" type="text" value={form.nameEn} style={inputStyle}
                   onChange={(e) => setForm({ ...form, nameEn: e.target.value })} />
               </div>
               <div>
-                <label htmlFor="warehouse-company-contact" style={labelStyle}>Контактна особа</label>
+                <label htmlFor="warehouse-company-contact" style={labelStyle}>{t('admin.common.contact_person')}</label>
                 <input id="warehouse-company-contact" type="text" value={form.contactPerson} style={inputStyle}
                   onChange={(e) => setForm({ ...form, contactPerson: e.target.value })} />
               </div>
               <div>
-                <label htmlFor="warehouse-company-phone" style={labelStyle}>Телефон</label>
+                <label htmlFor="warehouse-company-phone" style={labelStyle}>{t('admin.common.phone')}</label>
                 <input id="warehouse-company-phone" type="text" placeholder="+380XXXXXXXXX" value={form.phone} style={inputStyle}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               </div>
               <div>
-                <label htmlFor="warehouse-company-email" style={labelStyle}>Email</label>
+                <label htmlFor="warehouse-company-email" style={labelStyle}>{t('admin.common.email')}</label>
                 <input id="warehouse-company-email" type="email" value={form.email} style={inputStyle}
                   onChange={(e) => setForm({ ...form, email: e.target.value })} />
               </div>
               <div>
-                <label htmlFor="warehouse-company-address" style={labelStyle}>Адреса</label>
+                <label htmlFor="warehouse-company-address" style={labelStyle}>{t('admin.common.address')}</label>
                 <input id="warehouse-company-address" type="text" value={form.address} style={inputStyle}
                   onChange={(e) => setForm({ ...form, address: e.target.value })} />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label htmlFor="warehouse-company-notes" style={labelStyle}>Примітки</label>
+                <label htmlFor="warehouse-company-notes" style={labelStyle}>{t('admin.common.notes')}</label>
                 <textarea id="warehouse-company-notes" rows={2} value={form.notes} style={inputStyle}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
@@ -634,17 +632,17 @@ function CompaniesTab({ companies, reloadCompanies }) {
                 <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
                   <input type="checkbox" checked={form.isActive} style={{ marginRight: 8 }}
                     onChange={(e) => setForm({ ...form, isActive: e.target.checked })} />
-                  Активна
+                  {t('admin.common.active')}
                 </label>
               </div>
             </div>
             <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
               <button type="submit" style={{ ...btnStyle, background: '#28a745' }}>
-                {editingId ? 'Зберегти зміни' : 'Створити компанію'}
+                {editingId ? t('admin.common.save_changes') : t('admin.warehouse.create_company')}
               </button>
               <button type="button" style={{ ...btnStyle, background: '#6c757d' }}
                 onClick={() => { setShowForm(false); resetForm(); }}>
-                Скасувати
+                {t('common.cancel')}
               </button>
             </div>
           </form>
@@ -655,12 +653,12 @@ function CompaniesTab({ companies, reloadCompanies }) {
         <table style={tableStyle}>
           <thead style={{ background: '#f8f9fa' }}>
             <tr>
-              <th style={thStyle}>Назва</th>
-              <th style={thStyle}>Контакт</th>
-              <th style={thStyle}>Телефон</th>
-              <th style={thStyle}>Email</th>
-              <th style={thStyle}>Статус</th>
-              <th style={thStyle}>Дії</th>
+              <th style={thStyle}>{t('admin.companies.col_name')}</th>
+              <th style={thStyle}>{t('admin.companies.col_contact')}</th>
+              <th style={thStyle}>{t('admin.common.phone')}</th>
+              <th style={thStyle}>{t('admin.common.email')}</th>
+              <th style={thStyle}>{t('admin.common.status')}</th>
+              <th style={thStyle}>{t('admin.common.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -676,22 +674,22 @@ function CompaniesTab({ companies, reloadCompanies }) {
                     background: company.isActive ? '#d4edda' : '#f8d7da',
                     color: company.isActive ? '#155724' : '#721c24',
                   }}>
-                    {company.isActive ? 'Активна' : 'Деактивована'}
+                    {company.isActive ? t('admin.common.active') : t('admin.common.inactive')}
                   </span>
                 </td>
                 <td style={tdStyle}>
                   <button type="button" style={{ ...btnSmall, border: '1px solid #007bff', background: 'transparent', color: '#007bff' }}
-                    onClick={() => handleEdit(company)}>Редагувати</button>
+                    onClick={() => handleEdit(company)}>{t('admin.common.edit')}</button>
                   <button type="button" style={{ ...btnSmall, border: `1px solid ${company.isActive ? '#6c757d' : '#28a745'}`, background: 'transparent', color: company.isActive ? '#6c757d' : '#28a745' }}
-                    onClick={() => toggleActive(company)}>{company.isActive ? 'Деактивувати' : 'Активувати'}</button>
+                    onClick={() => toggleActive(company)}>{company.isActive ? t('admin.common.deactivate') : t('admin.common.activate')}</button>
                   <button type="button" style={{ ...btnSmall, border: '1px solid #dc3545', background: 'transparent', color: '#dc3545', marginRight: 0 }}
-                    onClick={() => handleDelete(company.companyId)}>Видалити</button>
+                    onClick={() => handleDelete(company.companyId)}>{t('admin.common.delete')}</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {companies.length === 0 && <div style={emptyRowStyle}>Компаній поки що немає</div>}
+        {companies.length === 0 && <div style={emptyRowStyle}>{t('admin.warehouse.empty_companies')}</div>}
       </div>
     </div>
   );
@@ -699,6 +697,7 @@ function CompaniesTab({ companies, reloadCompanies }) {
 
 // ======================= Головна сторінка =======================
 function AdminWarehousePage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('incoming');
   const [products, setProducts] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -733,19 +732,19 @@ function AdminWarehousePage() {
   }, []);
 
   const tabs = [
-    { key: 'incoming', label: 'Прибуткові' },
-    { key: 'outgoing', label: 'Видаткові' },
-    { key: 'stock', label: 'Поточні залишки' },
-    { key: 'companies', label: 'Компанії' },
+    { key: 'incoming', label: t('admin.warehouse.tab_incoming') },
+    { key: 'outgoing', label: t('admin.warehouse.tab_outgoing') },
+    { key: 'stock', label: t('admin.warehouse.tab_stock') },
+    { key: 'companies', label: t('admin.warehouse.tab_companies') },
   ];
 
   return (
     <div className="admin-warehouse" style={{ padding: 20, maxWidth: 1200, margin: '0 auto' }}>
       <div style={{ marginBottom: 20 }}>
         <Link to="/admin" className="back-link" style={{ textDecoration: 'none', color: '#666', display: 'block', marginBottom: 10 }}>
-          ← Назад до дашборду
+          {t('admin.common.back_to_dashboard')}
         </Link>
-        <h1>Склад</h1>
+        <h1>{t('admin.warehouse.title')}</h1>
       </div>
 
       <div style={tabsStyle}>
@@ -764,7 +763,7 @@ function AdminWarehousePage() {
         ))}
       </div>
 
-      {loading && <div style={emptyRowStyle}>Завантаження...</div>}
+      {loading && <div style={emptyRowStyle}>{t('common.loading')}</div>}
 
       {!loading && activeTab === 'incoming' && <IncomingTab products={products} companies={companies} />}
       {!loading && activeTab === 'outgoing' && <OutgoingTab products={products} companies={companies} />}

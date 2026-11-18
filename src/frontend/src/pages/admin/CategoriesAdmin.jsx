@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { categoriesAPI, adminCategoriesAPI, productsAPI } from '../../services/api';
 
@@ -32,6 +33,7 @@ const updateChildren = (nodes, parentId, newChildren) => {
 };
 
 function CategoriesAdmin() {
+  const { t } = useTranslation();
   const { user, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const [categoriesTree, setCategoriesTree] = useState([]);
@@ -51,6 +53,23 @@ function CategoriesAdmin() {
   const [dragId, setDragId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
 
+  const loadData = useCallback(async () => {
+    try {
+      setPageLoading(true);
+      const [catRes, prodRes] = await Promise.all([
+        categoriesAPI.getAll(),
+        productsAPI.getAll({ pageSize: 100 })
+      ]);
+      setCategoriesTree(catRes.data || []);
+      setProducts(prodRes.data.items || []);
+      setError(null);
+    } catch (e) {
+      setError(t('admin.common.load_error'));
+    } finally {
+      setPageLoading(false);
+    }
+  }, [t]);
+
   useEffect(() => {
     if (loading) return;
     if (!isAuthenticated) {
@@ -62,24 +81,7 @@ function CategoriesAdmin() {
       return;
     }
     loadData();
-  }, [loading, isAuthenticated, user, navigate]);
-
-  const loadData = async () => {
-    try {
-      setPageLoading(true);
-      const [catRes, prodRes] = await Promise.all([
-        categoriesAPI.getAll(),
-        productsAPI.getAll({ pageSize: 100 })
-      ]);
-      setCategoriesTree(catRes.data || []);
-      setProducts(prodRes.data.items || []);
-      setError(null);
-    } catch (e) {
-      setError('Помилка завантаження даних');
-    } finally {
-      setPageLoading(false);
-    }
-  };
+  }, [loading, isAuthenticated, user, navigate, loadData]);
 
   const getCategoryProductCount = (category) => {
     let count = products.filter(p => p.categoryId === category.categoryId).length;
@@ -116,7 +118,7 @@ function CategoriesAdmin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) {
-      alert('Введіть назву категорії');
+      alert(t('admin.categories.err_name'));
       return;
     }
     setSaving(true);
@@ -135,7 +137,7 @@ function CategoriesAdmin() {
       await loadData();
       setModal(null);
     } catch (err) {
-      alert(err.response?.data?.error || 'Помилка збереження категорії');
+      alert(err.response?.data?.error || t('admin.categories.err_save'));
     } finally {
       setSaving(false);
     }
@@ -155,7 +157,7 @@ function CategoriesAdmin() {
       setModal(null);
       setDeleteTarget(null);
     } catch (err) {
-      alert(err.response?.data?.message || 'Помилка видалення категорії');
+      alert(err.response?.data?.message || t('admin.categories.err_delete'));
     } finally {
       setSaving(false);
     }
@@ -198,7 +200,7 @@ function CategoriesAdmin() {
         displayOrder: idx
       })));
     } catch (err) {
-      alert(err.response?.data?.message || 'Не вдалося зберегти порядок');
+      alert(err.response?.data?.message || t('admin.categories.err_reorder'));
       loadData();
     }
   };
@@ -243,8 +245,8 @@ function CategoriesAdmin() {
           </td>
           <td style={{ padding: '12px 8px' }}>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => openEdit(category)} style={actionBtnStyle('#ffc107')} title="Редагувати">✎</button>
-              <button onClick={() => confirmDelete(category)} style={actionBtnStyle('#dc3545')} title="Видалити">✕</button>
+              <button onClick={() => openEdit(category)} style={actionBtnStyle('#ffc107')} title={t('admin.common.edit')}>✎</button>
+              <button onClick={() => confirmDelete(category)} style={actionBtnStyle('#dc3545')} title={t('admin.common.delete')}>✕</button>
             </div>
           </td>
         </tr>
@@ -255,21 +257,21 @@ function CategoriesAdmin() {
     );
   };
 
-  if (loading || pageLoading) return <div style={{ padding: 20 }}>Завантаження...</div>;
+  if (loading || pageLoading) return <div style={{ padding: 20 }}>{t('common.loading')}</div>;
   if (error) return <div style={{ padding: 20 }}>{error}</div>;
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto', padding: 20 }}>
       <div style={{ marginBottom: 30 }}>
         <Link to="/admin" style={{ textDecoration: 'none', color: '#007bff', fontWeight: 600, display: 'block', marginBottom: 10 }}>
-          ← Назад до дашборду
+          {t('admin.common.back_to_dashboard')}
         </Link>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1>Керування категоріями</h1>
-          <button onClick={openCreate} style={primaryBtnStyle('#28a745')}>+ Додати категорію</button>
+          <h1>{t('admin.categories.title')}</h1>
+          <button onClick={openCreate} style={primaryBtnStyle('#28a745')}>{t('admin.categories.add')}</button>
         </div>
         <p style={{ color: '#595959', fontSize: '0.85rem', marginTop: 8 }}>
-          Перетягніть рядок, щоб змінити порядок відображення в межах одного рівня.
+          {t('admin.categories.drag_hint')}
         </p>
       </div>
 
@@ -277,10 +279,10 @@ function CategoriesAdmin() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #eee', textAlign: 'left' }}>
-              <th style={thStyle}>Назва</th>
-              <th style={thStyle}>Опис</th>
-              <th style={{ ...thStyle, textAlign: 'center' }}>Товари</th>
-              <th style={{ ...thStyle, textAlign: 'right' }}>Дії</th>
+              <th style={thStyle}>{t('admin.categories.col_name')}</th>
+              <th style={thStyle}>{t('admin.categories.col_description')}</th>
+              <th style={{ ...thStyle, textAlign: 'center' }}>{t('admin.categories.col_products')}</th>
+              <th style={{ ...thStyle, textAlign: 'right' }}>{t('admin.common.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -292,16 +294,16 @@ function CategoriesAdmin() {
       </div>
 
       {modal === 'create' || modal === 'edit' ? (
-        <Modal title={editId ? 'Редагувати категорію' : 'Нова категорія'} onClose={() => setModal(null)}>
+        <Modal title={editId ? t('admin.categories.edit_title') : t('admin.categories.new_title')} onClose={() => setModal(null)}>
           <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 15 }}>
             <div>
-              <label htmlFor="category-name" style={labelStyle}>Назва *</label>
+              <label htmlFor="category-name" style={labelStyle}>{t('admin.categories.label_name')}</label>
               <input id="category-name" name="name" value={form.name} onChange={handleChange} style={inputStyle} required />
             </div>
             <div>
-              <label htmlFor="category-parent" style={labelStyle}>Батьківська категорія</label>
+              <label htmlFor="category-parent" style={labelStyle}>{t('admin.categories.label_parent')}</label>
               <select id="category-parent" name="parentCategoryId" value={form.parentCategoryId} onChange={handleChange} style={inputStyle}>
-                <option value="">Немає (головна)</option>
+                <option value="">{t('admin.categories.no_parent')}</option>
                 {categoriesTree
                   .filter(c => c.categoryId !== editId)
                   .map(c => (
@@ -310,17 +312,17 @@ function CategoriesAdmin() {
               </select>
             </div>
             <div>
-              <label htmlFor="category-description" style={labelStyle}>Опис</label>
+              <label htmlFor="category-description" style={labelStyle}>{t('admin.categories.label_description')}</label>
               <textarea id="category-description" name="description" value={form.description} onChange={handleChange} rows={3} style={inputStyle} />
             </div>
             <div>
-              <label htmlFor="category-order" style={labelStyle}>Порядок відображення</label>
+              <label htmlFor="category-order" style={labelStyle}>{t('admin.categories.label_order')}</label>
               <input id="category-order" name="displayOrder" type="number" value={form.displayOrder} onChange={handleChange} style={inputStyle} />
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 10 }}>
-              <button type="button" onClick={() => setModal(null)} style={secondaryBtnStyle} disabled={saving}>Скасувати</button>
+              <button type="button" onClick={() => setModal(null)} style={secondaryBtnStyle} disabled={saving}>{t('common.cancel')}</button>
               <button type="submit" style={primaryBtnStyle('#007bff')} disabled={saving}>
-                {saving ? 'Збереження...' : editId ? 'Зберегти зміни' : 'Створити'}
+                {saving ? t('admin.common.saving') : editId ? t('admin.common.save_changes') : t('admin.common.create')}
               </button>
             </div>
           </form>
@@ -328,15 +330,12 @@ function CategoriesAdmin() {
       ) : null}
 
       {modal === 'delete' && deleteTarget ? (
-        <Modal title="Видалити категорію?" onClose={() => { setModal(null); setDeleteTarget(null); }}>
-          <p style={{ marginBottom: 20 }}>
-            Категорію «<strong>{deleteTarget.name}</strong>» буде видалено. Категорія має бути порожньою
-            (без товарів і підкатегорій).
-          </p>
+        <Modal title={t('admin.categories.delete_title')} onClose={() => { setModal(null); setDeleteTarget(null); }}>
+          <p style={{ marginBottom: 20 }}>{t('admin.categories.delete_confirm', { name: deleteTarget.name })}</p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <button type="button" onClick={() => { setModal(null); setDeleteTarget(null); }} style={secondaryBtnStyle} disabled={saving}>Скасувати</button>
+            <button type="button" onClick={() => { setModal(null); setDeleteTarget(null); }} style={secondaryBtnStyle} disabled={saving}>{t('common.cancel')}</button>
             <button type="button" onClick={handleDelete} style={primaryBtnStyle('#dc3545')} disabled={saving}>
-              {saving ? 'Видалення...' : 'Видалити'}
+              {saving ? t('admin.common.deleting') : t('admin.common.delete')}
             </button>
           </div>
         </Modal>
@@ -345,17 +344,20 @@ function CategoriesAdmin() {
   );
 }
 
-const Modal = ({ title, children, onClose }) => (
+const Modal = ({ title, children, onClose }) => {
+  const { t } = useTranslation();
+  return (
   <div style={overlayStyle} onClick={onClose}>
     <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <h3 style={{ margin: 0 }}>{title}</h3>
-        <button onClick={onClose} aria-label="Закрити" style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: '#595959' }}>✕</button>
+        <button onClick={onClose} aria-label={t('admin.common.close')} style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: '#595959' }}>✕</button>
       </div>
       {children}
     </div>
   </div>
-);
+  );
+};
 
 const overlayStyle = {
   position: 'fixed',

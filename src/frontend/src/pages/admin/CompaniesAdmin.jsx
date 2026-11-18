@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { companiesAPI } from '../../services/api';
 
 function CompaniesAdmin() {
+  const { t } = useTranslation();
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -49,7 +51,7 @@ function CompaniesAdmin() {
       resetForm();
       loadCompanies();
     } catch (err) {
-      alert(err.response?.data?.errors?.[0] || 'Не вдалося зберегти компанію');
+      alert(err.response?.data?.errors?.[0] || t('admin.companies.err_save'));
     }
   };
   const handleEdit = (company) => {
@@ -66,12 +68,12 @@ function CompaniesAdmin() {
     setShowForm(true);
   };
   const handleDelete = async (companyId) => {
-    if (!window.confirm('Ви впевнені, що хочете видалити/деактивувати цю компанію?')) return;
+    if (!window.confirm(t('admin.companies.confirm_delete'))) return;
     try {
       await companiesAPI.delete(companyId);
       loadCompanies();
     } catch (err) {
-      alert('Не вдалося видалити компанію');
+      alert(t('admin.companies.err_delete'));
     }
   };
   const resetForm = () => {
@@ -85,30 +87,30 @@ function CompaniesAdmin() {
       isActive: true
     });
   };
-  if (loading) return <div>Завантаження...</div>;
+  if (loading) return <div>{t('common.loading')}</div>;
   return (
     <div style={{ padding: 20, maxWidth: 1200, margin: '0 auto' }}>
       <div style={{ marginBottom: 20 }}>
         <Link to="/admin" style={{ textDecoration: 'none', color: '#666', display: 'block', marginBottom: 10 }}>
-          ← Повернутися до дашборду
+          {t('admin.common.back_to_dashboard')}
         </Link>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1>Компанії-постачальники</h1>
+          <h1>{t('admin.companies.title')}</h1>
           <button 
             onClick={() => { setShowForm(true); setEditingCompany(null); resetForm(); }}
             style={{ padding: '10px 20px', background: '#007bff', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}
           >
-            + Додати компанію
+            {t('admin.companies.add')}
           </button>
         </div>
       </div>
       {showForm && (
         <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)', marginBottom: 30 }}>
-          <h2 style={{ marginBottom: 20 }}>{editingCompany ? 'Редагувати компанію' : 'Нова компанія'}</h2>
+          <h2 style={{ marginBottom: 20 }}>{editingCompany ? t('admin.companies.edit_title') : t('admin.companies.new_title')}</h2>
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label htmlFor="company-name" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Назва компанії *</label>
+                <label htmlFor="company-name" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('admin.companies.label_name')}</label>
                 <input
                   id="company-name"
                   type="text"
@@ -119,7 +121,7 @@ function CompaniesAdmin() {
                 />
               </div>
               <div>
-                <label htmlFor="company-contact" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Контактна особа</label>
+                <label htmlFor="company-contact" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('admin.common.contact_person')}</label>
                 <input
                   id="company-contact"
                   type="text"
@@ -129,7 +131,7 @@ function CompaniesAdmin() {
                 />
               </div>
               <div>
-                <label htmlFor="company-phone" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Телефон</label>
+                <label htmlFor="company-phone" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('admin.common.phone')}</label>
                 <input
                   id="company-phone"
                   type="text"
@@ -140,7 +142,7 @@ function CompaniesAdmin() {
                 />
               </div>
               <div>
-                <label htmlFor="company-email" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Email</label>
+                <label htmlFor="company-email" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('admin.common.email')}</label>
                 <input
                   id="company-email"
                   type="email"
@@ -150,7 +152,7 @@ function CompaniesAdmin() {
                 />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label htmlFor="company-address" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Адреса</label>
+                <label htmlFor="company-address" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('admin.common.address')}</label>
                 <input
                   id="company-address"
                   type="text"
@@ -160,7 +162,7 @@ function CompaniesAdmin() {
                 />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label htmlFor="company-notes" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Примітки</label>
+                <label htmlFor="company-notes" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>{t('admin.common.notes')}</label>
                 <textarea
                   id="company-notes"
                   value={form.notes}
@@ -177,7 +179,7 @@ function CompaniesAdmin() {
                     onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                     style={{ marginRight: 8 }}
                   />
-                  Активна
+                  {t('admin.common.active')}
                 </label>
               </div>
             </div>
@@ -186,14 +188,14 @@ function CompaniesAdmin() {
                 type="submit"
                 style={{ padding: '12px 24px', background: '#28a745', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}
               >
-                {editingCompany ? 'Зберегти зміни' : 'Створити компанію'}
+                {editingCompany ? t('admin.common.save_changes') : t('admin.companies.create')}
               </button>
               <button
                 type="button"
                 onClick={() => { setShowForm(false); setEditingCompany(null); }}
                 style={{ padding: '12px 24px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}
               >
-                Скасувати
+                {t('common.cancel')}
               </button>
             </div>
           </form>
@@ -203,12 +205,12 @@ function CompaniesAdmin() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead style={{ background: '#f8f9fa' }}>
             <tr>
-              <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #eee' }}>Назва</th>
-              <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #eee' }}>Контакт</th>
-              <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #eee' }}>Телефон</th>
-              <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #eee' }}>Email</th>
-              <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #eee' }}>Статус</th>
-              <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #eee' }}>Дії</th>
+              <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #eee' }}>{t('admin.companies.col_name')}</th>
+              <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #eee' }}>{t('admin.companies.col_contact')}</th>
+              <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #eee' }}>{t('admin.common.phone')}</th>
+              <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #eee' }}>{t('admin.common.email')}</th>
+              <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #eee' }}>{t('admin.common.status')}</th>
+              <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #eee' }}>{t('admin.common.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -228,7 +230,7 @@ function CompaniesAdmin() {
                     background: company.isActive ? '#d4edda' : '#f8d7da',
                     color: company.isActive ? '#155724' : '#721c24'
                   }}>
-                    {company.isActive ? 'Активна' : 'Деактивована'}
+                    {company.isActive ? t('admin.common.active') : t('admin.common.inactive')}
                   </span>
                 </td>
                 <td style={{ padding: 16 }}>
@@ -236,13 +238,13 @@ function CompaniesAdmin() {
                     onClick={() => handleEdit(company)}
                     style={{ padding: '6px 12px', marginRight: 8, border: '1px solid #007bff', background: 'transparent', color: '#007bff', borderRadius: 6, cursor: 'pointer' }}
                   >
-                    Редагувати
+                    {t('admin.common.edit')}
                   </button>
                   <button
                     onClick={() => handleDelete(company.companyId)}
                     style={{ padding: '6px 12px', border: '1px solid #dc3545', background: 'transparent', color: '#dc3545', borderRadius: 6, cursor: 'pointer' }}
                   >
-                    Видалити
+                    {t('admin.common.delete')}
                   </button>
                 </td>
               </tr>
@@ -251,7 +253,7 @@ function CompaniesAdmin() {
         </table>
         {companies.length === 0 && (
           <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>
-            Компаній поки що немає
+            {t('admin.companies.empty')}
           </div>
         )}
       </div>

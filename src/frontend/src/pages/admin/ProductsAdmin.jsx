@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { productsAPI, categoriesAPI, adminProductsAPI, buildImageUrl } from '../../services/api';
 import { TableSkeleton } from '../../components/ui';
@@ -25,9 +26,9 @@ const moveItem = (list, from, to) => {
   return arr;
 };
 
-const WIZARD_STEPS = ['Основна інформація', 'Ціна та склад', 'Зображення'];
-
 function ProductsAdmin() {
+  const { t } = useTranslation();
+  const WIZARD_STEPS = [t('admin.products.step_basic'), t('admin.products.step_price'), t('admin.products.step_images')];
   const { user, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
@@ -61,6 +62,23 @@ function ProductsAdmin() {
   const [imgDrag, setImgDrag] = useState(null); // { list: 'existing'|'new', index }
   const [imgOver, setImgOver] = useState(null); // { list, index }
 
+  const loadData = useCallback(async () => {
+    try {
+      setPageLoading(true);
+      const [prodRes, catRes] = await Promise.all([
+        productsAPI.getAll({ pageSize: 100 }),
+        categoriesAPI.getAll()
+      ]);
+      setProducts(prodRes.data.items || []);
+      setCategoriesTree(catRes.data || []);
+      setError(null);
+    } catch (e) {
+      setError(t('admin.common.load_error'));
+    } finally {
+      setPageLoading(false);
+    }
+  }, [t]);
+
   useEffect(() => {
     if (loading) return;
     if (!isAuthenticated) {
@@ -72,24 +90,7 @@ function ProductsAdmin() {
       return;
     }
     loadData();
-  }, [loading, isAuthenticated, user, navigate]);
-
-  const loadData = async () => {
-    try {
-      setPageLoading(true);
-      const [prodRes, catRes] = await Promise.all([
-        productsAPI.getAll({ pageSize: 100 }),
-        categoriesAPI.getAll()
-      ]);
-      setProducts(prodRes.data.items || []);
-      setCategoriesTree(catRes.data || []);
-      setError(null);
-    } catch (e) {
-      setError('Помилка завантаження даних');
-    } finally {
-      setPageLoading(false);
-    }
-  };
+  }, [loading, isAuthenticated, user, navigate, loadData]);
 
   const flatCategories = useMemo(() => flattenCategories(categoriesTree), [categoriesTree]);
 
@@ -178,13 +179,13 @@ function ProductsAdmin() {
 
   const validateStep = () => {
     if (step === 0) {
-      if (!form.name.trim()) { alert('Введіть назву товару'); return false; }
-      if (form.description.trim().length < 10) { alert('Опис має містити мінімум 10 символів'); return false; }
-      if (!form.parentCategoryId) { alert('Оберіть категорію'); return false; }
+      if (!form.name.trim()) { alert(t('admin.products.err_name')); return false; }
+      if (form.description.trim().length < 10) { alert(t('admin.products.err_description')); return false; }
+      if (!form.parentCategoryId) { alert(t('admin.products.err_category')); return false; }
     }
     if (step === 1) {
-      if (!form.price || Number(form.price) <= 0) { alert('Введіть коректну ціну'); return false; }
-      if (!form.weight || Number(form.weight) <= 0) { alert('Введіть коректну вагу'); return false; }
+      if (!form.price || Number(form.price) <= 0) { alert(t('admin.products.err_price')); return false; }
+      if (!form.weight || Number(form.weight) <= 0) { alert(t('admin.products.err_weight')); return false; }
     }
     return true;
   };
@@ -194,7 +195,7 @@ function ProductsAdmin() {
 
   const handleSave = async () => {
     const categoryId = form.subCategoryId || form.parentCategoryId;
-    if (!categoryId) { alert('Будь ласка, оберіть категорію'); return; }
+    if (!categoryId) { alert(t('admin.products.err_select_category')); return; }
     setSaving(true);
     try {
       const payload = {
@@ -224,7 +225,7 @@ function ProductsAdmin() {
     } catch (err) {
       const errorMsg = err.response?.data?.errors
         ? Object.values(err.response.data.errors).flat().join('\n')
-        : err.response?.data?.message || 'Помилка збереження товару';
+        : err.response?.data?.message || t('admin.products.err_save');
       alert(errorMsg);
     } finally {
       setSaving(false);
@@ -243,13 +244,13 @@ function ProductsAdmin() {
   };
 
   const removeExistingImage = async (imageId) => {
-    if (!window.confirm('Видалити це зображення назавжди?')) return;
+    if (!window.confirm(t('admin.products.confirm_delete_image'))) return;
     try {
       await adminProductsAPI.deleteImage(editId, imageId);
       setExistingImages((prev) => prev.filter((img) => img.imageId !== imageId));
       loadData();
     } catch (err) {
-      alert('Помилка при видаленні зображення');
+      alert(t('admin.products.err_image_delete'));
     }
   };
 
@@ -259,7 +260,7 @@ function ProductsAdmin() {
       await adminProductsAPI.setPrimaryImage(editId, imageId);
       setExistingImages((prev) => prev.map((img) => ({ ...img, isPrimary: img.imageId === imageId })));
     } catch (err) {
-      alert('Помилка встановлення головного зображення');
+      alert(t('admin.products.err_primary'));
     }
   };
 
@@ -288,7 +289,7 @@ function ProductsAdmin() {
             next.map((img, i) => ({ imageId: img.imageId, displayOrder: i }))
           );
         } catch (err) {
-          alert('Не вдалося зберегти порядок зображень');
+          alert(t('admin.products.err_reorder'));
         }
       }
     } else {
@@ -308,14 +309,14 @@ function ProductsAdmin() {
         const res = await adminProductsAPI.bulkDelete(confirm.ids);
         await loadData();
         setSelectedIds([]);
-        alert(res.message || 'Готово');
+        alert(res.message || t('admin.products.done'));
       } else {
         await adminProductsAPI.delete(confirm.ids[0]);
         await loadData();
       }
       setConfirm(null);
     } catch (err) {
-      alert(err.response?.data?.message || err.response?.data?.error || 'Помилка видалення');
+      alert(err.response?.data?.message || err.response?.data?.error || t('admin.products.err_delete'));
     } finally {
       setSaving(false);
     }
@@ -326,7 +327,7 @@ function ProductsAdmin() {
 
   if (loading || pageLoading) return (
     <div role="status" aria-live="polite" style={{ padding: 20 }}>
-      <span className="sr-only">Завантаження...</span>
+      <span className="sr-only">{t('common.loading')}</span>
       <TableSkeleton rows={6} cols={6} />
     </div>
   );
@@ -336,11 +337,11 @@ function ProductsAdmin() {
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: 20 }}>
       <div style={{ marginBottom: 24 }}>
         <Link to="/admin" style={{ textDecoration: 'none', color: '#007bff', fontWeight: 600, display: 'block', marginBottom: 10 }}>
-          ← Назад до дашборду
+          {t('admin.common.back_to_dashboard')}
         </Link>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1>Керування товарами</h1>
-          <button onClick={openCreate} style={primaryBtnStyle('#28a745')}>+ Додати товар</button>
+          <h1>{t('admin.products.title')}</h1>
+          <button onClick={openCreate} style={primaryBtnStyle('#28a745')}>{t('admin.products.add')}</button>
         </div>
       </div>
 
@@ -348,33 +349,33 @@ function ProductsAdmin() {
         {/* Фільтри */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
           <input
-            aria-label="Пошук за назвою"
+            aria-label={t('admin.products.search_label')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Пошук за назвою..."
+            placeholder={t('admin.products.search_placeholder')}
             style={{ ...inputStyle, maxWidth: 260 }}
           />
-          <select aria-label="Фільтр за категорією" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ ...inputStyle, maxWidth: 220 }}>
-            <option value="">Усі категорії</option>
+          <select aria-label={t('admin.products.filter_category_label')} value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ ...inputStyle, maxWidth: 220 }}>
+            <option value="">{t('admin.products.all_categories')}</option>
             {flatCategories.map((c) => (
               <option key={c.categoryId} value={c.categoryId}>
                 {'\u00A0'.repeat(c.level * 3)}{c.name}
               </option>
             ))}
           </select>
-          <select aria-label="Фільтр за наявністю" value={filterStock} onChange={(e) => setFilterStock(e.target.value)} style={{ ...inputStyle, maxWidth: 180 }}>
-            <option value="all">Уся наявність</option>
-            <option value="in">Лише в наявності</option>
-            <option value="out">Немає в наявності</option>
+          <select aria-label={t('admin.products.filter_stock_label')} value={filterStock} onChange={(e) => setFilterStock(e.target.value)} style={{ ...inputStyle, maxWidth: 180 }}>
+            <option value="all">{t('admin.products.all_stock')}</option>
+            <option value="in">{t('admin.products.in_stock')}</option>
+            <option value="out">{t('admin.products.out_stock')}</option>
           </select>
           {selectedIds.length > 0 && (
             <button onClick={askDeleteBulk} style={primaryBtnStyle('#dc3545')}>
-              Видалити вибрані ({selectedIds.length})
+              {t('admin.products.delete_selected', { count: selectedIds.length })}
             </button>
           )}
         </div>
 
-        <h3 style={{ marginBottom: 16 }}>Список товарів ({filteredProducts.length})</h3>
+        <h3 style={{ marginBottom: 16 }}>{t('admin.products.list_title', { count: filteredProducts.length })}</h3>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -382,11 +383,11 @@ function ProductsAdmin() {
                 <th style={{ ...thStyle, width: 40 }}>
                   <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
                 </th>
-                <th style={thStyle}>Товар</th>
-                <th style={thStyle}>Категорія</th>
-                <th style={thStyle}>Ціна</th>
-                <th style={thStyle}>Склад</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>Дії</th>
+                <th style={thStyle}>{t('admin.products.col_product')}</th>
+                <th style={thStyle}>{t('admin.products.col_category')}</th>
+                <th style={thStyle}>{t('admin.products.col_price')}</th>
+                <th style={thStyle}>{t('admin.products.col_stock')}</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t('admin.common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -411,7 +412,7 @@ function ProductsAdmin() {
                     </div>
                   </td>
                   <td style={tdStyle}>{p.category?.name || '—'}</td>
-                  <td style={tdStyle}>{Number(p.price).toFixed(2)} грн</td>
+                  <td style={tdStyle}>{Number(p.price).toFixed(2)} {t('common.currency')}</td>
                   <td style={tdStyle}>
                     <span style={{
                       padding: '2px 8px',
@@ -420,13 +421,13 @@ function ProductsAdmin() {
                       background: p.stock > 0 ? '#e6ffed' : '#fff1f0',
                       color: p.stock > 0 ? '#28a745' : '#cf1322'
                     }}>
-                      {p.stock} шт
+                      {p.stock} {t('product.pcs')}
                     </span>
                   </td>
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                      <button onClick={() => openEdit(p)} style={actionBtnStyle('#ffc107')} title="Редагувати">✎</button>
-                      <button onClick={() => askDeleteSingle(p)} style={actionBtnStyle('#dc3545')} title="Видалити">✕</button>
+                      <button onClick={() => openEdit(p)} style={actionBtnStyle('#ffc107')} title={t('admin.common.edit')}>✎</button>
+                      <button onClick={() => askDeleteSingle(p)} style={actionBtnStyle('#dc3545')} title={t('admin.common.delete')}>✕</button>
                     </div>
                   </td>
                 </tr>
@@ -434,7 +435,7 @@ function ProductsAdmin() {
               {filteredProducts.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ padding: 24, textAlign: 'center', color: '#595959' }}>
-                    Товарів не знайдено
+                    {t('admin.products.no_products')}
                   </td>
                 </tr>
               )}
@@ -446,18 +447,18 @@ function ProductsAdmin() {
       {/* Модалка підтвердження видалення */}
       {confirm && (
         <Modal
-          title={confirm.bulk ? 'Масове видалення' : 'Видалити товар?'}
+          title={confirm.bulk ? t('admin.products.bulk_delete_title') : t('admin.products.delete_title')}
           onClose={() => setConfirm(null)}
         >
           <p style={{ marginBottom: 20 }}>
             {confirm.bulk
-              ? `Видалити вибрані товари (${confirm.ids.length})? Товари з активними замовленнями буде пропущено.`
-              : `Товар «${confirm.name}» буде видалено.`}
+              ? t('admin.products.bulk_delete_confirm', { count: confirm.ids.length })
+              : t('admin.products.delete_confirm', { name: confirm.name })}
           </p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <button type="button" onClick={() => setConfirm(null)} style={secondaryBtnStyle} disabled={saving}>Скасувати</button>
+            <button type="button" onClick={() => setConfirm(null)} style={secondaryBtnStyle} disabled={saving}>{t('common.cancel')}</button>
             <button type="button" onClick={doDelete} style={primaryBtnStyle('#dc3545')} disabled={saving}>
-              {saving ? 'Видалення...' : 'Видалити'}
+              {saving ? t('admin.common.deleting') : t('admin.common.delete')}
             </button>
           </div>
         </Modal>
@@ -465,7 +466,7 @@ function ProductsAdmin() {
 
       {/* Майстер створення/редагування */}
       {wizardOpen && (
-        <Modal title={editId ? 'Редагування товару' : 'Новий товар'} onClose={() => setWizardOpen(false)} wide>
+        <Modal title={editId ? t('admin.products.wizard_edit_title') : t('admin.products.wizard_new_title')} onClose={() => setWizardOpen(false)} wide>
           <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
             {WIZARD_STEPS.map((label, i) => (
               <div key={label} style={{ flex: 1, textAlign: 'center' }}>
@@ -483,17 +484,17 @@ function ProductsAdmin() {
           {step === 0 && (
             <div style={{ display: 'grid', gap: 15 }}>
               <div>
-                <label htmlFor="product-name" style={labelStyle}>Назва *</label>
-                <input id="product-name" name="name" value={form.name} onChange={handleChange} placeholder="Назва товару" style={inputStyle} />
+                <label htmlFor="product-name" style={labelStyle}>{t('admin.products.label_name')}</label>
+                <input id="product-name" name="name" value={form.name} onChange={handleChange} placeholder={t('admin.products.name_placeholder')} style={inputStyle} />
               </div>
               <div>
-                <label htmlFor="product-description" style={labelStyle}>Опис * (мін. 10 симв.)</label>
-                <textarea id="product-description" name="description" value={form.description} onChange={handleChange} placeholder="Опис товару" rows={4} style={inputStyle} />
+                <label htmlFor="product-description" style={labelStyle}>{t('admin.products.label_description')}</label>
+                <textarea id="product-description" name="description" value={form.description} onChange={handleChange} placeholder={t('admin.products.description_placeholder')} rows={4} style={inputStyle} />
               </div>
               <div>
-                <label htmlFor="product-category" style={labelStyle}>Категорія *</label>
+                <label htmlFor="product-category" style={labelStyle}>{t('admin.products.label_category')}</label>
                 <select id="product-category" name="parentCategoryId" value={form.parentCategoryId} onChange={handleChange} style={inputStyle}>
-                  <option value="">Оберіть категорію</option>
+                  <option value="">{t('admin.products.select_category')}</option>
                   {categoriesTree.map((c) => (
                     <option key={c.categoryId} value={c.categoryId}>{c.name}</option>
                   ))}
@@ -501,9 +502,9 @@ function ProductsAdmin() {
               </div>
               {form.parentCategoryId && subCategories.length > 0 && (
                 <div>
-                  <label htmlFor="product-subcategory" style={labelStyle}>Підкатегорія (необов'язково)</label>
+                  <label htmlFor="product-subcategory" style={labelStyle}>{t('admin.products.label_subcategory')}</label>
                   <select id="product-subcategory" name="subCategoryId" value={form.subCategoryId} onChange={handleChange} style={inputStyle}>
-                    <option value="">Без підкатегорії</option>
+                    <option value="">{t('admin.products.no_subcategory')}</option>
                     {subCategories.map((c) => (
                       <option key={c.categoryId} value={c.categoryId}>{c.name}</option>
                     ))}
@@ -517,19 +518,19 @@ function ProductsAdmin() {
             <div style={{ display: 'grid', gap: 15 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15 }}>
                 <div>
-                  <label htmlFor="product-price" style={labelStyle}>Ціна (грн) *</label>
+                  <label htmlFor="product-price" style={labelStyle}>{t('admin.products.label_price')}</label>
                   <input id="product-price" name="price" type="number" step="0.01" value={form.price} onChange={handleChange} style={inputStyle} />
                 </div>
                 <div>
-                  <label htmlFor="product-weight" style={labelStyle}>Вага (кг) *</label>
+                  <label htmlFor="product-weight" style={labelStyle}>{t('admin.products.label_weight')}</label>
                   <input id="product-weight" name="weight" type="number" step="0.001" value={form.weight} onChange={handleChange} style={inputStyle} />
                 </div>
               </div>
               <div>
-                <label htmlFor="product-stock" style={labelStyle}>Залишок на складі</label>
+                <label htmlFor="product-stock" style={labelStyle}>{t('admin.products.label_stock')}</label>
                 <input id="product-stock" name="stock" type="number" value={form.stock} onChange={handleChange} style={inputStyle} />
                 <p style={{ fontSize: '0.8rem', color: '#595959', marginTop: 6 }}>
-                  Зменшення залишку відбувається через замовлення; тут можна скоригувати вручну.
+                  {t('admin.products.stock_hint')}
                 </p>
               </div>
             </div>
@@ -539,7 +540,7 @@ function ProductsAdmin() {
             <div style={{ display: 'grid', gap: 20 }}>
               {existingImages.length > 0 && (
                 <div>
-                  <label style={labelStyle}>Поточні зображення (перетягніть для зміни порядку, ★ - головне)</label>
+                  <label style={labelStyle}>{t('admin.products.current_images')}</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
                     {existingImages.map((img, index) => (
                       <div
@@ -560,12 +561,12 @@ function ProductsAdmin() {
                           overflow: 'hidden'
                         }}
                       >
-                        <img src={buildImageUrl(img.imageURL)} alt={`Зображення товару ${index + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <button type="button" onClick={() => setPrimary(img.imageId)} title="Зробити головним" style={imgBadgeStyle('#28a745', 'left')}>★</button>
-                        <button type="button" onClick={() => removeExistingImage(img.imageId)} title="Видалити" style={imgBadgeStyle('#dc3545', 'right')}>✕</button>
+                        <img src={buildImageUrl(img.imageURL)} alt={t('admin.products.alt_product_image', { index: index + 1 })} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <button type="button" onClick={() => setPrimary(img.imageId)} title={t('admin.products.make_primary')} style={imgBadgeStyle('#28a745', 'left')}>★</button>
+                        <button type="button" onClick={() => removeExistingImage(img.imageId)} title={t('admin.common.delete')} style={imgBadgeStyle('#dc3545', 'right')}>✕</button>
                         {img.isPrimary && (
                           <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(40,167,69,0.85)', color: '#fff', fontSize: 10, textAlign: 'center' }}>
-                            Головне
+                            {t('admin.products.primary')}
                           </span>
                         )}
                       </div>
@@ -575,7 +576,7 @@ function ProductsAdmin() {
               )}
 
               <div>
-                <label htmlFor="product-images" style={labelStyle}>Додати зображення</label>
+                <label htmlFor="product-images" style={labelStyle}>{t('admin.products.add_images')}</label>
                 <input id="product-images" type="file" accept="image/*" multiple onChange={handleFileChange} style={{ ...inputStyle, padding: '8px' }} />
                 {selectedFiles.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 12 }}>
@@ -598,14 +599,14 @@ function ProductsAdmin() {
                           overflow: 'hidden'
                         }}
                       >
-                        <img src={URL.createObjectURL(file)} alt={`Попередній перегляд ${index + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <button type="button" onClick={() => removeSelectedFile(index)} title="Прибрати" style={imgBadgeStyle('#dc3545', 'right')}>✕</button>
+                        <img src={URL.createObjectURL(file)} alt={t('admin.products.alt_preview', { index: index + 1 })} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <button type="button" onClick={() => removeSelectedFile(index)} title={t('admin.products.remove')} style={imgBadgeStyle('#dc3545', 'right')}>✕</button>
                       </div>
                     ))}
                   </div>
                 )}
                 <p style={{ fontSize: '0.8rem', color: '#595959', marginTop: 6 }}>
-                  Порядок завантаження відповідає порядку мініатюр. Перше зображення нового товару стане головним.
+                  {t('admin.products.images_hint')}
                 </p>
               </div>
             </div>
@@ -613,14 +614,14 @@ function ProductsAdmin() {
 
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 24 }}>
             {step > 0 && (
-              <button type="button" onClick={prevStep} style={secondaryBtnStyle} disabled={saving}>← Назад</button>
+              <button type="button" onClick={prevStep} style={secondaryBtnStyle} disabled={saving}>{t('admin.common.back')}</button>
             )}
-            <button type="button" onClick={() => setWizardOpen(false)} style={secondaryBtnStyle} disabled={saving}>Скасувати</button>
+            <button type="button" onClick={() => setWizardOpen(false)} style={secondaryBtnStyle} disabled={saving}>{t('common.cancel')}</button>
             {step < WIZARD_STEPS.length - 1 ? (
-              <button type="button" onClick={nextStep} style={primaryBtnStyle('#007bff')} disabled={saving}>Далі →</button>
+              <button type="button" onClick={nextStep} style={primaryBtnStyle('#007bff')} disabled={saving}>{t('admin.common.next')}</button>
             ) : (
               <button type="button" onClick={handleSave} style={primaryBtnStyle('#28a745')} disabled={saving}>
-                {saving ? 'Збереження...' : editId ? 'Зберегти зміни' : 'Створити товар'}
+                {saving ? t('admin.common.saving') : editId ? t('admin.common.save_changes') : t('admin.products.create_product')}
               </button>
             )}
           </div>
@@ -630,17 +631,20 @@ function ProductsAdmin() {
   );
 }
 
-const Modal = ({ title, children, onClose, wide }) => (
+const Modal = ({ title, children, onClose, wide }) => {
+  const { t } = useTranslation();
+  return (
   <div style={overlayStyle} onClick={onClose}>
     <div style={{ ...modalStyle, maxWidth: wide ? 680 : 480 }} onClick={(e) => e.stopPropagation()}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <h3 style={{ margin: 0 }}>{title}</h3>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: '#595959' }}>✕</button>
+        <button onClick={onClose} aria-label={t('admin.common.close')} style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: '#595959' }}>✕</button>
       </div>
       {children}
     </div>
   </div>
-);
+  );
+};
 
 const overlayStyle = {
   position: 'fixed',

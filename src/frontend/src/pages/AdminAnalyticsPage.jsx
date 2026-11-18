@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { analyticsAPI } from '../services/api';
 
 // ============================ Допоміжні функції ============================
@@ -43,7 +44,8 @@ const emptyChartStyle = { display: 'flex', alignItems: 'center', justifyContent:
 
 // Лінійний графік (SVG): data = [{ label, value }]
 function LineChart({ data, height = 260, color = '#165DFF' }) {
-  if (!data || data.length === 0) return <div style={emptyChartStyle}>Даних за цей період немає</div>;
+  const { t } = useTranslation();
+  if (!data || data.length === 0) return <div style={emptyChartStyle}>{t('admin.analytics.no_data')}</div>;
   const width = 680;
   const padL = 56, padR = 20, padT = 20, padB = 36;
   const innerW = width - padL - padR;
@@ -71,7 +73,7 @@ function LineChart({ data, height = 260, color = '#165DFF' }) {
       {data.map((d, i) => (
         <g key={i}>
           <circle cx={xAt(i)} cy={yAt(d.value)} r="3.5" fill="#fff" stroke={color} strokeWidth="2">
-            <title>{`${d.label}: ${fmtMoney(d.value)} грн`}</title>
+            <title>{`${d.label}: ${fmtMoney(d.value)} ${t('common.currency')}`}</title>
           </circle>
           {i % labelStep === 0 && (
             <text x={xAt(i)} y={height - 12} textAnchor="middle" fontSize="10" fill="#8a94a6">{d.label}</text>
@@ -84,8 +86,9 @@ function LineChart({ data, height = 260, color = '#165DFF' }) {
 
 // Стовпчиковий графік (горизонтальні смуги): data = [{ label, value }]
 function BarChart({ data, color = '#165DFF', maxItems = 10 }) {
+  const { t } = useTranslation();
   const items = (data || []).slice(0, maxItems);
-  if (items.length === 0) return <div style={emptyChartStyle}>Даних за цей період немає</div>;
+  if (items.length === 0) return <div style={emptyChartStyle}>{t('admin.analytics.no_data')}</div>;
   const max = Math.max(1, ...items.map((d) => Number(d.value) || 0));
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -104,9 +107,10 @@ function BarChart({ data, color = '#165DFF', maxItems = 10 }) {
 
 // Кругова діаграма (SVG): data = [{ label, value, color }]
 function PieChart({ data }) {
+  const { t } = useTranslation();
   const slices = (data || []).filter((d) => (Number(d.value) || 0) > 0);
   const total = slices.reduce((s, d) => s + (Number(d.value) || 0), 0);
-  if (total === 0) return <div style={emptyChartStyle}>Даних за цей період немає</div>;
+  if (total === 0) return <div style={emptyChartStyle}>{t('admin.analytics.no_data')}</div>;
   const size = 180;
   const r = size / 2;
   const cx = r, cy = r;
@@ -151,6 +155,7 @@ function PieChart({ data }) {
 
 // ============================ Таблиця з сортуванням і пагінацією ============================
 function MetricsTable({ columns, rows, pageSize = 10 }) {
+  const { t } = useTranslation();
   const [sortKey, setSortKey] = useState(null);
   const [sortDir, setSortDir] = useState('desc');
   const [page, setPage] = useState(1);
@@ -179,7 +184,7 @@ function MetricsTable({ columns, rows, pageSize = 10 }) {
     else { setSortKey(key); setSortDir('desc'); }
   };
 
-  if (!rows || rows.length === 0) return <div style={{ ...emptyChartStyle, height: 120 }}>Даних за цей період немає</div>;
+  if (!rows || rows.length === 0) return <div style={{ ...emptyChartStyle, height: 120 }}>{t('admin.analytics.no_data')}</div>;
 
   return (
     <div>
@@ -218,7 +223,7 @@ function MetricsTable({ columns, rows, pageSize = 10 }) {
       {totalPages > 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 16 }}>
           <button style={{ ...btnStyle, background: '#6c757d' }} disabled={current <= 1} onClick={() => setPage(current - 1)}>←</button>
-          <span style={{ fontSize: '0.9rem' }}>Сторінка {current} з {totalPages}</span>
+          <span style={{ fontSize: '0.9rem' }}>{t('admin.common.page_of', { current, total: totalPages })}</span>
           <button style={{ ...btnStyle, background: '#6c757d' }} disabled={current >= totalPages} onClick={() => setPage(current + 1)}>→</button>
         </div>
       )}
@@ -228,6 +233,7 @@ function MetricsTable({ columns, rows, pageSize = 10 }) {
 
 // ============================ Кнопки експорту ============================
 function ExportButtons({ type, range }) {
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(null);
   const handle = async (format) => {
     try {
@@ -241,7 +247,7 @@ function ExportButtons({ type, range }) {
       downloadBlob(res.data, `${type}_report.${format}`);
     } catch (err) {
       console.error('Помилка експорту звіту', err);
-      alert('Помилка експорту звіту');
+      alert(t('admin.analytics.export_error'));
     } finally {
       setBusy(null);
     }
@@ -257,26 +263,17 @@ function ExportButtons({ type, range }) {
   );
 }
 
-const TABS = [
-  { key: 'sales', label: 'Продажі' },
-  { key: 'products', label: 'Товари' },
-  { key: 'categories', label: 'Категорії' },
-  { key: 'promotions', label: 'Акції' },
-  { key: 'financial', label: 'Фінанси' },
-];
+const TAB_KEYS = ['sales', 'products', 'categories', 'promotions', 'financial'];
 
-const PERIODS = [
-  { value: 'today', label: 'Сьогодні' },
-  { value: 'yesterday', label: 'Вчора' },
-  { value: '7d', label: 'Останні 7 днів' },
-  { value: '30d', label: 'Останні 30 днів' },
-  { value: 'custom', label: 'Довільний період' },
-];
+const PERIOD_VALUES = ['today', 'yesterday', '7d', '30d', 'custom'];
 
 const PAYMENT_COLORS = ['#165DFF', '#FF7D00'];
 
 // ============================ Сторінка ============================
 function AdminAnalyticsPage() {
+  const { t } = useTranslation();
+  const TABS = TAB_KEYS.map((key) => ({ key, label: t('admin.analytics.tab_' + key) }));
+  const PERIODS = PERIOD_VALUES.map((value) => ({ value, label: t('admin.analytics.period_' + value) }));
   const [period, setPeriod] = useState('30d');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
@@ -332,12 +329,12 @@ function AdminAnalyticsPage() {
       setOverview(res.data);
     } catch (err) {
       console.error('Не вдалося завантажити аналітику', err);
-      setError(errMessage(err, 'Не вдалося завантажити аналітику'));
+      setError(errMessage(err, t('admin.analytics.load_error')));
       setOverview(null);
     } finally {
       setLoading(false);
     }
-  }, [params]);
+  }, [params, t]);
 
   useEffect(() => { loadOverview(); }, [loadOverview]);
 
@@ -365,8 +362,8 @@ function AdminAnalyticsPage() {
 
   const paymentData = overview
     ? [
-        { label: 'Картка', value: overview.payments?.cardCount || 0, color: PAYMENT_COLORS[0] },
-        { label: 'Післяплата', value: overview.payments?.codCount || 0, color: PAYMENT_COLORS[1] },
+        { label: t('admin.analytics.payment_card'), value: overview.payments?.cardCount || 0, color: PAYMENT_COLORS[0] },
+        { label: t('admin.analytics.payment_cod'), value: overview.payments?.codCount || 0, color: PAYMENT_COLORS[1] },
       ]
     : [];
 
@@ -374,8 +371,8 @@ function AdminAnalyticsPage() {
     <div className="admin-analytics" style={{ padding: 20, maxWidth: 1400, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 30 }}>
         <div>
-          <Link to="/admin" className="back-link">← Назад до дашборду</Link>
-          <h1 style={{ marginTop: 8 }}>Аналітика та звіти</h1>
+          <Link to="/admin" className="back-link">{t('admin.common.back_to_dashboard')}</Link>
+          <h1 style={{ marginTop: 8 }}>{t('admin.analytics.title')}</h1>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: '1.5rem' }}>
           <select style={selectStyle} value={period} onChange={(e) => setPeriod(e.target.value)}>
@@ -392,26 +389,26 @@ function AdminAnalyticsPage() {
       </div>
 
       {error && <div style={{ ...cardStyle, color: '#dc3545', marginBottom: 20 }}>{error}</div>}
-      {loading && !overview && <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>Завантаження аналітики...</div>}
+      {loading && !overview && <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>{t('admin.analytics.loading_analytics')}</div>}
 
       {overview && (
         <>
           {/* KPI картки */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20 }}>
             <div style={kpiStyle}>
-              <span style={{ color: '#666', fontSize: '0.9rem' }}>Загальна виручка</span>
-              <h2 style={{ margin: '10px 0', color: '#28a745' }}>{fmtMoney(overview.totalRevenue)} грн</h2>
+              <span style={{ color: '#666', fontSize: '0.9rem' }}>{t('admin.analytics.kpi_total_revenue')}</span>
+              <h2 style={{ margin: '10px 0', color: '#28a745' }}>{fmtMoney(overview.totalRevenue)} {t('common.currency')}</h2>
             </div>
             <div style={kpiStyle}>
-              <span style={{ color: '#666', fontSize: '0.9rem' }}>Замовлень</span>
+              <span style={{ color: '#666', fontSize: '0.9rem' }}>{t('admin.analytics.kpi_orders')}</span>
               <h2 style={{ margin: '10px 0', color: '#007bff' }}>{fmtInt(overview.totalOrders)}</h2>
             </div>
             <div style={kpiStyle}>
-              <span style={{ color: '#666', fontSize: '0.9rem' }}>Середній чек (AOV)</span>
-              <h2 style={{ margin: '10px 0' }}>{fmtMoney(overview.averageOrderValue)} грн</h2>
+              <span style={{ color: '#666', fontSize: '0.9rem' }}>{t('admin.analytics.kpi_aov')}</span>
+              <h2 style={{ margin: '10px 0' }}>{fmtMoney(overview.averageOrderValue)} {t('common.currency')}</h2>
             </div>
             <div style={kpiStyle}>
-              <span style={{ color: '#666', fontSize: '0.9rem' }}>Маржа</span>
+              <span style={{ color: '#666', fontSize: '0.9rem' }}>{t('admin.analytics.kpi_margin')}</span>
               <h2 style={{ margin: '10px 0', color: '#6f42c1' }}>{fmtPercent(overview.margin)}</h2>
             </div>
           </div>
@@ -419,11 +416,11 @@ function AdminAnalyticsPage() {
           {/* Динаміка продажів + способи оплати */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, marginTop: 24 }}>
             <div style={cardStyle}>
-              <h3 style={{ marginTop: 0, marginBottom: 16 }}>📈 Динаміка продажів</h3>
+              <h3 style={{ marginTop: 0, marginBottom: 16 }}>📈 {t('admin.analytics.sales_dynamics')}</h3>
               <LineChart data={(overview.salesByDay || []).map((d) => ({ label: d.date, value: d.amount }))} />
             </div>
             <div style={cardStyle}>
-              <h3 style={{ marginTop: 0, marginBottom: 16 }}>💳 Способи оплати</h3>
+              <h3 style={{ marginTop: 0, marginBottom: 16 }}>💳 {t('admin.analytics.payment_methods')}</h3>
               <PieChart data={paymentData} />
             </div>
           </div>
@@ -447,7 +444,7 @@ function AdminAnalyticsPage() {
           </div>
 
           <div style={cardStyle}>
-            {tabLoading && <div style={{ color: '#666', marginBottom: 12 }}>Завантаження...</div>}
+            {tabLoading && <div style={{ color: '#666', marginBottom: 12 }}>{t('common.loading')}</div>}
             {activeTab === 'sales' && <SalesTab data={tabData.sales} range={range} />}
             {activeTab === 'products' && <ProductsTab data={tabData.products} range={range} />}
             {activeTab === 'categories' && <CategoriesTab data={tabData.categories} />}
@@ -462,33 +459,34 @@ function AdminAnalyticsPage() {
 
 // ============================ Вміст вкладок ============================
 function SalesTab({ data, range }) {
+  const { t } = useTranslation();
   const series = data?.series || [];
   const metrics = data?.metrics;
   const rows = series.map((s) => ({ date: s.date, count: s.count, amount: s.amount }));
   const columns = [
-    { key: 'date', label: 'Дата' },
-    { key: 'count', label: 'Замовлень', align: 'right' },
-    { key: 'amount', label: 'Виручка, грн', align: 'right', render: (r) => fmtMoney(r.amount) },
+    { key: 'date', label: t('admin.analytics.col_date') },
+    { key: 'count', label: t('admin.analytics.col_orders'), align: 'right' },
+    { key: 'amount', label: t('admin.analytics.col_revenue_uah'), align: 'right', render: (r) => fmtMoney(r.amount) },
   ];
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-        <h3 style={{ margin: 0 }}>Продажі за період</h3>
+        <h3 style={{ margin: 0 }}>{t('admin.analytics.sales_period')}</h3>
         <ExportButtons type="sales" range={range} />
       </div>
       {metrics && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
           <div style={{ background: '#f8f9fb', padding: 16, borderRadius: 10 }}>
-            <div style={{ color: '#666', fontSize: '0.85rem' }}>Замовлень</div>
+            <div style={{ color: '#666', fontSize: '0.85rem' }}>{t('admin.analytics.col_orders')}</div>
             <b style={{ fontSize: '1.3rem' }}>{fmtInt(metrics.totalOrders)}</b>
           </div>
           <div style={{ background: '#f8f9fb', padding: 16, borderRadius: 10 }}>
-            <div style={{ color: '#666', fontSize: '0.85rem' }}>Виручка</div>
-            <b style={{ fontSize: '1.3rem' }}>{fmtMoney(metrics.totalRevenue)} грн</b>
+            <div style={{ color: '#666', fontSize: '0.85rem' }}>{t('admin.analytics.revenue')}</div>
+            <b style={{ fontSize: '1.3rem' }}>{fmtMoney(metrics.totalRevenue)} {t('common.currency')}</b>
           </div>
           <div style={{ background: '#f8f9fb', padding: 16, borderRadius: 10 }}>
-            <div style={{ color: '#666', fontSize: '0.85rem' }}>Середній чек</div>
-            <b style={{ fontSize: '1.3rem' }}>{fmtMoney(metrics.averageOrderValue)} грн</b>
+            <div style={{ color: '#666', fontSize: '0.85rem' }}>{t('admin.analytics.col_avg_check')}</div>
+            <b style={{ fontSize: '1.3rem' }}>{fmtMoney(metrics.averageOrderValue)} {t('common.currency')}</b>
           </div>
         </div>
       )}
@@ -501,18 +499,19 @@ function SalesTab({ data, range }) {
 }
 
 function ProductsTab({ data, range }) {
+  const { t } = useTranslation();
   const list = data || [];
   const rows = list.map((p) => ({ id: p.productId, name: p.name, quantity: p.quantity, revenue: p.revenue }));
   const columns = [
     { key: 'id', label: 'ID' },
-    { key: 'name', label: 'Товар' },
-    { key: 'quantity', label: 'Продано, шт', align: 'right' },
-    { key: 'revenue', label: 'Виручка, грн', align: 'right', render: (r) => fmtMoney(r.revenue) },
+    { key: 'name', label: t('admin.analytics.col_product') },
+    { key: 'quantity', label: t('admin.analytics.col_sold_pcs'), align: 'right' },
+    { key: 'revenue', label: t('admin.analytics.col_revenue_uah'), align: 'right', render: (r) => fmtMoney(r.revenue) },
   ];
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-        <h3 style={{ margin: 0 }}>Топ товарів за виручкою</h3>
+        <h3 style={{ margin: 0 }}>{t('admin.analytics.top_products')}</h3>
         <ExportButtons type="products" range={range} />
       </div>
       <BarChart data={list.map((p) => ({ label: p.name, value: p.revenue }))} />
@@ -524,15 +523,16 @@ function ProductsTab({ data, range }) {
 }
 
 function CategoriesTab({ data }) {
+  const { t } = useTranslation();
   const list = data || [];
   const rows = list.map((c) => ({ name: c.name, revenue: c.revenue }));
   const columns = [
-    { key: 'name', label: 'Категорія' },
-    { key: 'revenue', label: 'Виручка, грн', align: 'right', render: (r) => fmtMoney(r.revenue) },
+    { key: 'name', label: t('admin.analytics.col_category') },
+    { key: 'revenue', label: t('admin.analytics.col_revenue_uah'), align: 'right', render: (r) => fmtMoney(r.revenue) },
   ];
   return (
     <div>
-      <h3 style={{ marginTop: 0, marginBottom: 20 }}>Топ категорій за виручкою</h3>
+      <h3 style={{ marginTop: 0, marginBottom: 20 }}>{t('admin.analytics.top_categories')}</h3>
       <BarChart data={list.map((c) => ({ label: c.name, value: c.revenue }))} color="#FF7D00" />
       <div style={{ marginTop: 24 }}>
         <MetricsTable columns={columns} rows={rows} />
@@ -542,6 +542,7 @@ function CategoriesTab({ data }) {
 }
 
 function PromotionsTab({ data, range }) {
+  const { t } = useTranslation();
   const list = data || [];
   const rows = list.map((p) => ({
     name: p.name,
@@ -551,16 +552,16 @@ function PromotionsTab({ data, range }) {
     roi: p.roi,
   }));
   const columns = [
-    { key: 'name', label: 'Акція' },
-    { key: 'uses', label: 'Використань', align: 'right' },
-    { key: 'discount', label: 'Знижка, грн', align: 'right', render: (r) => fmtMoney(r.discount) },
-    { key: 'revenue', label: 'Виручка, грн', align: 'right', render: (r) => fmtMoney(r.revenue) },
+    { key: 'name', label: t('admin.analytics.col_promotion') },
+    { key: 'uses', label: t('admin.analytics.col_uses'), align: 'right' },
+    { key: 'discount', label: t('admin.analytics.col_discount_uah'), align: 'right', render: (r) => fmtMoney(r.discount) },
+    { key: 'revenue', label: t('admin.analytics.col_revenue_uah'), align: 'right', render: (r) => fmtMoney(r.revenue) },
     { key: 'roi', label: 'ROI', align: 'right', render: (r) => fmtPercent(r.roi) },
   ];
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-        <h3 style={{ margin: 0 }}>Ефективність акцій</h3>
+        <h3 style={{ margin: 0 }}>{t('admin.analytics.promotions_efficiency')}</h3>
         <ExportButtons type="promotions" range={range} />
       </div>
       <MetricsTable columns={columns} rows={rows} />
@@ -569,30 +570,31 @@ function PromotionsTab({ data, range }) {
 }
 
 function FinancialTab({ data, range }) {
+  const { t } = useTranslation();
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-        <h3 style={{ margin: 0 }}>Фінансові показники</h3>
+        <h3 style={{ margin: 0 }}>{t('admin.analytics.financial_metrics')}</h3>
         <ExportButtons type="financial" range={range} />
       </div>
       {!data ? (
-        <div style={{ ...emptyChartStyle, height: 120 }}>Даних за цей період немає</div>
+        <div style={{ ...emptyChartStyle, height: 120 }}>{t('admin.analytics.no_data')}</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
           <div style={{ background: '#f8f9fb', padding: 16, borderRadius: 10 }}>
-            <div style={{ color: '#666', fontSize: '0.85rem' }}>Виручка</div>
-            <b style={{ fontSize: '1.3rem' }}>{fmtMoney(data.totalRevenue)} грн</b>
+            <div style={{ color: '#666', fontSize: '0.85rem' }}>{t('admin.analytics.revenue')}</div>
+            <b style={{ fontSize: '1.3rem' }}>{fmtMoney(data.totalRevenue)} {t('common.currency')}</b>
           </div>
           <div style={{ background: '#f8f9fb', padding: 16, borderRadius: 10 }}>
-            <div style={{ color: '#666', fontSize: '0.85rem' }}>Собівартість</div>
-            <b style={{ fontSize: '1.3rem', color: '#dc3545' }}>{fmtMoney(data.totalPurchaseCost)} грн</b>
+            <div style={{ color: '#666', fontSize: '0.85rem' }}>{t('admin.analytics.cost')}</div>
+            <b style={{ fontSize: '1.3rem', color: '#dc3545' }}>{fmtMoney(data.totalPurchaseCost)} {t('common.currency')}</b>
           </div>
           <div style={{ background: '#f8f9fb', padding: 16, borderRadius: 10 }}>
-            <div style={{ color: '#666', fontSize: '0.85rem' }}>Валовий прибуток</div>
-            <b style={{ fontSize: '1.3rem', color: '#28a745' }}>{fmtMoney(data.grossProfit)} грн</b>
+            <div style={{ color: '#666', fontSize: '0.85rem' }}>{t('admin.analytics.gross_profit')}</div>
+            <b style={{ fontSize: '1.3rem', color: '#28a745' }}>{fmtMoney(data.grossProfit)} {t('common.currency')}</b>
           </div>
           <div style={{ background: '#f8f9fb', padding: 16, borderRadius: 10 }}>
-            <div style={{ color: '#666', fontSize: '0.85rem' }}>Маржа</div>
+            <div style={{ color: '#666', fontSize: '0.85rem' }}>{t('admin.analytics.margin')}</div>
             <b style={{ fontSize: '1.3rem', color: '#6f42c1' }}>{fmtPercent(data.margin)}</b>
           </div>
         </div>
