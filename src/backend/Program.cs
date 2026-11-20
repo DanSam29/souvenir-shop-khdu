@@ -275,3 +275,6 @@ app.UseAuthorization();   // Перевірка прав користувача
 app.MapControllers();
 Log.Information("Сервер запущено!");
 app.Run();
+
+// Оголошення для integration-тестів: дозволяє WebApplicationFactory<Program> використати точку входу застосунку.
+public partial class Program { }

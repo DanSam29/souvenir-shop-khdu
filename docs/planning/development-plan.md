@@ -715,7 +715,7 @@
 
 - Мета покриття: критичні бізнес-сервіси ≥80%
 
-13.2. Integration Tests - Backend
+13.2. Integration Tests - Backend ✅
 - TestContainers для MySQL (запуск тимчасової БД в Docker)
 - Тести:
   - E2E API endpoints: реєстрація → логін → додати в кошик → оформити замовлення (Stripe mock) → оплата success webhook → змінити статус Shipped → Delivered
