@@ -38,7 +38,11 @@ api.interceptors.response.use(
       // Токен невалідний або закінчився
       localStorage.removeItem('token');
       sessionStorage.removeItem('token');
-      window.location.href = '/login';
+      // Не перезавантажуємо сторінку входу: інакше 401 на самому запиті логіну
+      // знищує повідомлення «Невірний email або пароль» до його показу.
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

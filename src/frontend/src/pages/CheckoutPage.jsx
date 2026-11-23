@@ -717,7 +717,11 @@ function CheckoutPage() {
               </button>
             )}
             {step < TOTAL_STEPS ? (
+              // key обов'язковий: без нього React перевикористовує той самий вузол кнопки
+              // і під час кліку синхронно змінює type="button" на type="submit". Браузер
+              // виконує submit тієї ж події, і замовлення створюється передчасно.
               <button
+                key="next"
                 type="button"
                 onClick={handleNext}
                 style={{ flex: 1, padding: '14px', borderRadius: 8, border: 'none', background: '#007bff', color: '#fff', fontSize: '1.1rem', fontWeight: 600, cursor: 'pointer' }}
@@ -726,6 +730,7 @@ function CheckoutPage() {
               </button>
             ) : (
               <button
+                key="submit"
                 type="submit"
                 disabled={submitting}
                 style={{

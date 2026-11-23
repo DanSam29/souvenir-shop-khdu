@@ -733,7 +733,7 @@
   - AuthContext (логін, логаут, стан токена)
 - msw (Mock Service Worker) для мокання axios запитів
 
-13.4. E2E Tests (Playwright / Cypress)
+13.4. E2E Tests (Playwright / Cypress) ✅
 - Установка: npm install -D playwright
 - Сценарії:
   - Guest: перегляд каталогу → пошук → перегляд товару

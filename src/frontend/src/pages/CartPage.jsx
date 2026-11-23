@@ -38,7 +38,7 @@ function CartPage() {
       await loadCart(); // Перезавантажуємо кошик
     } catch (err) {
       console.error('Помилка оновлення кількості:', err);
-      alert(err.response?.data?.error || t('common.update_error') || 'Помилка оновлення кількості');
+      alert(err.response?.data?.message || t('common.update_error') || 'Помилка оновлення кількості');
     }
   };
   const handleRemoveItem = async (cartItemId) => {
