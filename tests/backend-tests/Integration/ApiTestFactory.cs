@@ -43,11 +43,18 @@ public sealed class ApiTestFactory : WebApplicationFactory<Program>
     public const decimal DeliveryCost = 85m;
 
     private readonly string _connectionString;
+    private readonly bool _enableRateLimiting;
     private readonly WireMockServer _novaPoshta;
 
-    public ApiTestFactory(string connectionString)
+    /// <param name="connectionString">Рядок підключення до тимчасової MySQL-контейнера.</param>
+    /// <param name="enableRateLimiting">
+    /// Якщо <c>true</c>, реальні ліміти швидкості залишаються активними (потрібно для безпекових тестів на 429).
+    /// За замовчуванням вони знімаються, щоб серія звичайних тестів не отримувала помилок 429.
+    /// </param>
+    public ApiTestFactory(string connectionString, bool enableRateLimiting = false)
     {
         _connectionString = connectionString;
+        _enableRateLimiting = enableRateLimiting;
         _novaPoshta = WireMockServer.Start();
         StubNovaPoshta(_novaPoshta);
     }
@@ -155,15 +162,19 @@ public sealed class ApiTestFactory : WebApplicationFactory<Program>
                 services.Remove(descriptor);
             }
 
-            // 2. Зняти обмеження швидкості, щоб серія тестів не отримувала 429
-            services.RemoveAll<IConfigureOptions<RateLimiterOptions>>();
-            services.Configure<RateLimiterOptions>(options =>
+            // 2. Зняти обмеження швидкості, щоб серія тестів не отримувала 429.
+            //    Для безпекових тестів (enableRateLimiting: true) ліміти лишаються реальними.
+            if (!_enableRateLimiting)
             {
-                options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(
-                    _ => RateLimitPartition.GetNoLimiter("integration"));
-                options.AddPolicy("AuthPolicy", _ => RateLimitPartition.GetNoLimiter("integration"));
-                options.AddPolicy("NovaPoshtaPolicy", _ => RateLimitPartition.GetNoLimiter("integration"));
-            });
+                services.RemoveAll<IConfigureOptions<RateLimiterOptions>>();
+                services.Configure<RateLimiterOptions>(options =>
+                {
+                    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(
+                        _ => RateLimitPartition.GetNoLimiter("integration"));
+                    options.AddPolicy("AuthPolicy", _ => RateLimitPartition.GetNoLimiter("integration"));
+                    options.AddPolicy("NovaPoshtaPolicy", _ => RateLimitPartition.GetNoLimiter("integration"));
+                });
+            }
 
             // 3. Направити HttpClient сервісу Nova Poshta на WireMock замість реального API
             services.AddHttpClient<INovaPoshtaService, NovaPoshtaService>()

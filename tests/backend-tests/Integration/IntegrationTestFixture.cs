@@ -19,6 +19,9 @@ public sealed class IntegrationTestFixture : IAsyncLifetime
 
     public ApiTestFactory Factory { get; private set; } = null!;
 
+    /// <summary>Рядок підключення до тимчасової MySQL (щоб створювати додаткові фабрики з іншими налаштуваннями).</summary>
+    public string ConnectionString { get; private set; } = null!;
+
     public async Task InitializeAsync()
     {
         _container = new MySqlBuilder()
@@ -35,6 +38,7 @@ public sealed class IntegrationTestFixture : IAsyncLifetime
         var connectionString =
             $"Server={_container.Hostname};Port={_container.GetMappedPublicPort(MySqlPort)};" +
             "Database=khdu_test;Uid=khdu;Pwd=khdu_test_pass;AllowPublicKeyRetrieval=true;SslMode=Preferred";
+        ConnectionString = connectionString;
 
         // Схему БД (міграції + HasData: категорії/товари) створюємо до старту тестового host,
         // бо сама програма міграції не застосовує - лише додає тестові дані через DbSeeder.

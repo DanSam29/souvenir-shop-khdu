@@ -56,7 +56,7 @@ namespace KhduSouvenirShop.API.Services
             var jwtKey = jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key не налаштовано");
             var jwtIssuer = jwtSettings["Issuer"] ?? throw new InvalidOperationException("JWT Issuer не налаштовано");
             var jwtAudience = jwtSettings["Audience"] ?? throw new InvalidOperationException("JWT Audience не налаштовано");
-            var jwtExpireMinutes = jwtSettings["ExpireMinutes"] ?? "1440";
+            var jwtExpireMinutes = jwtSettings["ExpireMinutes"] ?? "60";
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
