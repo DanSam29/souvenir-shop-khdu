@@ -723,7 +723,7 @@
   - Nova Poshta mock (WireMock)
   - Stripe webhook replay
 
-13.3. Unit Tests - Frontend (Jest + React Testing Library)
+13.3. Unit Tests - Frontend (Jest + React Testing Library) ✅
 - Тести компонентів:
   - Header (рендер, лінки, пошук)
   - ProductCard (рендер, onClick)
