@@ -21,11 +21,13 @@ namespace KhduSouvenirShop.API.Validators
             RuleFor(x => x.Password)
                 .NotEmpty().WithMessage("Пароль обов'язковий")
                 .MinimumLength(8).WithMessage("Пароль має бути не менше 8 символів")
+                .MaximumLength(128).WithMessage("Пароль не може бути довшим за 128 символів")
                 .Matches(@"[A-Z]").WithMessage("Пароль має містити хоча б одну велику літеру")
                 .Matches(@"[a-z]").WithMessage("Пароль має містити хоча б одну малу літеру")
                 .Matches(@"[0-9]").WithMessage("Пароль має містити хоча б одну цифру");
             RuleFor(x => x.ConfirmPassword)
                 .NotEmpty().WithMessage("Підтвердження паролю обов'язкове")
+                .MaximumLength(128).WithMessage("Пароль не може бути довшим за 128 символів")
                 .Equal(x => x.Password).WithMessage("Паролі не співпадають");
             RuleFor(x => x.Phone)
                 .Matches(@"^\+380\d{9}$").WithMessage("Телефон має бути у форматі +380XXXXXXXXX")
@@ -38,9 +40,11 @@ namespace KhduSouvenirShop.API.Validators
         {
             RuleFor(x => x.Email)
                 .NotEmpty().WithMessage("Email обов'язковий")
-                .EmailAddress().WithMessage("Некоректний формат Email");
+                .EmailAddress().WithMessage("Некоректний формат Email")
+                .MaximumLength(100).WithMessage("Email не може бути довшим за 100 символів");
             RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("Пароль обов'язковий");
+                .NotEmpty().WithMessage("Пароль обов'язковий")
+                .MaximumLength(128).WithMessage("Пароль не може бути довшим за 128 символів");
         }
     }
     public class ForgotPasswordRequestValidator : AbstractValidator<ForgotPasswordRequest>
@@ -49,22 +53,27 @@ namespace KhduSouvenirShop.API.Validators
         {
             RuleFor(x => x.Email)
                 .NotEmpty().WithMessage("Email обов'язковий")
-                .EmailAddress().WithMessage("Некоректний формат Email");
+                .EmailAddress().WithMessage("Некоректний формат Email")
+                .MaximumLength(100).WithMessage("Email не може бути довшим за 100 символів");
         }
     }
     public class ResetPasswordRequestValidator : AbstractValidator<ResetPasswordRequest>
     {
         public ResetPasswordRequestValidator()
         {
-            RuleFor(x => x.Token).NotEmpty().WithMessage("Токен скидання обов'язковий");
+            RuleFor(x => x.Token)
+                .NotEmpty().WithMessage("Токен скидання обов'язковий")
+                .MaximumLength(200).WithMessage("Токен скидання має некоректний формат");
             RuleFor(x => x.NewPassword)
                 .NotEmpty().WithMessage("Новий пароль обов'язковий")
                 .MinimumLength(8).WithMessage("Новий пароль має бути не менше 8 символів")
+                .MaximumLength(128).WithMessage("Пароль не може бути довшим за 128 символів")
                 .Matches(@"[A-Z]").WithMessage("Новий пароль має містити хоча б одну велику літеру")
                 .Matches(@"[a-z]").WithMessage("Новий пароль має містити хоча б одну малу літеру")
                 .Matches(@"[0-9]").WithMessage("Новий пароль має містити хоча б одну цифру");
             RuleFor(x => x.ConfirmPassword)
                 .NotEmpty().WithMessage("Підтвердження паролю обов'язкове")
+                .MaximumLength(128).WithMessage("Пароль не може бути довшим за 128 символів")
                 .Equal(x => x.NewPassword).WithMessage("Паролі не співпадають");
         }
     }
@@ -87,10 +96,13 @@ namespace KhduSouvenirShop.API.Validators
     {
         public ChangePasswordDtoValidator()
         {
-            RuleFor(x => x.OldPassword).NotEmpty().WithMessage("Старий пароль обов'язковий");
+            RuleFor(x => x.OldPassword)
+                .NotEmpty().WithMessage("Старий пароль обов'язковий")
+                .MaximumLength(128).WithMessage("Пароль не може бути довшим за 128 символів");
             RuleFor(x => x.NewPassword)
                 .NotEmpty().WithMessage("Новий пароль обов'язковий")
                 .MinimumLength(8).WithMessage("Новий пароль має бути не менше 8 символів")
+                .MaximumLength(128).WithMessage("Пароль не може бути довшим за 128 символів")
                 .Matches(@"[A-Z]").WithMessage("Новий пароль має містити хоча б одну велику літеру")
                 .Matches(@"[a-z]").WithMessage("Новий пароль має містити хоча б одну малу літеру")
                 .Matches(@"[0-9]").WithMessage("Новий пароль має містити хоча б одну цифру")
@@ -109,6 +121,10 @@ namespace KhduSouvenirShop.API.Validators
                 .MaximumLength(500).WithMessage("Номер відділення не може бути довшим за 500 символів");
             RuleFor(x => x.WarehouseAddress)
                 .MaximumLength(500).WithMessage("Адреса відділення не може бути довшою за 500 символів");
+            RuleFor(x => x.CityRef)
+                .MaximumLength(100).WithMessage("CityRef не може бути довшим за 100 символів");
+            RuleFor(x => x.WarehouseRef)
+                .MaximumLength(100).WithMessage("WarehouseRef не може бути довшим за 100 символів");
             RuleFor(x => x.RecipientName)
                 .NotEmpty().WithMessage("Ім'я отримувача обов'язкове")
                 .MaximumLength(100).WithMessage("Ім'я отримувача не може бути довшим за 100 символів");
@@ -133,10 +149,30 @@ namespace KhduSouvenirShop.API.Validators
         {
             RuleFor(x => x.NewPassword)
                 .MinimumLength(8).WithMessage("Пароль має бути не менше 8 символів")
+                .MaximumLength(128).WithMessage("Пароль не може бути довшим за 128 символів")
                 .Matches(@"[A-Z]").WithMessage("Пароль має містити хоча б одну велику літеру")
                 .Matches(@"[a-z]").WithMessage("Пароль має містити хоча б одну малу літеру")
                 .Matches(@"[0-9]").WithMessage("Пароль має містити хоча б одну цифру")
                 .When(x => !string.IsNullOrWhiteSpace(x.NewPassword));
+        }
+    }
+    public class RefreshTokenRequestValidator : AbstractValidator<RefreshTokenRequest>
+    {
+        public RefreshTokenRequestValidator()
+        {
+            RuleFor(x => x.RefreshToken)
+                .NotEmpty().WithMessage("Refresh-токен обов'язковий")
+                .MaximumLength(200).WithMessage("Refresh-токен має некоректний формат");
+        }
+    }
+    public class LanguageUpdateDtoValidator : AbstractValidator<LanguageUpdateDto>
+    {
+        public LanguageUpdateDtoValidator()
+        {
+            RuleFor(x => x.Language)
+                .NotEmpty().WithMessage("Мова обов'язкова")
+                .Must(x => x != null && (x.Trim().ToLowerInvariant() == "ua" || x.Trim().ToLowerInvariant() == "en"))
+                .WithMessage("Підтримуються лише мови 'ua' та 'en'");
         }
     }
 }

@@ -499,3 +499,301 @@ public class ProductDtoValidatorTests
         new ProductDtoValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.CategoryId);
     }
 }
+
+public class LengthLimitValidatorTests
+{
+    [Fact]
+    public void Login_TooLongPassword_Fails()
+    {
+        var dto = new LoginRequest { Email = "a@b.com", Password = new string('a', 129) };
+        new LoginRequestValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.Password);
+    }
+
+    [Fact]
+    public void Login_TooLongEmail_Fails()
+    {
+        var email = new string('a', 95) + "@b.com";
+        var dto = new LoginRequest { Email = email, Password = "x" };
+        new LoginRequestValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.Email);
+    }
+
+    [Fact]
+    public void ResetPassword_TooLongToken_Fails()
+    {
+        var dto = new ResetPasswordRequest
+        {
+            Token = new string('t', 201),
+            NewPassword = "Passw0rd",
+            ConfirmPassword = "Passw0rd"
+        };
+        new ResetPasswordRequestValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.Token);
+    }
+
+    [Fact]
+    public void ChangePassword_TooLongOldPassword_Fails()
+    {
+        var dto = new ChangePasswordDto { OldPassword = new string('a', 129), NewPassword = "Passw0rd" };
+        new ChangePasswordDtoValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.OldPassword);
+    }
+
+    [Fact]
+    public void Checkout_TooLongCity_Fails()
+    {
+        var dto = new CheckoutDto
+        {
+            RecipientName = "Ivan Petrenko",
+            RecipientPhone = "+380501112233",
+            City = new string('c', 101),
+            WarehouseNumber = "1",
+            PaymentMethod = "Card",
+            CityRef = "city-ref",
+            WarehouseRef = "warehouse-ref"
+        };
+        new CheckoutDtoValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.City);
+    }
+
+    [Fact]
+    public void Checkout_BadPromoCodeChars_Fails()
+    {
+        var dto = new CheckoutDto
+        {
+            RecipientName = "Ivan Petrenko",
+            RecipientPhone = "+380501112233",
+            City = "Kherson",
+            WarehouseNumber = "1",
+            PaymentMethod = "Card",
+            CityRef = "city-ref",
+            WarehouseRef = "warehouse-ref",
+            PromoCode = "SAVE 10!"
+        };
+        new CheckoutDtoValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.PromoCode);
+    }
+
+    [Fact]
+    public void Checkout_LowercasePromoCode_Passes()
+    {
+        var dto = new CheckoutDto
+        {
+            RecipientName = "Ivan Petrenko",
+            RecipientPhone = "+380501112233",
+            City = "Kherson",
+            WarehouseNumber = "1",
+            PaymentMethod = "Card",
+            CityRef = "city-ref",
+            WarehouseRef = "warehouse-ref",
+            PromoCode = "save10"
+        };
+        new CheckoutDtoValidator().TestValidate(dto).ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Promotion_TooLongDescription_Fails()
+    {
+        var dto = new PromotionDto
+        {
+            Name = "Spring Sale",
+            Description = new string('d', 501),
+            Type = "PERCENTAGE",
+            Value = 10,
+            TargetType = "PRODUCT",
+            AudienceType = "ALL"
+        };
+        new PromotionDtoValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.Description);
+    }
+
+    [Fact]
+    public void Promotion_TooLongPromoCode_Fails()
+    {
+        var dto = new PromotionDto
+        {
+            Name = "Spring Sale",
+            Type = "PERCENTAGE",
+            Value = 10,
+            TargetType = "PRODUCT",
+            AudienceType = "ALL",
+            PromoCode = new string('A', 51)
+        };
+        new PromotionDtoValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.PromoCode);
+    }
+
+    [Fact]
+    public void Product_TooLongEnglishName_Fails()
+    {
+        var dto = new ProductDto
+        {
+            Name = "Souvenir Cup",
+            NameEn = new string('a', 201),
+            Description = "A nice souvenir cup for students",
+            Price = 150,
+            Weight = 0.25m,
+            CategoryId = 1
+        };
+        new ProductDtoValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.NameEn);
+    }
+
+    [Fact]
+    public void Company_TooLongNotes_Fails()
+    {
+        var dto = new CompanyDto { Name = "TOV Postachalnyk", Notes = new string('n', 1001) };
+        new CompanyDtoValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.Notes);
+    }
+
+    [Fact]
+    public void Incoming_TooLongNotes_Fails()
+    {
+        var dto = new IncomingDocumentDto
+        {
+            ProductId = 1,
+            Quantity = 10,
+            PurchasePrice = 50,
+            Reason = "INCOMING",
+            CompanyId = 1,
+            Notes = new string('n', 1001)
+        };
+        new IncomingDocumentDtoValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.Notes);
+    }
+}
+
+public class OrdersMiscValidatorTests
+{
+    [Fact]
+    public void Calculate_ValidPromoCode_Passes()
+    {
+        var dto = new CalculateDto { PromoCode = "SAVE10", CityRef = "city-ref" };
+        new CalculateDtoValidator().TestValidate(dto).ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Calculate_BadPromoCode_Fails()
+    {
+        var dto = new CalculateDto { PromoCode = "save 10" };
+        new CalculateDtoValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.PromoCode);
+    }
+
+    [Fact]
+    public void Calculate_TooLongCityRef_Fails()
+    {
+        var dto = new CalculateDto { CityRef = new string('c', 101) };
+        new CalculateDtoValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.CityRef);
+    }
+
+    [Fact]
+    public void CancelOrder_TooLongReason_Fails()
+    {
+        var dto = new CancelOrderDto { Reason = new string('r', 501) };
+        new CancelOrderDtoValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.Reason);
+    }
+
+    [Fact]
+    public void CancelOrder_EmptyReason_Passes()
+    {
+        new CancelOrderDtoValidator().TestValidate(new CancelOrderDto { Reason = null })
+            .ShouldNotHaveAnyValidationErrors();
+    }
+}
+
+public class AdminCategoryDtoValidatorTests
+{
+    [Fact]
+    public void Valid_Category_Passes()
+    {
+        var dto = new AdminCategoryDto { Name = "Souvenirs", Description = "All souvenirs" };
+        new AdminCategoryDtoValidator().TestValidate(dto).ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void EmptyName_Fails()
+    {
+        new AdminCategoryDtoValidator().TestValidate(new AdminCategoryDto { Name = "" })
+            .ShouldHaveValidationErrorFor(x => x.Name);
+    }
+
+    [Fact]
+    public void TooLongName_Fails()
+    {
+        new AdminCategoryDtoValidator().TestValidate(new AdminCategoryDto { Name = new string('n', 101) })
+            .ShouldHaveValidationErrorFor(x => x.Name);
+    }
+
+    [Fact]
+    public void TooLongDescription_Fails()
+    {
+        var dto = new AdminCategoryDto { Name = "Souvenirs", Description = new string('d', 501) };
+        new AdminCategoryDtoValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.Description);
+    }
+}
+
+public class ValidatePromoCodeDtoValidatorTests
+{
+    [Fact]
+    public void Valid_Code_Passes()
+    {
+        new ValidatePromoCodeDtoValidator().TestValidate(new ValidatePromoCodeDto { Code = "SAVE10" })
+            .ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void EmptyCode_Fails()
+    {
+        new ValidatePromoCodeDtoValidator().TestValidate(new ValidatePromoCodeDto { Code = "" })
+            .ShouldHaveValidationErrorFor(x => x.Code);
+    }
+
+    [Fact]
+    public void BadCodeChars_Fails()
+    {
+        new ValidatePromoCodeDtoValidator().TestValidate(new ValidatePromoCodeDto { Code = "SAVE-10" })
+            .ShouldHaveValidationErrorFor(x => x.Code);
+    }
+}
+
+public class LanguageUpdateDtoValidatorTests
+{
+    [Theory]
+    [InlineData("ua")]
+    [InlineData("en")]
+    [InlineData("EN")]
+    public void SupportedLanguage_Passes(string lang)
+    {
+        new LanguageUpdateDtoValidator().TestValidate(new LanguageUpdateDto { Language = lang })
+            .ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void UnsupportedLanguage_Fails()
+    {
+        new LanguageUpdateDtoValidator().TestValidate(new LanguageUpdateDto { Language = "fr" })
+            .ShouldHaveValidationErrorFor(x => x.Language);
+    }
+
+    [Fact]
+    public void EmptyLanguage_Fails()
+    {
+        new LanguageUpdateDtoValidator().TestValidate(new LanguageUpdateDto { Language = "" })
+            .ShouldHaveValidationErrorFor(x => x.Language);
+    }
+}
+
+public class RefreshTokenRequestValidatorTests
+{
+    [Fact]
+    public void ValidToken_Passes()
+    {
+        new RefreshTokenRequestValidator().TestValidate(new RefreshTokenRequest { RefreshToken = "token" })
+            .ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void EmptyToken_Fails()
+    {
+        new RefreshTokenRequestValidator().TestValidate(new RefreshTokenRequest { RefreshToken = "" })
+            .ShouldHaveValidationErrorFor(x => x.RefreshToken);
+    }
+
+    [Fact]
+    public void TooLongToken_Fails()
+    {
+        new RefreshTokenRequestValidator().TestValidate(new RefreshTokenRequest { RefreshToken = new string('t', 201) })
+            .ShouldHaveValidationErrorFor(x => x.RefreshToken);
+    }
+}

@@ -249,11 +249,7 @@ namespace KhduSouvenirShop.API.Controllers
             var user = await _userRepository.GetByIdAsync(userId.Value);
             if (user == null) return NotFound(ApiResponse<object>.FailureResult("Користувача не знайдено", "NotFound"));
             var lang = (dto.Language ?? string.Empty).Trim().ToLowerInvariant();
-            // Підтримуються лише дві мовні версії шаблонів листів
-            if (lang != "ua" && lang != "en")
-            {
-                return BadRequest(ApiResponse<object>.FailureResult("Підтримуються лише мови 'ua' та 'en'", "InvalidLanguage"));
-            }
+            // Підтримувані мови перевіряє LanguageUpdateDtoValidator (auto-validation)
             user.PreferredLanguage = lang;
             await _userRepository.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResult(new { preferredLanguage = user.PreferredLanguage }, "Мову оновлено"));

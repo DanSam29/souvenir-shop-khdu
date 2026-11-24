@@ -12,6 +12,7 @@ namespace KhduSouvenirShop.API.Validators
             RuleFor(x => x.PurchasePrice).GreaterThan(0).WithMessage("Ціна закупівлі має бути більше 0");
             RuleFor(x => x.Reason)
                 .NotEmpty().WithMessage("Причина обов'язкова")
+                .MaximumLength(20).WithMessage("Причина не може бути довшою за 20 символів")
                 .Must(x => x == "INCOMING" || x == "RETURN")
                 .WithMessage("Некоректна причина надходження");
             RuleFor(x => x.CompanyId)
@@ -25,6 +26,8 @@ namespace KhduSouvenirShop.API.Validators
                 .LessThanOrEqualTo(DateTime.UtcNow.AddMinutes(5))
                 .WithMessage("Дата документа не може бути в майбутньому")
                 .When(x => x.DocumentDate.HasValue);
+            RuleFor(x => x.Notes)
+                .MaximumLength(1000).WithMessage("Примітки не можуть бути довшими за 1000 символів");
         }
     }
     public class OutgoingDocumentDtoValidator : AbstractValidator<OutgoingDocumentDto>
@@ -35,6 +38,7 @@ namespace KhduSouvenirShop.API.Validators
             RuleFor(x => x.Quantity).GreaterThan(0).WithMessage("Кількість має бути більше 0");
             RuleFor(x => x.Reason)
                 .NotEmpty().WithMessage("Причина обов'язкова")
+                .MaximumLength(20).WithMessage("Причина не може бути довшою за 20 символів")
                 .Must(x => new[] { "Damaged", "Lost", "Return", "Inventory", "Other" }.Contains(x))
                 .WithMessage("Некоректна причина списання");
             RuleFor(x => x.CompanyId)
@@ -45,6 +49,8 @@ namespace KhduSouvenirShop.API.Validators
                 .LessThanOrEqualTo(DateTime.UtcNow.AddMinutes(5))
                 .WithMessage("Дата документа не може бути в майбутньому")
                 .When(x => x.DocumentDate.HasValue);
+            RuleFor(x => x.Notes)
+                .MaximumLength(1000).WithMessage("Примітки не можуть бути довшими за 1000 символів");
         }
     }
     public class CompanyDtoValidator : AbstractValidator<CompanyDto>
@@ -66,6 +72,8 @@ namespace KhduSouvenirShop.API.Validators
                 .When(x => !string.IsNullOrEmpty(x.Email));
             RuleFor(x => x.Address)
                 .MaximumLength(500).WithMessage("Адреса не може бути довшою за 500 символів");
+            RuleFor(x => x.Notes)
+                .MaximumLength(1000).WithMessage("Примітки не можуть бути довшими за 1000 символів");
         }
     }
 }

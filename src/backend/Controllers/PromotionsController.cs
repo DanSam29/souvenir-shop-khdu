@@ -96,10 +96,6 @@ namespace KhduSouvenirShop.API.Controllers
             {
                 return Unauthorized(ApiResponse<object>.FailureResult("Не авторизовано", "Unauthorized"));
             }
-            if (string.IsNullOrWhiteSpace(dto?.Code))
-            {
-                return BadRequest(ApiResponse<object>.FailureResult("Промокод не знайдено", "BadRequest"));
-            }
             var cart = await _cartRepository.GetByUserIdAsync(userId);
             if (cart == null || cart.CartItems.Count == 0)
             {

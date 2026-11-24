@@ -770,7 +770,7 @@
   - BCrypt.WorkFactor = 12+
   - Lockout on failed login attempts (5 невдалих → lock 5 хвилин)
 
-14.2. Валідація всіх DTO
+14.2. Валідація всіх DTO ✅
 - Переконатися що ВСІ контролери використовують [ApiController] + FluentValidation auto validation
 - Немає жодного прямого ModelState.IsValid = false manual якщо можна через валідатор
 - Усі вхідні поля: MaxLength, регулярні вирази для телефона/пошти/промокодів

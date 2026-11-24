@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
 namespace KhduSouvenirShop.API.Controllers
@@ -107,13 +108,34 @@ namespace KhduSouvenirShop.API.Controllers
                 var value = update.Value;
                 switch (update.Key.ToLower())
                 {
-                    case "name": company.Name = value.GetString() ?? company.Name; break;
+                    case "name":
+                        if (value.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(value.GetString()) || value.GetString()!.Length > 200)
+                            return BadRequest(ApiResponse<object>.FailureResult("Назва компанії має бути від 1 до 200 символів", "Validation Error"));
+                        company.Name = value.GetString()!.Trim();
+                        break;
                     case "isactive": 
                         if (value.ValueKind == JsonValueKind.True || value.ValueKind == JsonValueKind.False) company.IsActive = value.GetBoolean();
-                        else if (bool.TryParse(value.GetString(), out var a)) company.IsActive = a; 
+                        else if (value.ValueKind == JsonValueKind.String && bool.TryParse(value.GetString(), out var a)) company.IsActive = a;
+                        else return BadRequest(ApiResponse<object>.FailureResult("Поле isActive має бути булевим", "Validation Error"));
                         break;
-                    case "email": company.Email = value.GetString(); break;
-                    case "phone": company.Phone = value.GetString(); break;
+                    case "email":
+                        if (value.ValueKind != JsonValueKind.String && value.ValueKind != JsonValueKind.Null)
+                            return BadRequest(ApiResponse<object>.FailureResult("Поле email має бути рядком", "Validation Error"));
+                        var email = value.ValueKind == JsonValueKind.Null ? null : value.GetString()?.Trim();
+                        if (!string.IsNullOrEmpty(email) && (email.Length > 100 || !new EmailAddressAttribute().IsValid(email)))
+                            return BadRequest(ApiResponse<object>.FailureResult("Некоректний формат Email", "Validation Error"));
+                        company.Email = email;
+                        break;
+                    case "phone":
+                        if (value.ValueKind != JsonValueKind.String && value.ValueKind != JsonValueKind.Null)
+                            return BadRequest(ApiResponse<object>.FailureResult("Поле phone має бути рядком", "Validation Error"));
+                        var phone = value.ValueKind == JsonValueKind.Null ? null : value.GetString()?.Trim();
+                        if (!string.IsNullOrEmpty(phone) && (phone.Length > 20 || !System.Text.RegularExpressions.Regex.IsMatch(phone, @"^\+380\d{9}$")))
+                            return BadRequest(ApiResponse<object>.FailureResult("Телефон має бути у форматі +380XXXXXXXXX", "Validation Error"));
+                        company.Phone = phone;
+                        break;
+                    default:
+                        return BadRequest(ApiResponse<object>.FailureResult($"Невідоме поле '{update.Key}'", "Validation Error"));
                 }
             }
             await _companyRepository.SaveChangesAsync();

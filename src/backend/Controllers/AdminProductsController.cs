@@ -184,20 +184,42 @@ namespace KhduSouvenirShop.API.Controllers
                 var value = update.Value;
                 switch (update.Key.ToLower())
                 {
-                    case "name": product.Name = value.GetString() ?? product.Name; break;
-                    case "nameen": product.NameEn = value.GetString(); break;
+                    case "name":
+                        if (value.ValueKind != JsonValueKind.String || value.GetString()!.Trim().Length is < 3 or > 200)
+                            return BadRequest(ApiResponse<object>.FailureResult("Назва має бути від 3 до 200 символів", "Validation Error"));
+                        product.Name = value.GetString()!.Trim();
+                        break;
+                    case "nameen":
+                        if (value.ValueKind != JsonValueKind.String && value.ValueKind != JsonValueKind.Null)
+                            return BadRequest(ApiResponse<object>.FailureResult("Поле nameEn має бути рядком", "Validation Error"));
+                        var nameEn = value.ValueKind == JsonValueKind.Null ? null : value.GetString();
+                        if (nameEn is { Length: > 200 })
+                            return BadRequest(ApiResponse<object>.FailureResult("Англійська назва не може бути довшою за 200 символів", "Validation Error"));
+                        product.NameEn = nameEn;
+                        break;
                     case "price": 
                         if (value.ValueKind == JsonValueKind.Number) product.Price = value.GetDecimal();
-                        else if (decimal.TryParse(value.GetString(), CultureInfo.InvariantCulture, out var p)) product.Price = p;
+                        else if (value.ValueKind == JsonValueKind.String && decimal.TryParse(value.GetString(), CultureInfo.InvariantCulture, out var p)) product.Price = p;
+                        else return BadRequest(ApiResponse<object>.FailureResult("Поле price має бути числом", "Validation Error"));
+                        if (product.Price <= 0)
+                            return BadRequest(ApiResponse<object>.FailureResult("Ціна має бути більше 0", "Validation Error"));
                         break;
                     case "stock": 
                         if (value.ValueKind == JsonValueKind.Number) product.Stock = value.GetInt32();
-                        else if (int.TryParse(value.GetString(), out var s)) product.Stock = s;
+                        else if (value.ValueKind == JsonValueKind.String && int.TryParse(value.GetString(), out var s)) product.Stock = s;
+                        else return BadRequest(ApiResponse<object>.FailureResult("Поле stock має бути числом", "Validation Error"));
+                        if (product.Stock < 0)
+                            return BadRequest(ApiResponse<object>.FailureResult("Кількість на складі не може бути від'ємною", "Validation Error"));
                         break;
                     case "categoryid": 
                         if (value.ValueKind == JsonValueKind.Number) product.CategoryId = value.GetInt32();
-                        else if (int.TryParse(value.GetString(), out var c)) product.CategoryId = c;
+                        else if (value.ValueKind == JsonValueKind.String && int.TryParse(value.GetString(), out var c)) product.CategoryId = c;
+                        else return BadRequest(ApiResponse<object>.FailureResult("Поле categoryId має бути числом", "Validation Error"));
+                        if (product.CategoryId <= 0)
+                            return BadRequest(ApiResponse<object>.FailureResult("Необхідно вказати категорію", "Validation Error"));
                         break;
+                    default:
+                        return BadRequest(ApiResponse<object>.FailureResult($"Невідоме поле '{update.Key}'", "Validation Error"));
                 }
             }
             await _productRepository.SaveChangesAsync();

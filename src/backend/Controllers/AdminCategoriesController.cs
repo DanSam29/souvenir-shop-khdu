@@ -31,10 +31,6 @@ namespace KhduSouvenirShop.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> CreateCategory([FromBody] AdminCategoryDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.Name))
-            {
-                return BadRequest(ApiResponse<object>.FailureResult("Назва категорії обов'язкова", "BadRequest"));
-            }
             if (dto.ParentCategoryId.HasValue)
             {
                 var parentExists = await _categoryRepository.Query().AnyAsync(c => c.CategoryId == dto.ParentCategoryId.Value);
@@ -152,18 +148,40 @@ namespace KhduSouvenirShop.API.Controllers
                 var value = update.Value;
                 switch (update.Key.ToLower())
                 {
-                    case "name": category.Name = value.GetString() ?? category.Name; break;
-                    case "nameen": category.NameEn = value.GetString(); break;
-                    case "description": category.Description = value.GetString(); break;
+                    case "name":
+                        if (value.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(value.GetString()) || value.GetString()!.Length > 100)
+                            return BadRequest(ApiResponse<object>.FailureResult("Назва категорії має бути від 1 до 100 символів", "Validation Error"));
+                        category.Name = value.GetString()!.Trim();
+                        break;
+                    case "nameen":
+                        if (value.ValueKind != JsonValueKind.String && value.ValueKind != JsonValueKind.Null)
+                            return BadRequest(ApiResponse<object>.FailureResult("Поле nameEn має бути рядком", "Validation Error"));
+                        var nameEn = value.ValueKind == JsonValueKind.Null ? null : value.GetString();
+                        if (nameEn is { Length: > 100 })
+                            return BadRequest(ApiResponse<object>.FailureResult("Англійська назва не може бути довшою за 100 символів", "Validation Error"));
+                        category.NameEn = nameEn;
+                        break;
+                    case "description":
+                        if (value.ValueKind != JsonValueKind.String && value.ValueKind != JsonValueKind.Null)
+                            return BadRequest(ApiResponse<object>.FailureResult("Поле description має бути рядком", "Validation Error"));
+                        var description = value.ValueKind == JsonValueKind.Null ? null : value.GetString();
+                        if (description is { Length: > 500 })
+                            return BadRequest(ApiResponse<object>.FailureResult("Опис категорії не може бути довшим за 500 символів", "Validation Error"));
+                        category.Description = description;
+                        break;
                     case "displayorder": 
                         if (value.ValueKind == JsonValueKind.Number) category.DisplayOrder = value.GetInt32();
-                        else if (int.TryParse(value.GetString(), out var o)) category.DisplayOrder = o;
+                        else if (value.ValueKind == JsonValueKind.String && int.TryParse(value.GetString(), out var o)) category.DisplayOrder = o;
+                        else return BadRequest(ApiResponse<object>.FailureResult("Поле displayOrder має бути числом", "Validation Error"));
                         break;
                     case "parentcategoryid": 
                         if (value.ValueKind == JsonValueKind.Null) category.ParentCategoryId = null;
                         else if (value.ValueKind == JsonValueKind.Number) category.ParentCategoryId = value.GetInt32();
-                        else if (int.TryParse(value.GetString(), out var p)) category.ParentCategoryId = p;
+                        else if (value.ValueKind == JsonValueKind.String && int.TryParse(value.GetString(), out var p)) category.ParentCategoryId = p;
+                        else return BadRequest(ApiResponse<object>.FailureResult("Поле parentCategoryId має бути числом", "Validation Error"));
                         break;
+                    default:
+                        return BadRequest(ApiResponse<object>.FailureResult($"Невідоме поле '{update.Key}'", "Validation Error"));
                 }
             }
             await _categoryRepository.SaveChangesAsync();

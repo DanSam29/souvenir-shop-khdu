@@ -207,21 +207,46 @@ namespace KhduSouvenirShop.API.Controllers
                 var value = update.Value;
                 switch (update.Key.ToLower())
                 {
-                    case "name": promo.Name = value.GetString() ?? promo.Name; break;
-                    case "nameen": promo.NameEn = value.GetString(); break;
-                    case "description": promo.Description = value.GetString(); break;
+                    case "name":
+                        if (value.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(value.GetString()) || value.GetString()!.Length > 200)
+                            return BadRequest(ApiResponse<object>.FailureResult("Назва акції має бути від 1 до 200 символів", "Validation Error"));
+                        promo.Name = value.GetString()!.Trim();
+                        break;
+                    case "nameen":
+                        if (value.ValueKind != JsonValueKind.String && value.ValueKind != JsonValueKind.Null)
+                            return BadRequest(ApiResponse<object>.FailureResult("Поле nameEn має бути рядком", "Validation Error"));
+                        var nameEn = value.ValueKind == JsonValueKind.Null ? null : value.GetString();
+                        if (nameEn is { Length: > 200 })
+                            return BadRequest(ApiResponse<object>.FailureResult("Англійська назва не може бути довшою за 200 символів", "Validation Error"));
+                        promo.NameEn = nameEn;
+                        break;
+                    case "description":
+                        if (value.ValueKind != JsonValueKind.String && value.ValueKind != JsonValueKind.Null)
+                            return BadRequest(ApiResponse<object>.FailureResult("Поле description має бути рядком", "Validation Error"));
+                        var description = value.ValueKind == JsonValueKind.Null ? null : value.GetString();
+                        if (description is { Length: > 500 })
+                            return BadRequest(ApiResponse<object>.FailureResult("Опис не може бути довшим за 500 символів", "Validation Error"));
+                        promo.Description = description;
+                        break;
                     case "value":
                         if (value.ValueKind == JsonValueKind.Number) promo.Value = value.GetDecimal();
-                        else if (decimal.TryParse(value.GetString(), CultureInfo.InvariantCulture, out var v)) promo.Value = v;
+                        else if (value.ValueKind == JsonValueKind.String && decimal.TryParse(value.GetString(), CultureInfo.InvariantCulture, out var v)) promo.Value = v;
+                        else return BadRequest(ApiResponse<object>.FailureResult("Поле value має бути числом", "Validation Error"));
+                        if (promo.Value <= 0)
+                            return BadRequest(ApiResponse<object>.FailureResult("Значення акції має бути більше 0", "Validation Error"));
                         break;
                     case "isactive":
                         if (value.ValueKind == JsonValueKind.True || value.ValueKind == JsonValueKind.False) promo.IsActive = value.GetBoolean();
-                        else if (bool.TryParse(value.GetString(), out var a)) promo.IsActive = a;
+                        else if (value.ValueKind == JsonValueKind.String && bool.TryParse(value.GetString(), out var a)) promo.IsActive = a;
+                        else return BadRequest(ApiResponse<object>.FailureResult("Поле isActive має бути булевим", "Validation Error"));
                         break;
                     case "enddate":
                         if (value.ValueKind == JsonValueKind.Null) promo.EndDate = null;
-                        else if (DateTime.TryParse(value.GetString(), CultureInfo.InvariantCulture, out var d)) promo.EndDate = d;
+                        else if (value.ValueKind == JsonValueKind.String && DateTime.TryParse(value.GetString(), CultureInfo.InvariantCulture, out var d)) promo.EndDate = d;
+                        else return BadRequest(ApiResponse<object>.FailureResult("Поле endDate має бути датою", "Validation Error"));
                         break;
+                    default:
+                        return BadRequest(ApiResponse<object>.FailureResult($"Невідоме поле '{update.Key}'", "Validation Error"));
                 }
             }
             await _promotionRepository.SaveChangesAsync();
