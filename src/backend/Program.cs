@@ -14,6 +14,7 @@ using KhduSouvenirShop.API.DTOs.Mappings;
 using Microsoft.AspNetCore.ResponseCompression;
 using System.IO.Compression;
 using Polly;
+using Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
 // Стиснення відповідей (Brotli/Gzip) для зменшення обсягу даних, що передаються клієнту
@@ -142,12 +143,31 @@ builder.Services.AddScoped<KhduSouvenirShop.API.Services.IImageService, KhduSouv
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IAuthService, KhduSouvenirShop.API.Services.AuthService>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IAnalyticsService, KhduSouvenirShop.API.Services.AnalyticsService>();
 builder.Services.AddScoped<KhduSouvenirShop.API.Services.IReportExportService, KhduSouvenirShop.API.Services.ReportExportService>();
+// Стійкість Stripe (вимога 14.4): вбудовані мережеві ретраї SDK (ідемпотентність checkout-сесії
+// та дедуплікація webhook за EventId виконуються в PaymentService)
+StripeConfiguration.MaxNetworkRetries = 2;
 builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.INovaPoshtaService, KhduSouvenirShop.API.Services.NovaPoshtaService>()
+    // Таймаут однієї спроби (найвнутрішня політика): 10 с
+    .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(10)))
     // Retry для тимчасових збоїв NP API: 3 спроби з експоненційним відкатом (2с, 4с, 8с)
     .AddTransientHttpErrorPolicy(policy => policy.WaitAndRetryAsync(
         3,
-        retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))));
-builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.IUniversityService, KhduSouvenirShop.API.Services.UniversityService>();
+        retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))))
+    // Circuit Breaker: після 5 помилок підряд виклики NP «розмикаються» на 30 с (graceful fallback у сервісі)
+    .AddTransientHttpErrorPolicy(policy => policy.CircuitBreakerAsync(
+        5,
+        TimeSpan.FromSeconds(30)));
+// University API: таймаут 5 с задано в сервісі через CancellationTokenSource (University:RequestTimeoutSeconds),
+// тому тут додаються лише Retry та Circuit Breaker
+builder.Services.AddHttpClient<KhduSouvenirShop.API.Services.IUniversityService, KhduSouvenirShop.API.Services.UniversityService>()
+    // Retry для тимчасових збоїв: 2 спроби з відкатом 1с, 2с
+    .AddTransientHttpErrorPolicy(policy => policy.WaitAndRetryAsync(
+        2,
+        retryAttempt => TimeSpan.FromSeconds(retryAttempt)))
+    // Circuit Breaker: після 5 помилок підряд запити «розмикаються» на 30 с; невдалі верифікації потрапляють у чергу
+    .AddTransientHttpErrorPolicy(policy => policy.CircuitBreakerAsync(
+        5,
+        TimeSpan.FromSeconds(30)));
 // Фоновий сервіс, що раз на 5 хвилин повторює невдалі верифікації студентів з черги
 builder.Services.AddHostedService<KhduSouvenirShop.API.Services.VerificationQueueBackgroundService>();
 // Фоновий сервіс, що раз на добу деактивує протерміновані студентські статуси та надсилає нагадування

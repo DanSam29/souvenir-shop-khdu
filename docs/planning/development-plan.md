@@ -782,7 +782,7 @@
 - Не логувати: паролі, токени, номери карток, CVV, Stripe credentials
 - Логістику зв'язати з OrderHistory / Верифікації з чергою
 
-14.4. Інтеграційна стійкість
+14.4. Інтеграційна стійкість ✅
 - Усі HTTP клієнти (Nova Poshta, University, Stripe) з:
   - Polly Retry + Circuit Breaker
   - Timeout 5-10 сек

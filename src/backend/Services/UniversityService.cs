@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using KhduSouvenirShop.API.Models;
 using KhduSouvenirShop.API.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Polly.CircuitBreaker;
 
 namespace KhduSouvenirShop.API.Services
 {
@@ -181,6 +182,11 @@ namespace KhduSouvenirShop.API.Services
             catch (HttpRequestException ex)
             {
                 throw new UniversityApiUnavailableException($"Помилка з'єднання з University API: {ex.Message}");
+            }
+            catch (BrokenCircuitException)
+            {
+                // Circuit Breaker (14.4) розімкнено після серії помилок — трактуємо як недоступність API
+                throw new UniversityApiUnavailableException("University API тимчасово недоступний (запобіжник розімкнено через серію помилок)");
             }
         }
 
