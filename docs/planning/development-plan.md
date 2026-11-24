@@ -789,7 +789,7 @@
 - Stripe ідемпотентність: Idempotency-Key header при створенні checkout session
 - Payments: webhook eventId + check якщо вже оброблено
 
-14.5. Секрети
+14.5. Секрети ✅
 - Переконатися що appsettings.json не містить реальних ключів
 - Всі ключі в Environment Variables або User Secrets (локально)
 - .gitignore містить appsettings.*.json якщо потрібно

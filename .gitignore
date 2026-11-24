@@ -7,6 +7,7 @@ obj/
 *.log
 .vs/
 TestResults/
+logs/
 # ===== Node / React =====
 node_modules/
 dist/
