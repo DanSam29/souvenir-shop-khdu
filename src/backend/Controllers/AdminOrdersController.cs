@@ -211,7 +211,7 @@ namespace KhduSouvenirShop.API.Controllers
             });
             await _unitOfWork.SaveChangesAsync();
             InvalidateCache();
-            _logger.LogInformation("Замовлення {OrderId}: статус {OldStatus} → {NewStatus}", id, oldStatus, newStatus);
+            _logger.LogInformation("Адміністратор {AdminId} змінив статус замовлення {OrderId}: {OldStatus} → {NewStatus}", adminUserId, id, oldStatus, newStatus);
             return Ok(ApiResponse<object>.SuccessResult(new { orderId = order.OrderId, status = order.Status }, "Статус замовлення оновлено"));
         }
         // Скасування замовлення адміністратором (логіка пункту 4.3)

@@ -180,7 +180,7 @@ namespace KhduSouvenirShop.API.Controllers
             }
             user.Role = role;
             await _userRepository.SaveChangesAsync();
-            _logger.LogInformation("Роль користувача {UserId} змінено на {Role}", id, role);
+            _logger.LogInformation("Адміністратор {AdminId} змінив роль користувача {UserId} на {Role}", GetCurrentUserId(), id, role);
             return Ok(ApiResponse<object?>.SuccessResult(null, "Роль користувача оновлено"));
         }
         // PUT: api/admin/users/{id}/block - блокування користувача (soft delete)
@@ -211,7 +211,7 @@ namespace KhduSouvenirShop.API.Controllers
             user.IsDeleted = true;
             user.DeletedAt = DateTime.UtcNow;
             await _userRepository.SaveChangesAsync();
-            _logger.LogInformation("Користувача {UserId} заблоковано", id);
+            _logger.LogInformation("Адміністратор {AdminId} заблокував користувача {UserId}", GetCurrentUserId(), id);
             return Ok(ApiResponse<object?>.SuccessResult(null, "Користувача заблоковано"));
         }
         // PUT: api/admin/users/{id}/unblock - розблокування користувача
@@ -239,7 +239,7 @@ namespace KhduSouvenirShop.API.Controllers
             user.DeletedAt = null;
             user.DeletedBy = null;
             await _userRepository.SaveChangesAsync();
-            _logger.LogInformation("Користувача {UserId} розблоковано", id);
+            _logger.LogInformation("Адміністратор {AdminId} розблокував користувача {UserId}", GetCurrentUserId(), id);
             return Ok(ApiResponse<object?>.SuccessResult(null, "Користувача розблоковано"));
         }
         // POST: api/admin/users/{id}/reset-password - скидання паролю адміністратором
@@ -263,7 +263,7 @@ namespace KhduSouvenirShop.API.Controllers
             var newPassword = isGenerated ? GenerateTemporaryPassword() : dto.NewPassword!;
             user.Password = BCrypt.Net.BCrypt.HashPassword(newPassword, workFactor: 12);
             await _userRepository.SaveChangesAsync();
-            _logger.LogInformation("Адміністратор скинув пароль користувача {UserId}", id);
+            _logger.LogInformation("Адміністратор {AdminId} скинув пароль користувача {UserId}", GetCurrentUserId(), id);
             return Ok(ApiResponse<object>.SuccessResult(
                 new { temporaryPassword = isGenerated ? newPassword : null },
                 "Пароль користувача скинуто"));
@@ -296,7 +296,7 @@ namespace KhduSouvenirShop.API.Controllers
             user.StudentExpiresAt = basis.AddMonths(UniversityService.StudentStatusValidMonths);
             user.StudentExpiryReminderSentAt = null; // новий термін — нагадування дозволено знову
             await _userRepository.SaveChangesAsync();
-            _logger.LogInformation("Студентський статус користувача {UserId} продовжено до {ExpiresAt}", id, user.StudentExpiresAt);
+            _logger.LogInformation("Адміністратор {AdminId} продовжив студентський статус користувача {UserId} до {ExpiresAt}", GetCurrentUserId(), id, user.StudentExpiresAt);
             return Ok(ApiResponse<object>.SuccessResult(
                 new { studentExpiresAt = user.StudentExpiresAt },
                 "Термін студентського статусу продовжено"));

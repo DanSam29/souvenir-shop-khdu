@@ -111,14 +111,14 @@ namespace KhduSouvenirShop.API.Controllers
             }
             if (user.IsDeleted)
             {
-                _logger.LogWarning("Спроба входу в заблокований акаунт: {Email}", email);
+                _logger.LogWarning("Спроба входу в заблокований акаунт: {Email} (UserId: {UserId})", email, user.UserId);
                 return BadRequest(ApiResponse<object>.FailureResult("AccountBlocked", "Ваш акаунт заблоковано. Будь ласка, зверніться до адміністратора."));
             }
             // Тимчасове блокування після серії невдалих спроб входу (вимога 14.1)
             if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTime.UtcNow)
             {
                 var minutesLeft = Math.Max(1, (int)Math.Ceiling((user.LockoutEnd.Value - DateTime.UtcNow).TotalMinutes));
-                _logger.LogWarning("Спроба входу у тимчасово заблокований акаунт: {Email}", email);
+                _logger.LogWarning("Спроба входу у тимчасово заблокований акаунт: {Email} (UserId: {UserId})", email, user.UserId);
                 return StatusCode(StatusCodes.Status423Locked, ApiResponse<object>.FailureResult(
                     "AccountLocked",
                     $"Акаунт тимчасово заблоковано через невдалі спроби входу. Спробуйте через {minutesLeft} хв."));
@@ -132,12 +132,12 @@ namespace KhduSouvenirShop.API.Controllers
                     // Досягнуто ліміт — блокуємо акаунт на 5 хвилин і скидаємо лічильник
                     user.LockoutEnd = DateTime.UtcNow.AddMinutes(LockoutMinutes);
                     user.AccessFailedCount = 0;
-                    _logger.LogWarning("Акаунт {Email} тимчасово заблоковано на {Minutes} хв після {Attempts} невдалих спроб",
-                        email, LockoutMinutes, MaxFailedLoginAttempts);
+                    _logger.LogWarning("Акаунт {Email} (UserId: {UserId}) тимчасово заблоковано на {Minutes} хв після {Attempts} невдалих спроб",
+                        email, user.UserId, LockoutMinutes, MaxFailedLoginAttempts);
                 }
                 else
                 {
-                    _logger.LogWarning("Невірний пароль для {Email}. Невдалих спроб: {Count}", email, user.AccessFailedCount);
+                    _logger.LogWarning("Невірний пароль для {Email} (UserId: {UserId}). Невдалих спроб: {Count}", email, user.UserId, user.AccessFailedCount);
                 }
                 await _userRepository.SaveChangesAsync();
                 return Unauthorized(ApiResponse<object>.FailureResult("Невірний email або пароль", "Unauthorized"));

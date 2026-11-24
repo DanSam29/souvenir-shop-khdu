@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace KhduSouvenirShop.API.Controllers
 {
@@ -31,6 +32,12 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly ILogger<AdminUniversityController> _logger = logger;
         // Студентські статуси, які адміністратор може присвоїти вручну
         private static readonly string[] ManualStatuses = { "REGULAR", "SCHOLARSHIP", "HIGH_ACHIEVER" };
+        // Ідентифікатор поточного адміністратора для аудит-логів
+        private int? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(userIdClaim, out var userId) ? userId : null;
+        }
 
         // GET: api/admin/university/verifications - черга та історія верифікацій (пагінація, фільтр за статусом)
         [HttpGet("verifications")]
@@ -111,8 +118,8 @@ namespace KhduSouvenirShop.API.Controllers
 
             var discount = UniversityService.GetDiscountPercent(status);
             await _emailService.SendStudentVerificationEmailAsync(user.Email, status, user.PreferredLanguage, discount);
-            _logger.LogInformation("Запис черги {QueueId} підтверджено вручну; користувачу {UserId} присвоєно {Status}",
-                id, user.UserId, status);
+            _logger.LogInformation("Запис черги {QueueId} підтверджено вручну адміністратором {AdminId}; користувачу {UserId} присвоєно {Status}",
+                id, GetCurrentUserId(), user.UserId, status);
 
             return Ok(ApiResponse<object>.SuccessResult(
                 new { studentStatus = user.StudentStatus, studentExpiresAt = user.StudentExpiresAt },
@@ -134,7 +141,7 @@ namespace KhduSouvenirShop.API.Controllers
             entry.Status = "Failed";
             entry.LastError = "Відхилено адміністратором";
             await _queueRepository.SaveChangesAsync();
-            _logger.LogInformation("Запис черги {QueueId} відхилено адміністратором", id);
+            _logger.LogInformation("Запис черги {QueueId} відхилено адміністратором {AdminId}", id, GetCurrentUserId());
 
             return Ok(ApiResponse<object?>.SuccessResult(null, "Верифікацію відхилено"));
         }
@@ -156,7 +163,7 @@ namespace KhduSouvenirShop.API.Controllers
             entry.NextAttemptAt = DateTime.UtcNow;
             entry.LastError = null;
             await _queueRepository.SaveChangesAsync();
-            _logger.LogInformation("Запис черги {QueueId} поставлено на повторну перевірку", id);
+            _logger.LogInformation("Запис черги {QueueId} поставлено на повторну перевірку адміністратором {AdminId}", id, GetCurrentUserId());
 
             return Ok(ApiResponse<object?>.SuccessResult(null, "Запит поставлено в чергу на повторну перевірку"));
         }

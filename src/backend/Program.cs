@@ -93,12 +93,11 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 });
-// Налаштування запису логів (в консоль, в папку logs)
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
-    .CreateLogger();
-builder.Host.UseSerilog();
+// Налаштування структурованого логування Serilog: сінки та рівні беруться з конфігурації
+// (секція "Serilog" у appsettings.json / appsettings.{Environment}.json)
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .Enrich.FromLogContext());
 // Підключення БД MySQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
