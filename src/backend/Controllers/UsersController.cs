@@ -37,6 +37,9 @@ namespace KhduSouvenirShop.API.Controllers
         private readonly IShippingRepository _shippingRepository = shippingRepository;
         private readonly IRepository<UserPromotion> _userPromotionRepository = userPromotionRepository;
         private readonly PromotionService _promotionService = promotionService;
+        // Ліміт невдалих спроб входу та тривалість блокування (вимога 14.1)
+        private const int MaxFailedLoginAttempts = 5;
+        private const int LockoutMinutes = 5;
         // Допоміжний метод: отримання ідентифікатора поточного користувача з токена
         private int? GetCurrentUserId()
         {
@@ -111,11 +114,40 @@ namespace KhduSouvenirShop.API.Controllers
                 _logger.LogWarning("Спроба входу в заблокований акаунт: {Email}", email);
                 return BadRequest(ApiResponse<object>.FailureResult("AccountBlocked", "Ваш акаунт заблоковано. Будь ласка, зверніться до адміністратора."));
             }
+            // Тимчасове блокування після серії невдалих спроб входу (вимога 14.1)
+            if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTime.UtcNow)
+            {
+                var minutesLeft = Math.Max(1, (int)Math.Ceiling((user.LockoutEnd.Value - DateTime.UtcNow).TotalMinutes));
+                _logger.LogWarning("Спроба входу у тимчасово заблокований акаунт: {Email}", email);
+                return StatusCode(StatusCodes.Status423Locked, ApiResponse<object>.FailureResult(
+                    "AccountLocked",
+                    $"Акаунт тимчасово заблоковано через невдалі спроби входу. Спробуйте через {minutesLeft} хв."));
+            }
             var isValid = BCrypt.Net.BCrypt.Verify(request.Password, user.Password);
             if (!isValid)
             {
-                _logger.LogWarning("Невірний пароль для {Email}", email);
+                user.AccessFailedCount++;
+                if (user.AccessFailedCount >= MaxFailedLoginAttempts)
+                {
+                    // Досягнуто ліміт — блокуємо акаунт на 5 хвилин і скидаємо лічильник
+                    user.LockoutEnd = DateTime.UtcNow.AddMinutes(LockoutMinutes);
+                    user.AccessFailedCount = 0;
+                    _logger.LogWarning("Акаунт {Email} тимчасово заблоковано на {Minutes} хв після {Attempts} невдалих спроб",
+                        email, LockoutMinutes, MaxFailedLoginAttempts);
+                }
+                else
+                {
+                    _logger.LogWarning("Невірний пароль для {Email}. Невдалих спроб: {Count}", email, user.AccessFailedCount);
+                }
+                await _userRepository.SaveChangesAsync();
                 return Unauthorized(ApiResponse<object>.FailureResult("Невірний email або пароль", "Unauthorized"));
+            }
+            // Успішний вхід — скидання лічильника невдалих спроб і блокування
+            if (user.AccessFailedCount != 0 || user.LockoutEnd != null)
+            {
+                user.AccessFailedCount = 0;
+                user.LockoutEnd = null;
+                await _userRepository.SaveChangesAsync();
             }
             _logger.LogInformation("Користувач {Email} успішно авторизований", user.Email);
             var response = _mapper.Map<AuthResponse>(user);

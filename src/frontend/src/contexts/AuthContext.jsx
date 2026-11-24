@@ -10,7 +10,9 @@ export const AuthProvider = ({ children }) => {
   // Вихід (потрібен для loadUserData, тому визначений першим)
   const logout = useCallback(() => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     sessionStorage.removeItem('token');
+    sessionStorage.removeItem('refreshToken');
     setUser(null);
   }, []);
   // Завантаження даних користувача (Обертаємо в useCallback для стабілізації)
@@ -42,13 +44,17 @@ export const AuthProvider = ({ children }) => {
   // Авторизація. remember=true -> токен зберігається в localStorage, інакше - в sessionStorage
   const login = async (email, password, remember = true) => {
     const response = await usersAPI.login({ email, password });
-    const { token, ...userData } = response.data;
+    const { token, refreshToken, ...userData } = response.data;
     if (remember) {
       localStorage.setItem('token', token);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
       sessionStorage.removeItem('token');
+      sessionStorage.removeItem('refreshToken');
     } else {
       sessionStorage.setItem('token', token);
+      if (refreshToken) sessionStorage.setItem('refreshToken', refreshToken);
       localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
     }
     setUser(userData);
     return response.data;
@@ -56,8 +62,9 @@ export const AuthProvider = ({ children }) => {
   // Реєстрація
   const register = async (userData) => {
     const response = await usersAPI.register(userData);
-    const { token, ...userInfo } = response.data;
+    const { token, refreshToken, ...userInfo } = response.data;
     localStorage.setItem('token', token);
+    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
     setUser(userInfo);
     return response.data;
   };

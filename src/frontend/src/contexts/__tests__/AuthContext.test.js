@@ -108,4 +108,41 @@ describe('AuthContext', () => {
     expect(localStorage.getItem('token')).toBeNull();
     consoleSpy.mockRestore();
   });
+
+  test('login зберігає refreshToken разом з access-токеном', async () => {
+    usersAPI.login.mockResolvedValue({
+      data: { token: 'jwt-local', refreshToken: 'rt-local', id: 1, email: 'student@ksu.edu.ua' }
+    });
+    setup();
+    fireEvent.click(screen.getByText('login-remember'));
+    await waitFor(() => expect(screen.getByTestId('auth')).toHaveTextContent('true'));
+
+    expect(localStorage.getItem('token')).toBe('jwt-local');
+    expect(localStorage.getItem('refreshToken')).toBe('rt-local');
+  });
+
+  test('login з remember=false зберігає refreshToken у sessionStorage', async () => {
+    usersAPI.login.mockResolvedValue({
+      data: { token: 'jwt-session', refreshToken: 'rt-session', id: 2, email: 'student@ksu.edu.ua' }
+    });
+    setup();
+    fireEvent.click(screen.getByText('login-session'));
+    await waitFor(() => expect(screen.getByTestId('auth')).toHaveTextContent('true'));
+
+    expect(sessionStorage.getItem('refreshToken')).toBe('rt-session');
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+  });
+
+  test('logout очищає refreshToken', async () => {
+    usersAPI.login.mockResolvedValue({
+      data: { token: 'jwt', refreshToken: 'rt', id: 1, email: 'a@ksu.edu.ua' }
+    });
+    setup();
+    fireEvent.click(screen.getByText('login-remember'));
+    await waitFor(() => expect(screen.getByTestId('auth')).toHaveTextContent('true'));
+
+    fireEvent.click(screen.getByText('logout'));
+    await waitFor(() => expect(screen.getByTestId('auth')).toHaveTextContent('false'));
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+  });
 });

@@ -9,11 +9,52 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+// --- Робота з токенами у сховищах (localStorage для "Запам'ятати мене", інакше sessionStorage) ---
+const getStoredAccessToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
+const getStoredRefreshToken = () => localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
+// Сховище, у якому лежить активна пара токенів (refresh має пріоритет як індикатор сесії)
+const activeTokenStorage = () => {
+  if (sessionStorage.getItem('refreshToken') || sessionStorage.getItem('token')) return sessionStorage;
+  return localStorage;
+};
+const persistTokens = (token, refreshToken) => {
+  const storage = activeTokenStorage();
+  if (token) storage.setItem('token', token);
+  if (refreshToken) storage.setItem('refreshToken', refreshToken);
+};
+const clearTokens = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('refreshToken');
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('refreshToken');
+};
+// Одноразове оновлення пари токенів: усі паралельні 401 очікують один спільний запит
+let refreshPromise = null;
+const refreshAccessToken = () => {
+  if (!refreshPromise) {
+    const refreshToken = getStoredRefreshToken();
+    if (!refreshToken) {
+      return Promise.reject(new Error('Refresh token is missing'));
+    }
+    refreshPromise = axios
+      .post(`${API_BASE_URL}/Users/refresh`, { refreshToken })
+      .then((res) => {
+        const data = res.data?.data;
+        if (!data?.token) throw new Error('Refresh response has no access token');
+        persistTokens(data.token, data.refreshToken);
+        return data.token;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+};
 // Interceptor для додавання JWT токену до кожного запиту
 api.interceptors.request.use(
   (config) => {
     // Токен зберігається в localStorage ("Запам'ятати мене") або в sessionStorage (до закриття вкладки)
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const token = getStoredAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -33,11 +74,30 @@ api.interceptors.response.use(
     // В іншому випадку повернення повної відповіді
     return response;
   },
-  (error) => {
-    if (error.response?.status === 401) {
+  async (error) => {
+    const originalRequest = error.config;
+    const status = error.response?.status;
+    // Автоматичне оновлення access-токена при 401 з одноразовою повторною спробою
+    const isRefreshCall = originalRequest?.url?.includes('/Users/refresh');
+    if (status === 401 && originalRequest && !originalRequest._retry && !isRefreshCall && getStoredRefreshToken()) {
+      originalRequest._retry = true;
+      try {
+        const newToken = await refreshAccessToken();
+        originalRequest.headers = originalRequest.headers || {};
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Refresh-токен недійсний або прострочений — остаточний вихід із системи
+        clearTokens();
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+        return Promise.reject(refreshError);
+      }
+    }
+    if (status === 401) {
       // Токен невалідний або закінчився
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
+      clearTokens();
       // Не перезавантажуємо сторінку входу: інакше 401 на самому запиті логіну
       // знищує повідомлення «Невірний email або пароль» до його показу.
       if (window.location.pathname !== '/login') {

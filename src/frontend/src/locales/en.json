@@ -284,6 +284,7 @@
     "register_link": "Register",
     "invalid_credentials": "Invalid email or password",
     "account_blocked": "Your account has been blocked. Please contact the administrator.",
+    "account_locked": "Account temporarily locked due to failed login attempts. Please try again later.",
     "unknown_error": "Authorization error. Please try again later.",
     "email_invalid": "Invalid email format",
     "password_too_short": "Password must be at least 8 characters long",

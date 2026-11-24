@@ -24,6 +24,10 @@ namespace KhduSouvenirShop.API.Models
         public string Password { get; set; } = string.Empty;
         [MaxLength(20)]
         public string? Phone { get; set; }
+        // Кількість послідовних невдалих спроб входу (захист від підбору пароля)
+        public int AccessFailedCount { get; set; }
+        // Час, до якого акаунт тимчасово заблоковано після перевищення ліміту невдалих спроб
+        public DateTime? LockoutEnd { get; set; }
         [Required]
         [MaxLength(50)]
         public string Role { get; set; } = "Customer"; // Guest, Customer, Manager, Administrator, SuperAdmin

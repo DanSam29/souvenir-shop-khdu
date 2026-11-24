@@ -760,7 +760,7 @@
 ## Етап 14: Безпека, NFR, CSRF, валідація, аудит
 **Мета:** Забезпечити виконання всіх нефункціональних вимог до безпеки.
 
-14.1. Перевірити та додати:
+14.1. Перевірити та додати: ✅
 - Response Compression (Brotli/Gzip) в Program.cs
 - HTTPS Redirection + HSTS (вже є для non-Development)
 - CORS строга: DefaultPolicy тільки з дозволених доменів

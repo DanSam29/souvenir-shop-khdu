@@ -56,6 +56,9 @@ function LoginPage() {
       // Перевірка, чи є код AccountBlocked у списку помилок або в повідомленні
       if (errors.includes('AccountBlocked') || message === 'AccountBlocked') {
         setError(t('auth.account_blocked'));
+      } else if (errors.includes('AccountLocked') || message === 'AccountLocked' || err.response?.status === 423) {
+        // Тимчасове блокування після серії невдалих спроб входу (вимога 14.1)
+        setError(t('auth.account_locked'));
       } else if (err.response?.status === 401) {
         setError(t('auth.invalid_credentials'));
       } else if (message) {
